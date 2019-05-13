@@ -9,6 +9,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.WaterMob;
+import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Wither;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -26,12 +27,10 @@ import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static org.bukkit.block.Biome.THE_END;
 
 /**
  * Responsible for controlling spawns on uSkyBlock islands.
@@ -94,9 +93,25 @@ public class SpawnEvents implements Listener {
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (!event.isCancelled() && event.getEntity() instanceof WaterMob) {
             Location loc = event.getLocation();
-            if (isDeepOceanBiome(loc) && isPrismarineRoof(loc)) {
+            if (isPrismarineRoof(loc)) {
                 loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
                 event.setCancelled(true);
+            }
+        }
+        if (!event.isCancelled() && event.getEntity() instanceof Enderman) {
+            Location loc = event.getLocation();
+
+            if(isPurpurFloor(loc)) {
+                if (isEndBiome(loc)) {
+                    Random r = new Random();
+                    if (r.nextInt(10) == 0) {
+                        loc.getWorld().spawnEntity(loc, EntityType.SHULKER);
+                        event.setCancelled(true);
+                    }
+                } else {
+                    loc.getWorld().spawnEntity(loc, EntityType.SHULKER);
+                    event.setCancelled(true);
+                }
             }
         }
         if (!event.isCancelled() && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.BUILD_WITHER && event.getEntity() instanceof Wither) {
@@ -108,6 +123,13 @@ public class SpawnEvents implements Listener {
         }
     }
 
+    private boolean isPurpurFloor(Location loc){
+        List<Material> purpurBlocks = Arrays.asList(Material.PURPUR_BLOCK, Material.PURPUR_PILLAR, Material.PURPUR_SLAB);
+        loc.setY(loc.getY()-1);
+        boolean ret=purpurBlocks.contains(loc.getBlock().getType());
+        loc.setY(loc.getY()+1);
+        return ret;
+    }
     private boolean isPrismarineRoof(Location loc) {
         List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
         return prismarineBlocks.contains(LocationUtil.findRoofBlock(loc).getType());
@@ -116,6 +138,9 @@ public class SpawnEvents implements Listener {
     private boolean isDeepOceanBiome(Location loc) {
         List<Biome> deepOceans = Arrays.asList(Biome.DEEP_OCEAN, Biome.DEEP_COLD_OCEAN, Biome.DEEP_FROZEN_OCEAN, Biome.DEEP_LUKEWARM_OCEAN, Biome.DEEP_WARM_OCEAN);
         return deepOceans.contains(loc.getWorld().getBiome(loc.getBlockX(), loc.getBlockZ()));
+    }
+    private boolean isEndBiome(Location loc) {
+        return loc.getWorld().getBiome(loc.getBlockX(), loc.getBlockZ())==Biome.THE_END;
     }
 
     private void checkLimits(Cancellable event, EntityType entityType, Location location) {
