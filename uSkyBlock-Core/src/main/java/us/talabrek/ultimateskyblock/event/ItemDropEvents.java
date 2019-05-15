@@ -111,7 +111,7 @@ public class ItemDropEvents implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPickupEvent(PlayerPickupItemEvent event) {
         Player player = event.getPlayer();
-        if (event.isCancelled() || !plugin.isSkyWorld(player.getWorld())) {
+        if (event.isCancelled() || !plugin.isSkyWorld(player.getWorld()) || !plugin.isSkyNether(player.getWorld())) {
             clearDropInfo(event.getItem());
             return;
         }
