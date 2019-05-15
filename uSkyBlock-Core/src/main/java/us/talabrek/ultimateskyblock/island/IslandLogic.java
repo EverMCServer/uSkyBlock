@@ -262,9 +262,8 @@ public class IslandLogic {
                 jclick.put("value",cmd);
                 json.put("hoverEvent",jhover);
                 json.put("clickEvent",jclick);
-
-                uSkyBlock.getInstance().execCommand(player,"console:tellraw "+ player.getName() + " " + json.toString(),false);
-
+                uSkyBlock.getInstance().execCommand(player,"console:tellraw " +
+                        player.getName() + " " + json.toString(),false);
                 place++;
             }
             if (rank != null) {
