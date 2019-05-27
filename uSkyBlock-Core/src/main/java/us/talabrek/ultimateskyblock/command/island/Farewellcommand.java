@@ -23,12 +23,14 @@ public class Farewellcommand extends AbstractCommand {
     public boolean execute(CommandSender sender, String alias, Map<String, Object> data, String... args) {
         Player player = (Player)sender;
         IslandInfo islandInfo = uSkyBlock.getInstance().getIslandInfo(player);
-        System.out.println(islandInfo.getName() + "island");
-        System.out.println(args[0]);
         String str="";
-        for (String arg:args){
-            str+=arg+" ";
+        if(args.length < 1){
+            str=tr("§d** You are leaving §b{0}''s §disland.",islandInfo.getLeader());
         }
+        else
+            for (String arg:args){
+                str+=arg+" ";
+            }
         String cmd = "console:rg flag -w world_skyland " + islandInfo.getName() + "island farewell "+str;
         uSkyBlock.getInstance().execCommand(player, cmd,false);
 
