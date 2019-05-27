@@ -778,8 +778,8 @@ public class SkyBlockMenu {
 
         menuItem = new ItemStack(Material.IRON_SWORD, 1);
         meta4 = menuItem.getItemMeta();
-        meta4.setDisplayName(tr("\u00a7a\u00a7lAllow pvp"));
-        addLore(lores, "\u00a7f", tr("allow/deny pvp"));
+        meta4.setDisplayName(tr("\u00a7a\u00a7lToggle PVP"));
+        addLore(lores, "\u00a7f", tr("Click to toggle PVP deny/allow state on your island."));
         meta4.setLore(lores);
         menuItem.setItemMeta(meta4);
         menu.setItem(47,menuItem);
@@ -979,6 +979,9 @@ public class SkyBlockMenu {
         } else if (currentItem.getType() == Material.LIGHT_GRAY_BED) {
             p.closeInventory();
             p.performCommand("sethome");
+        } else if (currentItem.getType() == Material.IRON_SWORD) {
+            p.closeInventory();
+            p.performCommand("island togglepvp");
         } else if (currentItem.getType() == Material.PAINTING) {
             p.closeInventory();
             p.performCommand("island top");

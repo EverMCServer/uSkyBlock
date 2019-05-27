@@ -7,6 +7,7 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.internal.platform.WorldGuardPlatform;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
+import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.Flags;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
@@ -14,6 +15,7 @@ import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import dk.lockfuglsang.minecraft.po.I18nUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -212,7 +214,11 @@ public class WorldGuardHandler {
             LogUtil.log(Level.SEVERE, "ERROR: Failed to unlock " + islandName + "'s Island (" + sender.getName() + ")", ex);
         }
     }
-
+    public static ProtectedRegion getIslandRegion(String regionName){
+        RegionManager regionManager = getRegionManager(Bukkit.getWorld(Settings.general_worldName));
+        ProtectedRegion rg = regionManager.getRegion(regionName);
+        return rg;
+    }
     public static BlockVector3 getProtectionVectorLeft(final Location island) {
         return BlockVector3.at(island.getX() + Settings.island_radius - 1, 255.0, island.getZ() + Settings.island_radius - 1);
     }
@@ -246,18 +252,6 @@ public class WorldGuardHandler {
             }
         }
         return null;
-    }
-    public static boolean isPVPAllowed(Location location){
-        RegionManager regionManager = getRegionManager(location.getWorld());
-        if (regionManager == null) {
-            return false;
-        }
-        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
-        for (ProtectedRegion region : applicableRegions) {
-            String id = region.getId().toLowerCase();
-            System.out.println("region: "+id);
-        }
-        return false;
     }
     private static BlockVector3 toVector(Location location) {
         return BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ());

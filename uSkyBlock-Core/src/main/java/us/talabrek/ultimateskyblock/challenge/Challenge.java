@@ -25,7 +25,7 @@ import static dk.lockfuglsang.minecraft.util.FormatUtil.*;
 public class Challenge {
     public static final Pattern REQ_PATTERN = Pattern.compile("(?<itemstack>(?<type>[0-9A-Z_]+)(:(?<subtype>[0-9]+))?(?<meta>\\{.*\\})?):(?<amount>[0-9]+)(;(?<op>[+\\-*\\^])(?<inc>[0-9]+))?");
     public static final int MAX_DETAILS = 11;
-    public static final int MAX_LINE = 30;
+    public static final int MAX_LINE = 20;
 
     public enum Type {
         PLAYER, ISLAND, ISLAND_LEVEL;
@@ -159,7 +159,10 @@ public class Challenge {
         ItemStack currentChallengeItem = getDisplayItem();
         ItemMeta meta = currentChallengeItem.getItemMeta();
         List<String> lores = new ArrayList<>();
-        lores.addAll(prefix(wordWrap(getDescription(), MAX_LINE), "\u00a77"));
+        for(String str : getDescription().split("\\\\n")) {
+            lores.add("\u00a77"+str);
+        }
+        //lores.addAll(prefix(wordWrap(getDescription(), MAX_LINE), "\u00a77"));
         Reward reward = getReward();
         if (completion.getTimesCompleted() > 0 && isRepeatable()) {
             currentChallengeItem.setAmount(completion.getTimesCompleted() < currentChallengeItem.getMaxStackSize() ? completion.getTimesCompleted() : currentChallengeItem.getMaxStackSize());
