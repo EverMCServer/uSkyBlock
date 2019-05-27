@@ -210,14 +210,7 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSpawnDamage(final EntityDamageEvent event) {
-        if (!plugin.isSkyWorld(event.getEntity().getWorld())) {
-            return;
-        }
-        if (event.getEntity() instanceof Player && plugin.playerIsInSpawn((Player) event.getEntity()) && event.getCause() == EntityDamageEvent.DamageCause.VOID) {
-            event.setDamage(-event.getDamage());
-            event.setCancelled(true);
-            plugin.getTeleportLogic().spawnTeleport((Player) event.getEntity(), true);
-        }
+
     }
 
     @EventHandler
