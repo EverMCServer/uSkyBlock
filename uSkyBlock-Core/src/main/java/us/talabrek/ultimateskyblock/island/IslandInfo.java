@@ -516,7 +516,7 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
             for (UUID uuid : getMemberUUIDs()) {
                 Player player = uSkyBlock.getInstance().getPlayerDB().getPlayer(uuid);
                 if (player != null && player.isOnline()) {
-                    player.sendMessage(tr("\u00a7cSKY \u00a7f> \u00a77 {0}", tr(message, args)));
+                    player.sendMessage(tr("§7[§b空岛§7][系统]: §r{0}", tr(message, args)));
                 }
             }
         }
@@ -829,7 +829,7 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
     }
 
     public void sendMessageToOnlineMembers(String msg) {
-        String message = tr("\u00a7cSKY \u00a7f> \u00a77 {0}", msg);
+        String message = tr("§7[§b空岛§7][系统]: §r{0}", msg);
         for (Player player : getOnlineMembers()) {
             player.sendMessage(message);
         }
