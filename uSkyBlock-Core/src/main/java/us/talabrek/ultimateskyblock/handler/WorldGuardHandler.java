@@ -253,6 +253,20 @@ public class WorldGuardHandler {
         }
         return null;
     }
+    public static boolean isInSpawn(Location location) {
+        RegionManager regionManager = getRegionManager(location.getWorld());
+        if (regionManager == null) {
+            return false;
+        }
+        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
+        for (ProtectedRegion region : applicableRegions) {
+            String id = region.getId().toLowerCase();
+            if (id.equalsIgnoreCase("spawn")) {
+                return true;
+            }
+        }
+        return false;
+    }
     private static BlockVector3 toVector(Location location) {
         return BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }

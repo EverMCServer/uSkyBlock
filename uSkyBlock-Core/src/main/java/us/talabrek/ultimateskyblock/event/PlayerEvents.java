@@ -184,6 +184,10 @@ public class PlayerEvents implements Listener {
             return;
         }
 
+        // Don't protect players in spawn
+        if (WorldGuardHandler.isInSpawn(event.getEntity().getLocation())) {
+            return;
+        }
         // This protection only applies to players:
         if (!(event.getEntity() instanceof Player)) {
             return;
