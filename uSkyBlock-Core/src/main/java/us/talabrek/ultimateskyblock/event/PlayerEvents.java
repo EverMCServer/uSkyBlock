@@ -27,6 +27,7 @@ import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.async.Callback;
 import us.talabrek.ultimateskyblock.api.event.IslandInfoEvent;
 import us.talabrek.ultimateskyblock.api.model.IslandScore;
+import us.talabrek.ultimateskyblock.challenge.ChallengeCompletionLogic;
 import us.talabrek.ultimateskyblock.handler.VaultHandler;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.island.BlockLimitLogic;
@@ -311,6 +312,22 @@ public class PlayerEvents implements Listener {
             return;
         }
         Material type = event.getBlock().getType();
+        if(type == Material.OBSIDIAN){
+            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+            boolean isFirstCompletion = playerInfo.checkChallenge("builder5") == 0;
+            if(isFirstCompletion){
+                event.setCancelled(true);
+                player.sendMessage(tr("You do not have permission to place {0}","Obsidian"));
+            }
+        }
+        if(type == Material.CHORUS_FLOWER){
+            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+            boolean isFirstCompletion = playerInfo.checkChallenge("builder10") == 0;
+            if(isFirstCompletion){
+                event.setCancelled(true);
+                player.sendMessage(tr("You do not have permission to place {0}","Chorus Flower"));
+            }
+        }
         BlockLimitLogic.CanPlace canPlace = plugin.getBlockLimitLogic().canPlace(type, islandInfo);
         if (canPlace == BlockLimitLogic.CanPlace.UNCERTAIN) {
             event.setCancelled(true);
