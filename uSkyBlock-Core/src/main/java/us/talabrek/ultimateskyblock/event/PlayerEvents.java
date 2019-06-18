@@ -317,7 +317,7 @@ public class PlayerEvents implements Listener {
             boolean isFirstCompletion = playerInfo.checkChallenge("builder5") == 0;
             if(isFirstCompletion){
                 event.setCancelled(true);
-                player.sendMessage(tr("You do not have permission to place {0}","Obsidian"));
+                player.sendMessage(tr("You do not have permission to place {0}",tr("Obsidian")));
             }
         }
         if(type == Material.CHORUS_FLOWER){
@@ -325,7 +325,7 @@ public class PlayerEvents implements Listener {
             boolean isFirstCompletion = playerInfo.checkChallenge("builder10") == 0;
             if(isFirstCompletion){
                 event.setCancelled(true);
-                player.sendMessage(tr("You do not have permission to place {0}","Chorus Flower"));
+                player.sendMessage(tr("You do not have permission to place {0}",tr("Chorus Flower")));
             }
         }
         BlockLimitLogic.CanPlace canPlace = plugin.getBlockLimitLogic().canPlace(type, islandInfo);

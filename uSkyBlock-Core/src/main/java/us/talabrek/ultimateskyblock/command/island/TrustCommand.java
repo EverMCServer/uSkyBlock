@@ -22,6 +22,12 @@ public class TrustCommand extends RequireIslandCommand {
 
     @Override
     protected boolean doExecute(final String alias, final Player player, final PlayerInfo pi, final IslandInfo island, Map<String, Object> data, String... args) {
+        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+        boolean isFirstCompletion = playerInfo.checkChallenge("builder5") == 0;
+        if(isFirstCompletion){
+            player.sendMessage(tr("\u00a7cYou do not have permission to use trust command. Complete newbie challenges to unlock this command. "));
+            return true;
+        }
         if (args.length == 0) {
             player.sendMessage(tr("\u00a7eThe following players are trusted on your island:"));
             player.sendMessage(tr("\u00a74{0}", island.getTrustees()));
@@ -41,6 +47,12 @@ public class TrustCommand extends RequireIslandCommand {
                 return true;
             }
             if (alias.equals("trust")) {
+                PlayerInfo pinfo = plugin.getPlayerInfo(offlinePlayer.getUniqueId());
+                boolean pii = pinfo.checkChallenge("builder5") == 0;
+                if(pii){
+                    player.sendMessage(tr("\u00a7cYou cannot trust players who have not completed newbie challenges. "));
+                    return true;
+                }
                 island.trust(offlinePlayer.getUniqueId());
                 if (offlinePlayer.isOnline()) {
                     offlinePlayer.getPlayer().sendMessage(tr("\u00a7eYou are now trusted on \u00a74{0}''s \u00a7eisland.", pi.getDisplayName()));
