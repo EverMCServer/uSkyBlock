@@ -10,6 +10,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import us.talabrek.ultimateskyblock.player.UltimateHolder;
+import us.talabrek.ultimateskyblock.player.UltimateHolder.MenuType;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.io.File;
@@ -44,7 +46,9 @@ public class MainConfigMenu extends AbstractConfigMenu implements EditMenu {
 
     @Override
     public boolean onClick(InventoryClickEvent event) {
-        String title = stripFormatting(event.getInventory().getTitle());
+        if (!(event.getInventory().getHolder() instanceof UltimateHolder))
+            return false;
+        String title = stripFormatting(((UltimateHolder) event.getInventory().getHolder()).getTitle());
         final Player player = (Player) event.getWhoClicked();
         if (!title.contains(".yml")) {
             return false;
@@ -52,6 +56,9 @@ public class MainConfigMenu extends AbstractConfigMenu implements EditMenu {
         ItemStack item = event.getCurrentItem();
         if (item == null) {
             return true;
+        }
+        if(event.getInventory().equals(event.getView().getBottomInventory())) {
+            return true; //we clicked on the players inventory, lets not try to do anyting
         }
         if (event.getSlot() % 9 == 0 && (item.getType() == Material.BOOK || item.getType() == Material.WRITABLE_BOOK)) {
             String configName = getConfigName(item);
@@ -107,15 +114,15 @@ public class MainConfigMenu extends AbstractConfigMenu implements EditMenu {
         int col = slot % 9;
         while (col >= 1) {
             ItemStack parent = inventory.getItem(getIndex(row, col));
-            while (parent != null && parent.getType() != Material.PAPER) {
+            if(parent != null && parent.getType() != Material.PAPER) {
                 col--;
                 parent = inventory.getItem(getIndex(row, col));
             }
-            while (parent == null || parent.getType() != Material.PAPER) {
+            else if(parent == null || parent.getType() != Material.PAPER) {
                 row--;
                 parent = inventory.getItem(getIndex(row, col));
             }
-            if (parent != null && parent.getType() == Material.PAPER) {
+            else if (parent != null && parent.getType() == Material.PAPER) {
                 sb.insert(0, stripFormatting(parent.getItemMeta().getDisplayName()) + ".");
                 col--;
             }
@@ -164,7 +171,8 @@ public class MainConfigMenu extends AbstractConfigMenu implements EditMenu {
         if (page > maxPages) {
             page = maxPages;
         }
-        Inventory menu = Bukkit.createInventory(null, 6 * 9, tr("Config:") + " " + pre("{0} ({1}/{2})", filename, page, maxPages));
+        String title = tr("Config:") + " " + pre("{0} ({1}/{2})", filename, page, maxPages);
+        Inventory menu = Bukkit.createInventory(new UltimateHolder(null, title, MenuType.CONFIG), 6 * 9, title);
         menu.setMaxStackSize(MenuItemFactory.MAX_INT_VALUE);
         int startOffset = (page-1)*54;
         // Add section markers on top line

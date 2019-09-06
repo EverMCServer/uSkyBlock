@@ -16,7 +16,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import us.talabrek.ultimateskyblock.handler.EntitySpawner;
@@ -33,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
-
 /**
  * Responsible for forming the correct blocks in nether on block-breaks.
  */
@@ -49,7 +46,6 @@ public class NetherTerraFormEvents implements Listener {
     private final double chanceBlaze;
     private final boolean terraformEnabled;
     private final boolean spawnEnabled;
-    private final boolean netherRoof;
     private final double minPitch;
     private final double maxPitch;
     private final EntitySpawner entitySpawner;
@@ -59,7 +55,6 @@ public class NetherTerraFormEvents implements Listener {
         // TODO: 23/09/2015 - R4zorax: Allow this to be perk-based?
         terraformEnabled = plugin.getConfig().getBoolean("nether.terraform-enabled", true);
         spawnEnabled = plugin.getConfig().getBoolean("nether.spawn-chances.enabled", true);
-        netherRoof = plugin.getConfig().getBoolean("options.protection.nether-roof", true);
         minPitch = plugin.getConfig().getDouble("nether.terraform-min-pitch", -70d);
         maxPitch = plugin.getConfig().getDouble("nether.terraform-max-pitch", 90d);
         ConfigurationSection config = plugin.getConfig().getConfigurationSection("nether.terraform");
@@ -91,14 +86,14 @@ public class NetherTerraFormEvents implements Listener {
         entitySpawner = new EntitySpawner();
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        if (event == null || event.isCancelled() || !terraformEnabled) {
+        if (event == null || !terraformEnabled) {
             return;
         }
         Block block = event.getBlock();
         Player player = event.getPlayer();
-        if (block == null || player == null || !plugin.isSkyNether(block.getWorld()) || !plugin.isSkyNether(player.getWorld())) {
+        if (!plugin.getWorldManager().isSkyNether(block.getWorld()) || !plugin.getWorldManager().isSkyNether(player.getWorld())) {
             return; // Bail out, not our problem
         }
         if (player.getGameMode() != GameMode.SURVIVAL) {
@@ -112,7 +107,7 @@ public class NetherTerraFormEvents implements Listener {
         }
         // TODO: 10/07/2016 - R4zorax: Handle dual-wielding (would break 1.8 compatibility)
         ItemStack tool = event.getPlayer().getItemInHand();
-        if (tool == null || event.getBlock().getDrops(tool).isEmpty()) {
+        if (event.getBlock().getDrops(tool).isEmpty()) {
             return; // Only terra-form when stuff is mined correctly
         }
         double toolWeight = getToolWeight(tool);
@@ -232,7 +227,7 @@ public class NetherTerraFormEvents implements Listener {
 
     @EventHandler
     public void onGhastExplode(EntityExplodeEvent event) {
-        if (event == null || event.getEntity() == null || !plugin.isSkyNether(event.getEntity().getWorld())) {
+        if (!plugin.getWorldManager().isSkyNether(event.getEntity().getWorld())) {
             return; // Bail out, not our problem
         }
         // TODO: 23/09/2015 - R4zorax: Perhaps enable this when island has a certain level?
@@ -248,15 +243,15 @@ public class NetherTerraFormEvents implements Listener {
      * Comes AFTER the SpawnEvents{@link #onCreatureSpawn(CreatureSpawnEvent)} - so cancelled will have effect
      * @param e
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent e) {
-        if (!spawnEnabled || e == null || e.isCancelled() || e.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL || e.getEntity() == null) {
+        if (!spawnEnabled || e.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) {
             return;
         }
-        if (!plugin.isSkyNether(e.getLocation().getWorld())) {
+        if (!plugin.getWorldManager().isSkyNether(e.getLocation().getWorld())) {
             return;
         }
-        if (e.getLocation().getBlockY() > plugin.getSkyBlockNetherWorld().getMaxHeight()) {
+        if (e.getLocation().getBlockY() > plugin.getWorldManager().getNetherWorld().getMaxHeight()) {
             // Block spawning above nether...
             e.setCancelled(true);
             return;
@@ -281,16 +276,5 @@ public class NetherTerraFormEvents implements Listener {
 
     private boolean isNetherFortressWalkway(Block block) {
         return block.getType() == Material.NETHER_BRICKS;
-    }
-
-    @EventHandler
-    public void onTeleport(PlayerTeleportEvent e) {
-        if (!netherRoof || e == null || e.getPlayer() == null || e.getTo() == null || !plugin.isSkyNether(e.getTo().getWorld())) {
-            return; // Bail out.
-        }
-        if (e.getTo().getBlockY() > 127) {
-            e.setCancelled(true);
-            e.getPlayer().sendMessage(tr("\u00a7cNo Access! \u00a7eYou are trying to teleport to the roof of the \u00a7cNETHER\u00a7e, that is not allowed."));
-        }
     }
 }

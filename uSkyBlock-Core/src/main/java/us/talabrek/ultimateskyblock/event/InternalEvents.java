@@ -9,7 +9,6 @@ import us.talabrek.ultimateskyblock.api.event.MemberJoinedEvent;
 import us.talabrek.ultimateskyblock.api.event.MemberLeftEvent;
 import us.talabrek.ultimateskyblock.api.event.RestartIslandEvent;
 import us.talabrek.ultimateskyblock.api.event.uSkyBlockScoreChangedEvent;
-import us.talabrek.ultimateskyblock.api.async.Callback;
 import us.talabrek.ultimateskyblock.island.level.IslandScore;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
@@ -18,6 +17,7 @@ import us.talabrek.ultimateskyblock.util.LocationUtil;
 /**
  * Main event-handler for internal uSkyBlock events
  */
+@SuppressWarnings("WeakerAccess")
 public class InternalEvents implements Listener {
     private final uSkyBlock plugin;
 
@@ -25,18 +25,14 @@ public class InternalEvents implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onRestart(RestartIslandEvent e) {
-        if (!e.isCancelled()) {
-            plugin.restartPlayerIsland(e.getPlayer(), e.getIslandLocation(), e.getSchematic());
-        }
+        plugin.restartPlayerIsland(e.getPlayer(), e.getIslandLocation(), e.getSchematic());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCreate(CreateIslandEvent e) {
-        if (!e.isCancelled()) {
-            plugin.createIsland(e.getPlayer(), e.getSchematic());
-        }
+        plugin.createIsland(e.getPlayer(), e.getSchematic());
     }
 
     @EventHandler

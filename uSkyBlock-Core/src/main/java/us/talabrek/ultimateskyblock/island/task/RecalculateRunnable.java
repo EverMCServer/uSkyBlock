@@ -2,7 +2,6 @@ package us.talabrek.ultimateskyblock.island.task;
 
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
-import us.talabrek.ultimateskyblock.api.event.uSkyBlockEvent;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.HashSet;
@@ -18,7 +17,7 @@ public class RecalculateRunnable extends BukkitRunnable {
     @Override
     public void run() {
         Set<String> recalcIslands = new HashSet<>();
-        for (Player player : plugin.getWorld().getPlayers()) {
+        for (Player player : plugin.getWorldManager().getWorld().getPlayers()) {
             if (player.isOnline() && plugin.playerIsOnIsland(player)) {
                 recalcIslands.add(plugin.getPlayerInfo(player).locationForParty());
             }

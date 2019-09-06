@@ -55,7 +55,7 @@ public class SpawnEvents implements Listener {
     @EventHandler
     public void onSpawnEggEvent(PlayerInteractEvent event) {
         Player player = event != null ? event.getPlayer() : null;
-        if (player == null || event.isCancelled() || !plugin.isSkyWorld(player.getWorld())) {
+        if (player == null || event.isCancelled() || !plugin.getWorldManager().isSkyWorld(player.getWorld())) {
             return; // Bail out, we don't care
         }
         if (player.hasPermission("usb.mod.bypassprotection") || player.isOp()) {
@@ -82,16 +82,16 @@ public class SpawnEvents implements Listener {
         return item.getType().name().endsWith("_SPAWN_EGG") && item.getData() instanceof MonsterEggs;
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-        if (event == null || event.isCancelled() || event.getLocation() == null || !plugin.isSkyAssociatedWorld(event.getLocation().getWorld())) {
+        if (event == null || !plugin.getWorldManager().isSkyAssociatedWorld(event.getLocation().getWorld())) {
             return; // Bail out, we don't care
         }
         if (!event.isCancelled() && ADMIN_INITIATED.contains(event.getSpawnReason())) {
             return; // Allow it, the above method would have blocked it if it should be blocked.
         }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
-        if (!event.isCancelled() && event.getEntity() instanceof WaterMob) {
+        if (event.getEntity() instanceof WaterMob) {
             Location loc = event.getLocation();
             if (isPrismarineRoof(loc)) {
                 loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
@@ -114,7 +114,7 @@ public class SpawnEvents implements Listener {
                 }
             }
         }
-        if (!event.isCancelled() && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.BUILD_WITHER && event.getEntity() instanceof Wither) {
+        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.BUILD_WITHER && event.getEntity() instanceof Wither) {
             IslandInfo islandInfo = plugin.getIslandInfo(event.getLocation());
             if (islandInfo != null && islandInfo.getLeader() != null) {
                 event.getEntity().setCustomName(I18nUtil.tr("{0}''s Wither", islandInfo.getLeader()));

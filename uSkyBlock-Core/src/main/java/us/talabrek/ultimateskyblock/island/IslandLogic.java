@@ -5,6 +5,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.gson.GsonBuilder;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
@@ -16,7 +17,6 @@ import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-import org.json.simple.JSONObject;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.IslandLevel;
 import us.talabrek.ultimateskyblock.api.IslandRank;
@@ -35,7 +35,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -85,7 +87,7 @@ public class IslandLogic {
                     @Override
                     public IslandInfo load(String islandName) throws Exception {
                         log.fine("Loading island-info " + islandName + " to cache!");
-                        return new IslandInfo(islandName);
+                        return new IslandInfo(islandName, plugin);
                     }
                 });
         long every = TimeUtil.secondsAsMillis(plugin.getConfig().getInt("options.advanced.island.saveEvery", 30));
@@ -124,17 +126,6 @@ public class IslandLogic {
         return null;
     }
 
-    public void loadIslandChunks(Location l, int radius) {
-        World world = l.getWorld();
-        final int px = l.getBlockX();
-        final int pz = l.getBlockZ();
-        for (int x = -radius-16; x <= radius+16; x += 16) {
-            for (int z = -radius-16; z <= radius+16; z += 16) {
-                world.loadChunk((px + x) / 16, (pz + z) / 16, true);
-            }
-        }
-    }
-
     public void clearIsland(final Location loc, final Runnable afterDeletion) {
         log.log(Level.FINE, "clearing island at {0}", loc);
         Runnable clearNether = new Runnable() {
@@ -144,28 +135,26 @@ public class IslandLogic {
                 ProtectedRegion netherRegion = WorldGuardHandler.getNetherRegionAt(netherIsland);
                 if (netherRegion != null) {
                     for (Player player : WorldGuardHandler.getPlayersInRegion(netherIsland.getWorld(), netherRegion)) {
-                        if (player != null && player.isOnline() && plugin.isSkyNether(player.getWorld()) && !player.isFlying()) {
+                        if (player != null && player.isOnline() && plugin.getWorldManager().isSkyNether(player.getWorld()) && !player.isFlying()) {
                             player.sendMessage(tr("\u00a7cThe island owning this piece of nether is being deleted! Sending you to spawn."));
                             plugin.getTeleportLogic().spawnTeleport(player, true);
                         }
                     }
-                    WorldEditHandler.clearEntities(netherIsland.getWorld(), netherIsland);
-                    WorldEditHandler.clearNetherIsland(netherIsland.getWorld(), netherRegion, afterDeletion);
+                    WorldEditHandler.clearIsland(netherIsland.getWorld(), netherRegion, afterDeletion);
                 } else {
                     afterDeletion.run();
                 }
             }
         };
-        World skyBlockWorld = plugin.getWorld();
+        World skyBlockWorld = plugin.getWorldManager().getWorld();
         ProtectedRegion region = WorldGuardHandler.getIslandRegionAt(loc);
         if (region != null) {
-            for (Player player : WorldGuardHandler.getPlayersInRegion(plugin.getWorld(), region)) {
-                if (player != null && player.isOnline() && plugin.isSkyWorld(player.getWorld()) && !player.isFlying()) {
+            for (Player player : WorldGuardHandler.getPlayersInRegion(plugin.getWorldManager().getWorld(), region)) {
+                if (player != null && player.isOnline() && plugin.getWorldManager().isSkyWorld(player.getWorld()) && !player.isFlying()) {
                     player.sendMessage(tr("\u00a7cThe island you are on is being deleted! Sending you to spawn."));
                     plugin.getTeleportLogic().spawnTeleport(player, true);
                 }
             }
-            WorldEditHandler.clearEntities(skyBlockWorld, loc);
             WorldEditHandler.clearIsland(skyBlockWorld, region, clearNether);
         } else {
             log.log(Level.WARNING, "Trying to delete an island - with no WG region! ({0})", LocationUtil.asString(loc));
@@ -175,7 +164,7 @@ public class IslandLogic {
 
     private Location getNetherLocation(Location loc) {
         Location netherIsland = loc.clone();
-        netherIsland.setWorld(plugin.getSkyBlockNetherWorld());
+        netherIsland.setWorld(plugin.getWorldManager().getNetherWorld());
         netherIsland.setY(loc.getY()/2);
         return netherIsland;
     }
@@ -248,22 +237,22 @@ public class IslandLogic {
                 if (showMembers && !level.getMembers().isEmpty()) {
                     members = Arrays.toString(level.getMembers().toArray(new String[level.getMembers().size()]));
                 }
-                Player player = (Player)sender;
-                String str = String.format(tr("\u00a7a#%2d \u00a77(%5.2f): \u00a7e%s \u00a77%s"), place, level.getScore(), level.getLeaderName(), members);
-                String hover = tr("Click to warp to the island!");
-                String cmd = String.format("/is w %s",level.getLeaderName());
-                JSONObject json = new JSONObject();
-                json.put("text",str);
-                JSONObject jhover = new JSONObject();
-                jhover.put("action","show_text");
-                jhover.put("value",hover);
-                JSONObject jclick = new JSONObject();
-                jclick.put("action","run_command");
-                jclick.put("value",cmd);
-                json.put("hoverEvent",jhover);
-                json.put("clickEvent",jclick);
-                uSkyBlock.getInstance().execCommand(player,"console:tellraw " +
-                        player.getName() + " " + json.toString(),false);
+                String message = String.format(tr("\u00a7a#%2d \u00a77(%5.2f): \u00a7e%s \u00a77%s"),
+                        place, level.getScore(), level.getLeaderName(), members);
+                if (sender instanceof Player) {
+                    Player target = (Player) sender;
+                    String warpString = getJsonWarpString(
+                            message,
+                            tr("Click to warp to the island!"),
+                            String.format("/is w %s", level.getLeaderName())
+                    );
+                    uSkyBlock.getInstance().execCommand(target, "console:tellraw " +
+                            target.getName() + " " + warpString, false);
+                } else {
+                    sender.sendMessage(message);
+                }
+
+
                 place++;
             }
             if (rank != null) {
@@ -273,16 +262,30 @@ public class IslandLogic {
 
     }
 
+    private String getJsonWarpString(String text, String hoverText, String command) {
+        Map<String, Object> hoverEvent = new HashMap<>();
+        hoverEvent.put("action", "show_text");
+        hoverEvent.put("value", hoverText);
+
+        Map<String, Object> clickEvent = new HashMap<>();
+        clickEvent.put("action", "run_command");
+        clickEvent.put("value", command);
+
+        Map<String, Object> rootMap = new HashMap<>();
+        rootMap.put("text", text);
+        rootMap.put("hoverEvent", hoverEvent);
+        rootMap.put("clickEvent", clickEvent);
+
+        return new GsonBuilder().create().toJson(rootMap);
+    }
+
     public void showTopTen(final CommandSender sender, final int page) {
         long t = System.currentTimeMillis();
         if (t > (lastGenerate + (Settings.island_topTenTimeout*60000)) || (sender.hasPermission("usb.admin.topten") || sender.isOp())) {
             lastGenerate = t;
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    generateTopTen(sender);
-                    displayTopTen(sender, page);
-                }
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                generateTopTen(sender);
+                displayTopTen(sender, page);
             });
         } else {
             displayTopTen(sender, page);
@@ -301,8 +304,7 @@ public class IslandLogic {
 
     public void generateTopTen(final CommandSender sender) {
         List<IslandLevel> topTen = new ArrayList<>();
-        final File folder = directoryIslands;
-        final String[] listOfFiles = folder.list(IslandUtil.createIslandFilenameFilter());
+        final String[] listOfFiles = directoryIslands.list(IslandUtil.createIslandFilenameFilter());
         for (String file : listOfFiles) {
             String islandName = FileUtil.getBasename(file);
             try {

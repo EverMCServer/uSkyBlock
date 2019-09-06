@@ -25,7 +25,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,16 +84,12 @@ public class MojangAPI {
         int success = 0;
         int total = names.size();
         for (String name : names) {
+            //noinspection deprecation
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
-            if (offlinePlayer == null) {
-                consumer.unknown(Collections.singletonList(name));
-                failed++;
-            } else {
-                Map<String, UUID> map = new HashMap<>();
-                map.put(offlinePlayer.getName(), offlinePlayer.getUniqueId());
-                consumer.success(map);
-                success++;
-            }
+            Map<String, UUID> map = new HashMap<>();
+            map.put(offlinePlayer.getName(), offlinePlayer.getUniqueId());
+            consumer.success(map);
+            success++;
             if (callback != null) {
                 callback.progress(success+failed, failed, total, "OfflineMode");
             }

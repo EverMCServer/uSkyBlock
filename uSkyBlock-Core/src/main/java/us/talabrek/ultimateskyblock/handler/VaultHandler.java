@@ -3,7 +3,6 @@ package us.talabrek.ultimateskyblock.handler;
 import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -22,16 +21,12 @@ public enum VaultHandler {;
         perms.playerAdd(player, perk);
     }
 
-    public static void addPermission(final OfflinePlayer player, final String perk) {
-        perms.playerAdd(null, player, perk);
+    public static void removePermission(final Player player, final String perk) {
+        perms.playerRemove(player, perk);
     }
 
-    public static void removePermission(final OfflinePlayer player, final String perk) {
-        perms.playerRemove(null, player, perk);
-    }
-
-    public static boolean hasPermission(OfflinePlayer player, String perk) {
-        return perms.playerHas(null, player, perk);
+    public static boolean hasPermission(final Player player, final String perk) {
+        return perms.playerHas(player, perk);
     }
 
     public static boolean setupPermissions() {
