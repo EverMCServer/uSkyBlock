@@ -74,15 +74,15 @@ public class SkyBlockMenu {
             new PartyPermissionMenuItem(invite, "canInviteOthers", tr("Invite Players"),
                     tr("invite others to the island."),
                     tr("invite\n" +
-                    "other players to the island if\n" +
-                    "there is enough room for more\n" +
-                    "members")),
+                            "other players to the island if\n" +
+                            "there is enough room for more\n" +
+                            "members")),
             new PartyPermissionMenuItem(kick, "canKickOthers", tr("Kick Players"),
                     tr("kick others from the island."),
                     tr("kick\n" +
-                    "other players from the island,\n" +
-                    "but they are unable to kick\n" +
-                    "the island leader."))
+                            "other players from the island,\n" +
+                            "but they are unable to kick\n" +
+                            "the island leader."))
     );
     private List<BiomeMenuItem> biomeMenus = Arrays.asList(
             new BiomeMenuItem(new ItemStack(Material.TROPICAL_FISH, 1),
@@ -591,7 +591,8 @@ public class SkyBlockMenu {
     }
 
     private Inventory createMainMenu(Player player) {
-        Inventory menu = Bukkit.createInventory(null, 54, "\u00a79" + tr("Island Menu"));
+        String title = "\u00a79" + tr("Island Menu");
+        Inventory menu = Bukkit.createInventory(new UltimateHolder(player, title, MenuType.DEFAULT), 54, title);
         IslandInfo islandInfo = plugin.getIslandInfo(player);
 
         List<String> lores = new ArrayList<>();
@@ -613,7 +614,7 @@ public class SkyBlockMenu {
         menu.setItem(2,menuItem);
         lores.clear();
 
-        menuItem = new ItemStack(Material.SIGN, 1);
+        menuItem = new ItemStack(SIGN_MATERIAL, 1);
         meta4 = menuItem.getItemMeta();
         meta4.setDisplayName(tr("\u00a7a\u00a7lReturn to Warp Point"));
         addLore(lores, "\u00a7f", tr("Return to your island''s warp point.\nAll players can use \u00a7a/is w {0}\u00a7f to tp here.\n\u00a7e\u00a7lClick here to return.",player.getName()));
@@ -875,7 +876,7 @@ public class SkyBlockMenu {
         ItemMeta meta = currentItem.getItemMeta();
         SkullMeta skull = meta instanceof SkullMeta ? (SkullMeta) meta : null;
         if (!(event.getInventory().getHolder() instanceof UltimateHolder))
-        	return;
+            return;
         String inventoryName = stripFormatting(((UltimateHolder) event.getInventory().getHolder()).getTitle());
         int slotIndex = event.getSlot();
         int menuSize = event.getInventory().getSize();
@@ -969,7 +970,7 @@ public class SkyBlockMenu {
         } else if (currentItem.getType() == Material.GRASS_BLOCK) {
             p.closeInventory();
             p.performCommand("island home");
-        } else if (currentItem.getType() == Material.SIGN) {
+        } else if (currentItem.getType() == SIGN_MATERIAL) {
             p.closeInventory();
             p.performCommand("island warp " + p.getName());
         } else if (currentItem.getType() == Material.LIGHT_BLUE_BED) {
