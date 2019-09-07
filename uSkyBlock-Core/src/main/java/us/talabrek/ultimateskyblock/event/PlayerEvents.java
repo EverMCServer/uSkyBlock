@@ -45,6 +45,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
+import com.meowj.langutils.lang.LanguageHelper;
+
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 public class PlayerEvents implements Listener {
@@ -333,7 +335,7 @@ public class PlayerEvents implements Listener {
             final String key = "usb.block-limits";
             if (!PatienceTester.isRunning(player, key)) {
                 PatienceTester.startRunning(player, key);
-                player.sendMessage(tr("\u00a74{0} is limited. \u00a7eScanning your island to see if you are allowed to place more, please be patient", VaultHandler.getItemName(new ItemStack(type))));
+                player.sendMessage(tr("\u00a74{0} is limited. \u00a7eScanning your island to see if you are allowed to place more, please be patient", LanguageHelper.getItemDisplayName(new ItemStack(type), "zh_cn")));
                 plugin.fireAsyncEvent(new IslandInfoEvent(player, islandInfo.getIslandLocation(), new Callback<IslandScore>() {
                     @Override
                     public void run() {
@@ -346,7 +348,7 @@ public class PlayerEvents implements Listener {
         }
         if (canPlace == BlockLimitLogic.CanPlace.NO) {
             event.setCancelled(true);
-            player.sendMessage(tr("\u00a74You''ve hit the {0} limit!\u00a7e You can''t have more of that type on your island!\u00a79 Max: {1,number}", VaultHandler.getItemName(new ItemStack(type)), plugin.getBlockLimitLogic().getLimit(type)));
+            player.sendMessage(tr("\u00a74You''ve hit the {0} limit!\u00a7e You can''t have more of that type on your island!\u00a79 Max: {1,number}", LanguageHelper.getItemDisplayName(new ItemStack(type), "zh_cn"), plugin.getBlockLimitLogic().getLimit(type)));
             return;
         }
         plugin.getBlockLimitLogic().incBlockCount(islandInfo.getIslandLocation(), type);

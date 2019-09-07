@@ -1,5 +1,7 @@
 package us.talabrek.ultimateskyblock.challenge;
 
+import com.meowj.langutils.lang.LanguageHelper;
+import dk.lockfuglsang.minecraft.file.FileUtil;
 import dk.lockfuglsang.minecraft.nbt.NBTUtil;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -209,9 +211,7 @@ public class Challenge {
                     details.add(tr("\u00a77and more..."));
                     break;
                 }
-                details.add(item.getAmount() > 1
-                        ? tr("\u00a7f{0}x \u00a77{1}", item.getAmount(), VaultHandler.getItemName(item))
-                        : tr("\u00a77{0}", VaultHandler.getItemName(item)));
+                details.add(tr("\u00a7f{0}x \u00a77{1}", item.getAmount(), LanguageHelper.getItemDisplayName(item, "zh_cn")));
             }
         }
         if (requiredEntities != null && !requiredEntities.isEmpty() && wrappedDetails(details).size() < MAX_DETAILS) {

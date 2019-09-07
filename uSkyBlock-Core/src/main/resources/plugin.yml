@@ -10,6 +10,7 @@ softdepend:
  - WorldEdit
  - WorldGuard
  - Multiverse-Core
+ - LangUtils
  # optional dependencies
  - ActionBarAPI
  # WE/AWE

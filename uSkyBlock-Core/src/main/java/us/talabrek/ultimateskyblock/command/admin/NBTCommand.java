@@ -11,6 +11,8 @@ import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 
 import java.util.Map;
 
+import com.meowj.langutils.lang.LanguageHelper;
+
 import static dk.lockfuglsang.minecraft.po.I18nUtil.marktr;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -29,7 +31,7 @@ public class NBTCommand extends CompositeCommand {
                     if (itemStack != null) {
                         String[] msgs = new String[]{
                                 tr("\u00a7eInfo for \u00a79{0}", ItemStackUtil.asString(itemStack)),
-                                tr("\u00a77 - name: \u00a79{0}", VaultHandler.getItemName(itemStack)),
+                                tr("\u00a77 - name: \u00a79{0}", LanguageHelper.getItemDisplayName(itemStack, "zh_cn")),
                                 tr("\u00a77 - nbttag: \u00a79{0}", NBTUtil.getNBTTag(itemStack))
                         };
                         player.sendMessage(msgs);

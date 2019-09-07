@@ -1,5 +1,6 @@
 package us.talabrek.ultimateskyblock.block;
 
+import com.meowj.langutils.lang.LanguageHelper;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
@@ -41,7 +42,7 @@ public class BlockCollection {
                 diff = item.getAmount() - count(item.getType());
             }
             if (diff > 0) {
-                sb.append(tr(" \u00a7f{0}x \u00a77{1}", diff, VaultHandler.getItemName(item)));
+                sb.append(tr(" \u00a7f{0}x \u00a77{1}", diff, LanguageHelper.getItemDisplayName(item, "zh_cn")));
             }
         }
         if (sb.toString().trim().isEmpty()) {

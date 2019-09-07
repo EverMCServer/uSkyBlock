@@ -10,7 +10,7 @@ bin
 **/target
 /lib
 /.classpath
-/.project
+**/.project
 **/*.iml
 **/*~
 .idea

@@ -14,6 +14,8 @@ import us.talabrek.ultimateskyblock.util.LogUtil;
 import java.util.Map;
 import java.util.logging.Level;
 
+import com.meowj.langutils.lang.LanguageHelper;
+
 import static dk.lockfuglsang.minecraft.po.I18nUtil.marktr;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -83,7 +85,7 @@ public class InfoCommand extends RequireIslandCommand {
                         for (BlockScore score : getState().getTop((currentPage - 1) * 10, 10)) {
                             player.sendMessage(score.getState().getColor() + tr("{0,number,00.00}  {1,number,#} {2}",
                                     score.getScore(), score.getCount(),
-                                    VaultHandler.getItemName(score.getBlock())));
+                                    LanguageHelper.getItemDisplayName(score.getBlock(), "zh_cn")));
                         }
                         player.sendMessage(tr("\u00a7aIsland level is {0,number,###.##}", getState().getScore()));
                     }

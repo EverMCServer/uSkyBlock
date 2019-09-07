@@ -40,6 +40,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
+import com.meowj.langutils.lang.LanguageHelper;
+
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static dk.lockfuglsang.minecraft.util.FormatUtil.stripFormatting;
 
@@ -306,7 +308,7 @@ public class ChallengeLogic implements Listener {
             boolean hasAll = true;
             List<ItemStack> requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
             for (ItemStack required : requiredItems) {
-                String name = VaultHandler.getItemName(required);
+                String name = LanguageHelper.getItemDisplayName(required, "zh_cn");
                 if (!player.getInventory().containsAtLeast(required, required.getAmount())) {
                     sb.append(tr(" \u00a74{0} \u00a7b{1}", (required.getAmount() - getCountOf(player.getInventory(), required)), name));
                     hasAll = false;
