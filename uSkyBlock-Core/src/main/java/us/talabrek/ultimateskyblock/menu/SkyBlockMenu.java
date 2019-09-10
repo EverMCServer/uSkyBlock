@@ -1000,6 +1000,9 @@ public class SkyBlockMenu {
         } else if (currentItem.getType() == Material.PAINTING) {
             p.closeInventory();
             p.performCommand("island top");
+        } else if (currentItem.getType() == Material.PLAYER_HEAD) {
+            p.closeInventory();
+            p.performCommand("island party");
         } else if (currentItem.getType() == Material.PAPER && currentItem.getAmount() == 1) {
             p.closeInventory();
             p.performCommand("island greeting");
