@@ -26,6 +26,7 @@ public class Perk {
     private Map<Material, Integer> blockLimits;
     private final int villagers;
     private final int golems;
+    private final int watermobs;
 
     Perk(List<ItemStack> extraItems,
          int maxPartySize,
@@ -33,6 +34,7 @@ public class Perk {
          int monsters,
          int villagers,
          int golems,
+         int watermobs,
          double rewBonus,
          double hungerReduction,
          List<String> schematics,
@@ -42,6 +44,7 @@ public class Perk {
         this.monsters = monsters >= 0 ? monsters : 0;
         this.villagers = villagers >= 0 ? villagers : 0;
         this.golems = golems >= 0 ? golems : 0;
+        this.watermobs = watermobs >= 0 ? watermobs : 0;
         this.extraItems = extraItems != null ? extraItems : Collections.<ItemStack>emptyList();
         this.rewBonus = rewBonus >= 0 ? rewBonus : 0;
         this.hungerReduction = hungerReduction >= 0 && hungerReduction <= 1 ? hungerReduction : 0;
@@ -67,6 +70,10 @@ public class Perk {
 
     public int getGolems() {
         return golems;
+    }
+
+    public int getWatermobs() {
+        return watermobs;
     }
 
     public List<ItemStack> getExtraItems() {
@@ -101,6 +108,7 @@ public class Perk {
                 Math.max(monsters, other.getMonsters()),
                 Math.max(villagers, other.getVillagers()),
                 Math.max(golems, other.getGolems()),
+                Math.max(watermobs, other.getWatermobs()),
                 Math.max(rewBonus, other.getRewBonus()),
                 Math.max(hungerReduction, other.getHungerReduction()),
                 schems, null);
@@ -113,6 +121,7 @@ public class Perk {
                 (monsters > 0 ? "monsters:" + monsters +"\n" : "") +
                 (villagers > 0 ? "villagers:" + villagers + "\n" : "") +
                 (golems > 0 ? "golems:" + golems + "\n" : "") +
+                (watermobs > 0 ? "watermobs:" + watermobs + "\n" : "") +
                 (!extraItems.isEmpty() ? "extraItems:" + ItemStackUtil.asShortString(extraItems) +"\n" : "") +
                 (rewBonus > 0 ? "rewBonus:" + rewBonus +"\n" : "") +
                 (hungerReduction > 0 ? "hungerReduction:" + hungerReduction +"\n" : "") +

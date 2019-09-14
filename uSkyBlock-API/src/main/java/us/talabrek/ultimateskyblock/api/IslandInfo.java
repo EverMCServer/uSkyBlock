@@ -55,6 +55,14 @@ public interface IslandInfo {
     int getMaxGolems();
 
     /**
+     * Returns the maximum number of watermob that can spawn on this island.
+     *
+     * Note: Only enforced if <pre>spawn-limits</pre> are enabled in <pre>config.yml</pre>
+     * @return the maximum number of watermobs that can spawn on this island.
+     */
+    int getMaxWatermobs();
+
+    /**
      * Returns the maximum number of blocks of limited types that can be placed on the island.
      *
      * @since v2.7.6

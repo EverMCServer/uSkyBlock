@@ -313,6 +313,12 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
     }
 
     @Override
+    public int getMaxWatermobs() {
+        return getMaxPartyIntValue("maxWatermobs",
+                plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getWatermobs());
+    }
+
+    @Override
     @NotNull
     public Map<Material, Integer> getBlockLimits() {
         Map<Material, Integer> blockLimitMap = new HashMap<>();

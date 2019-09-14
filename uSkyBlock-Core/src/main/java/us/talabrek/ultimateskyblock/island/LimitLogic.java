@@ -19,13 +19,14 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.marktr;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 public class LimitLogic {
-    public enum CreatureType { UNKNOWN, ANIMAL, MONSTER, VILLAGER, GOLEM }
+    public enum CreatureType { UNKNOWN, ANIMAL, MONSTER, VILLAGER, GOLEM, WATERMOB }
     static {
         marktr("UNKNOWN");
         marktr("ANIMAL");
         marktr("MONSTER");
         marktr("VILLAGER");
         marktr("GOLEM");
+        marktr("WATERMOB");
     }
 
     private final uSkyBlock plugin;
@@ -74,23 +75,24 @@ public class LimitLogic {
                 || creature instanceof Ghast
                 || creature instanceof Shulker) {
             return CreatureType.MONSTER;
-        } else if (creature instanceof Animals
-                || creature instanceof WaterMob) {
+        } else if (creature instanceof Animals) {
             return CreatureType.ANIMAL;
         } else if (creature instanceof Villager) {
             return CreatureType.VILLAGER;
         } else if (creature instanceof IronGolem
                 || creature instanceof Snowman) {
             return CreatureType.GOLEM;
+        } else if (creature instanceof WaterMob) {
+            return CreatureType.WATERMOB;
         }
         return CreatureType.UNKNOWN;
     }
 
     public CreatureType getCreatureType(EntityType entityType) {
         if (Monster.class.isAssignableFrom(entityType.getEntityClass())
-                || WaterMob.class.isAssignableFrom(entityType.getEntityClass())
                 || Slime.class.isAssignableFrom(entityType.getEntityClass())
                 || Ghast.class.isAssignableFrom(entityType.getEntityClass())
+                || Shulker.class.isAssignableFrom(entityType.getEntityClass())
                 ) {
             return CreatureType.MONSTER;
         } else if (Animals.class.isAssignableFrom(entityType.getEntityClass())) {
@@ -99,6 +101,8 @@ public class LimitLogic {
             return CreatureType.VILLAGER;
         } else if (Golem.class.isAssignableFrom(entityType.getEntityClass())) {
             return CreatureType.GOLEM;
+        } else if (WaterMob.class.isAssignableFrom(entityType.getEntityClass())) {
+            return CreatureType.WATERMOB;
         }
         return CreatureType.UNKNOWN;
     }
@@ -119,6 +123,7 @@ public class LimitLogic {
             case MONSTER: return islandInfo.getMaxMonsters();
             case VILLAGER: return islandInfo.getMaxVillagers();
             case GOLEM: return islandInfo.getMaxGolems();
+            case WATERMOB: return islandInfo.getMaxWatermobs();
         }
         return Integer.MAX_VALUE;
     }
