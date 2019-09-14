@@ -9,6 +9,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.WaterMob;
+import org.bukkit.entity.Squid;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Wither;
 import org.bukkit.event.Cancellable;
@@ -93,10 +94,8 @@ public class SpawnEvents implements Listener {
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (event.getEntity() instanceof WaterMob) {
             Location loc = event.getLocation();
-            if (isPrismarineRoof(loc)) {
-                loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+            if(doPrismarineRoof(loc))
                 event.setCancelled(true);
-            }
         }
         if (!event.isCancelled() && event.getEntity() instanceof Enderman) {
             Location loc = event.getLocation();
@@ -133,6 +132,27 @@ public class SpawnEvents implements Listener {
     private boolean isPrismarineRoof(Location loc) {
         List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
         return prismarineBlocks.contains(LocationUtil.findRoofBlock(loc).getType());
+    }
+    private boolean doPrismarineRoof(Location loc) {
+        List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
+        Location tloc = loc.clone();
+        if(tloc.getBlockY()<47 || tloc.getBlockY()>64)
+            return false;
+        for(int i=0;i<22;i++){
+            if (tloc.getBlock().getType() == Material.WATER){
+                tloc.add(0,1,0);
+                continue;
+            }else{
+                if(prismarineBlocks.contains(tloc.getBlock().getType())){
+                    loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+                    return true;
+                }else if(tloc.getBlock().getType() == Material.SEA_LANTERN){
+                    loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean isDeepOceanBiome(Location loc) {
