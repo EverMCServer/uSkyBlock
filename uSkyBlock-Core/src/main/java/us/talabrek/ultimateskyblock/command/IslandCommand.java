@@ -76,6 +76,7 @@ public class IslandCommand extends BaseCommandExecutor {
         add(new PermCommand(plugin));
         add(new GreetingCommand(plugin));
         add(new Farewellcommand(plugin));
+        add(new BuyHopperLimitCommand(plugin));
         add(new TogglePvpCommand(plugin));
     }
 

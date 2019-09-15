@@ -713,7 +713,7 @@ public class SkyBlockMenu {
         menu.setItem(21,menuItem);
         lores.clear();
 
-        menuItem = new ItemStack(Material.HOPPER, 1);
+        menuItem = new ItemStack(Material.BEACON, 1);
         meta4 = menuItem.getItemMeta();
         meta4.setDisplayName(tr("\u00a7a\u00a7lChange Warp Location"));
         addLore(lores, "\u00a7f", tr("When your warp is activated,\nother players will be taken to\nthis point when they teleport\nto your island."));
@@ -778,6 +778,15 @@ public class SkyBlockMenu {
         meta4.setLore(lores);
         menuItem.setItemMeta(meta4);
         menu.setItem(40,menuItem);
+        lores.clear();
+
+        menuItem = new ItemStack(Material.HOPPER, 1);
+        meta4 = menuItem.getItemMeta();
+        meta4.setDisplayName(tr("\u00a7b\u00a7lBuy Extra Hopper Limit"));
+        addLore(lores, tr("\u00a7eCurrent Limit: \u00a7a{0,number,##}\u00a77(Default) + \u00a7a{1,number,##}\u00a77(Extra)", plugin.getBlockLimitLogic().getLimits().getOrDefault(Material.HOPPER, 0),islandInfo.getHopperLimit()));
+        meta4.setLore(lores);
+        menuItem.setItemMeta(meta4);
+        menu.setItem(41,menuItem);
         lores.clear();
 
         menuItem = new ItemStack(Material.OAK_SAPLING, 1);
@@ -988,9 +997,12 @@ public class SkyBlockMenu {
         } else if (currentItem.getType() == Material.GRASS_PATH) {
             p.closeInventory();
             p.performCommand("island sethome");
-        } else if (currentItem.getType() == Material.HOPPER) {
+        } else if (currentItem.getType() == Material.BEACON) {
             p.closeInventory();
             p.performCommand("island setwarp");
+        } else if (currentItem.getType() == Material.HOPPER) {
+            p.closeInventory();
+            p.performCommand("island hopper");
         } else if (currentItem.getType() == Material.LIGHT_GRAY_BED) {
             p.closeInventory();
             p.performCommand("sethome");

@@ -143,16 +143,20 @@ public class LimitLogic {
         Map<Material, Integer> blockLimits = plugin.getBlockLimitLogic().getLimits();
         for (Map.Entry<Material,Integer> entry : blockLimits.entrySet()) {
             int blockCount = plugin.getBlockLimitLogic().getCount(entry.getKey(), islandInfo.getIslandLocation());
+            int val = entry.getValue();
+            if (entry.getKey() == Material.HOPPER){
+                val += islandInfo.getHopperLimit();
+            }
             if (blockCount >= 0) {
                 sb.append(tr("\u00a77{0}: \u00a7a{1}\u00a77 (max. {2})",
                         ItemStackUtil.getItemName(new ItemStack(entry.getKey())),
-                        blockCount >= entry.getValue() ? tr("\u00a7c{0}", blockCount) : blockCount,
-                        entry.getValue()) + "\n");
+                        blockCount >= val ? tr("\u00a7c{0}", blockCount) : blockCount,
+                        val) + "\n");
             } else {
                 sb.append(tr("\u00a77{0}: \u00a7a{1}\u00a77 (max. {2})",
                         ItemStackUtil.getItemName(new ItemStack(entry.getKey())),
                         tr("\u00a7c{0}", "?"),
-                        entry.getValue()) + "\n");
+                        val) + "\n");
             }
         }
         return sb.toString().trim();

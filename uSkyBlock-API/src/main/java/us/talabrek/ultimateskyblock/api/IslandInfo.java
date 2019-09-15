@@ -295,4 +295,6 @@ public interface IslandInfo {
      */
     double getScoreOffset();
 
+    public int getHopperLimit();
+    public void setHopperLimit(int limit);
 }
