@@ -2,13 +2,17 @@ package us.talabrek.ultimateskyblock;
 
 import dk.lockfuglsang.minecraft.po.I18nUtil;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import us.talabrek.ultimateskyblock.handler.WorldEditHandler;
 import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 public class Settings {
@@ -39,9 +43,22 @@ public class Settings {
     public static boolean nether_enabled;
     public static int nether_lava_level;
     public static int nether_height;
+    public static TreeMap<Integer, Material> Skygrid_blocks = new TreeMap<>();
+    public static int Skygrid_prob = 0;
 
     public static boolean loadPluginConfig(FileConfiguration config) {
         boolean changed = false;
+        try{
+            Skygrid_prob=0;
+            for (String key : config.getConfigurationSection("skygrid.blocks").getKeys(false)){
+                int prob = config.getInt("skygrid.blocks." + key);
+                Skygrid_prob += prob;
+                Skygrid_blocks.put(Skygrid_prob, Material.getMaterial(key));
+            }
+        }catch (Exception e) {
+            log.warning("Skygrid block load failed!");
+            Skygrid_blocks.put(1,Material.STONE);
+        }
         try {
             general_maxPartySize = config.getInt("options.general.maxPartySize");
             if (general_maxPartySize < 0) {

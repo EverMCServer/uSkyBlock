@@ -37,6 +37,15 @@ public class ChunkRegenerator {
         this.world = world;
         this.chunkGen = plugin.getDefaultWorldGenerator(world.getName(), "");
     }
+    
+    ChunkRegenerator(@NotNull World world,ChunkGenerator chunkGen) {
+        Validate.notNull(world, "World cannot be null");
+
+        this.plugin = uSkyBlock.getInstance();
+        this.world = world;
+        this.chunkGen = chunkGen;
+    }
+
 
     /**
      * Regenerates the given list of {@link Chunk}s at the configured chunks/tick speed (default: 4).

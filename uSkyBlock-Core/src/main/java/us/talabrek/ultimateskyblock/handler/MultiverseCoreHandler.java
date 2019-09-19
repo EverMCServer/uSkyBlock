@@ -57,6 +57,25 @@ public enum MultiverseCoreHandler {;
             }
         }
     }
+    public static void importGridWorld(World skyWorld) {
+        MultiverseCore core = getMultiverseCore();
+        if (core != null) {
+            if (!core.getMVWorldManager().isMVWorld(skyWorld)) {
+                core.getMVWorldManager().addWorld(skyWorld.getName(), World.Environment.NORMAL, "0", WorldType.NORMAL, false, "uSkyBlock", false);
+            }
+            MultiverseWorld mvWorld = core.getMVWorldManager().getMVWorld(skyWorld);
+            mvWorld.setEnvironment(World.Environment.NORMAL);
+            mvWorld.setScaling(1);
+            mvWorld.setGenerator("uSkyBlock");
+            if (!Settings.extras_sendToSpawn) {
+                mvWorld.setRespawnToWorld(Settings.general_worldName);
+            }
+        } else if (hasMultiverse()) {
+            if (!Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "mv import " + skyWorld.getName() + " NORMAL -g uSkyBlock")) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "mv import " + skyWorld.getName() + " NORMAL uSkyBlock");
+            }
+        }
+    }
 
     public static void importNetherWorld(World skyNetherWorld) {
         MultiverseCore core = getMultiverseCore();

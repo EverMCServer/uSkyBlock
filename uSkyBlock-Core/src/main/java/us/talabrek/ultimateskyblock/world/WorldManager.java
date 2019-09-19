@@ -35,6 +35,7 @@ public class WorldManager {
 
     public static volatile World skyBlockWorld;
     public static volatile World skyBlockNetherWorld;
+    public static volatile World skyBlockGridWorld;
 
     static {
         skyBlockWorld = null;
@@ -164,6 +165,24 @@ public class WorldManager {
         }
         return new SkyBlockNetherChunkGenerator();
     }
+    /**
+     * Gets the {@link ChunkGenerator} responsible for generating chunks in the nether skyworld.
+     * @return ChunkGenerator for nether skyworld.
+     */
+    @NotNull
+    private ChunkGenerator getGridGenerator() {
+        try {
+            String clazz = plugin.getConfig().getString("skygrid.chunk-generator",
+                    "us.talabrek.ultimateskyblock.world.SkyGridGenerator");
+            Object generator = Class.forName(clazz).newInstance();
+            if (generator instanceof ChunkGenerator) {
+                return (ChunkGenerator) generator;
+            }
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
+            logger.log(Level.WARNING, "Invalid nether chunk-generator configured: " + ex);
+        }
+        return new SkyGridGenerator();
+    }
 
     /**
      * Gets a {@link ChunkGenerator} for use in a default world, as specified in the server configuration
@@ -208,6 +227,28 @@ public class WorldManager {
             setupWorld(skyBlockWorld, island_height);
         }
         return skyBlockWorld;
+    }
+
+    /**
+     * Gets the skyblock island {@link World}. Creates and/or imports the world if necessary.
+     * @return Skyblock island world.
+     */
+    @NotNull
+    public synchronized World getGridWorld() {
+        if (skyBlockGridWorld == null) {
+            skyBlockGridWorld = WorldCreator
+                        .name(Settings.general_worldName + "_grid")
+                        .type(WorldType.NORMAL)
+                        .generateStructures(false)
+                        .environment(World.Environment.NORMAL)
+                        .generator(getGridGenerator())
+                        .createWorld();
+            skyBlockGridWorld.save();
+            MultiverseCoreHandler.importGridWorld(skyBlockGridWorld);
+            setupWorld(skyBlockGridWorld, island_height);
+            MultiverseInventoriesHandler.linkWorlds(getWorld(), skyBlockGridWorld);
+        }
+        return skyBlockGridWorld;
     }
 
     /**
