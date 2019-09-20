@@ -55,6 +55,10 @@ public class WorldManager {
     public ChunkRegenerator getChunkRegenerator(@NotNull World world) {
         return new ChunkRegenerator(world);
     }
+    @NotNull
+    public ChunkRegenerator getChunkRegenerator(@NotNull World world,ChunkGenerator chunkGen) {
+        return new ChunkRegenerator(world,chunkGen);
+    }
 
     /**
      * Removes all unnamed {@link Monster}'s at the given {@link Location}.
@@ -171,17 +175,7 @@ public class WorldManager {
      */
     @NotNull
     private ChunkGenerator getGridGenerator() {
-        try {
-            String clazz = plugin.getConfig().getString("skygrid.chunk-generator",
-                    "us.talabrek.ultimateskyblock.world.SkyGridGenerator");
-            Object generator = Class.forName(clazz).newInstance();
-            if (generator instanceof ChunkGenerator) {
-                return (ChunkGenerator) generator;
-            }
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
-            logger.log(Level.WARNING, "Invalid nether chunk-generator configured: " + ex);
-        }
-        return new SkyGridGenerator();
+        return getOverworldGenerator();
     }
 
     /**

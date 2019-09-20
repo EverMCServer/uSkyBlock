@@ -134,11 +134,14 @@ public class SpawnEvents implements Listener {
         return prismarineBlocks.contains(LocationUtil.findRoofBlock(loc).getType());
     }
     private boolean doPrismarineRoof(Location loc) {
+        Random r = new Random();
+        if (r.nextInt(10) != 0)
+            return true; 
         List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
         Location tloc = loc.clone();
         if(tloc.getBlockY()<47 || tloc.getBlockY()>64)
             return false;
-        for(int i=0;i<22;i++){
+        while(tloc.getBlockY()<=70){
             if (tloc.getBlock().getType() == Material.WATER){
                 tloc.add(0,1,0);
                 continue;
@@ -150,6 +153,7 @@ public class SpawnEvents implements Listener {
                     loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
                     return true;
                 }
+                return false;
             }
         }
         return false;

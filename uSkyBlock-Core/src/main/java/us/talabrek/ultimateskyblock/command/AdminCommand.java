@@ -16,6 +16,7 @@ import us.talabrek.ultimateskyblock.command.admin.FlatlandFixCommand;
 import us.talabrek.ultimateskyblock.command.admin.FlushCommand;
 import us.talabrek.ultimateskyblock.command.admin.GenTopTenCommand;
 import us.talabrek.ultimateskyblock.command.admin.GotoIslandCommand;
+import us.talabrek.ultimateskyblock.command.admin.GridCommand;
 import us.talabrek.ultimateskyblock.command.admin.ImportCommand;
 import us.talabrek.ultimateskyblock.command.admin.JobsCommand;
 import us.talabrek.ultimateskyblock.command.admin.LanguageCommand;
@@ -88,5 +89,6 @@ public class AdminCommand extends BaseCommandExecutor {
         add(new NBTCommand());
         add(new ProtectAllCommand(plugin));
         add(new ChunkCommand());
+        add(new GridCommand(plugin));
     }
 }
