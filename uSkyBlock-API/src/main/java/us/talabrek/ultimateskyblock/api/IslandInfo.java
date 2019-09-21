@@ -297,4 +297,6 @@ public interface IslandInfo {
 
     public int getHopperLimit();
     public void setHopperLimit(int limit);
+    public int getSkygridEnterCount();
+    public void setSkygridEnterCount();
 }

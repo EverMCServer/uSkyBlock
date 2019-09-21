@@ -18,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
@@ -284,6 +285,10 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onLeafBreak(BlockBreakEvent event) {
+        if (plugin.getWorldManager().isSkyGrid(event.getPlayer().getWorld())&&event.getBlock().getType() == Material.OAK_LEAVES){
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.OAK_SAPLING, 1));
+            return;
+        }
         if (!plugin.getWorldManager().isSkyWorld(event.getPlayer().getWorld())) {
             return;
         }
@@ -297,6 +302,15 @@ public class PlayerEvents implements Listener {
             // Add an oak-sapling
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.OAK_SAPLING, 1));
             islandInfo.setLeafBreaks(islandInfo.getLeafBreaks() + 1);
+        }
+    }
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerJoin(PlayerJoinEvent event){
+        if(plugin.getWorldManager().isSkyGrid(event.getPlayer().getWorld())){
+            if(plugin.getConfig().getInt("skygrid.regen",0)==1){
+                event.getPlayer().sendMessage(tr("\u00a7cSkygrid is regenerating, you have been teleported to spawn."));
+                uSkyBlock.getInstance().getTeleportLogic().spawnTeleport(event.getPlayer(), true);
+            }
         }
     }
     

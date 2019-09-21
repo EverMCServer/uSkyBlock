@@ -3,7 +3,10 @@ package us.talabrek.ultimateskyblock.island.task;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.ChunkGenerator.BiomeGrid;
 import org.bukkit.generator.ChunkGenerator.ChunkData;
@@ -16,6 +19,7 @@ import us.talabrek.ultimateskyblock.util.LogUtil;
 import us.talabrek.ultimateskyblock.world.SkyGridGenerator;
 
 import java.util.Random;
+import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import java.util.logging.Level;
 
 public class GridRegenerateTask{
@@ -37,30 +41,36 @@ public class GridRegenerateTask{
             return;
         }
         plugin.getConfig().set("skygrid.regen",1);
-
+        for (Player player : world.getPlayers()) {
+            player.sendMessage(tr("\u00a7cSkygrid is regenerating, you have been teleported to spawn."));
+            uSkyBlock.getInstance().getTeleportLogic().spawnTeleport(player, true);
+        }
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         task = scheduler.runTaskTimer(plugin, () -> {
             if (regen_count<1024) {
                 Random random = new Random();
-                ChunkData chunkData = cg.generateChunkData(world, random, regen_count/32 - 16, regen_count%32 - 16, new GridBiomeGrid());
+                ChunkData chunkData = cg.generateChunkData(world, random, regen_count / 32 - 16, regen_count % 32 - 16, new GridBiomeGrid());
 
-                for (int x = 1; x < 16; x+=4) {
-                    for (int z = 1; z < 16; z+=4) {
-                        for (int y = 0; y < 64; y+=4) {
-                            world.getChunkAt(regen_count/32 - 16, regen_count%32 - 16).getBlock(x, y, z).setBlockData(chunkData.getBlockData(x, y, z));
+                for (int x = 0; x < 16; x ++) {
+                    for (int z = 0; z < 16; z ++) {
+                        for (int y = 0; y <= 64; y ++) {
+                            BlockData temp = chunkData.getBlockData(x, y, z);
+                            if(temp instanceof Waterlogged) ((Waterlogged)temp).setWaterlogged(false);
+                            world.getChunkAt(regen_count / 32 - 16, regen_count % 32 - 16).getBlock(x, y, z).setBlockData(temp);
                         }
                     }
                 }
-                if(regen_count%10==0)LogUtil.log(Level.INFO, "regen: "+regen_count);
+                if(regen_count % 10 == 0)
+                    LogUtil.log(Level.INFO, "regen: " + regen_count);
                 regen_count++;
             } else {
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    player.sendMessage("空岛资源世界生成完毕");
+                    player.sendMessage(tr("\u00a79[Skygrid] Skygrid world regenerated."));
                 }
                 plugin.getConfig().set("skygrid.regen",0);
                 task.cancel();
             }
-        }, 0L, 1L);
+        }, 0L, 2L);
     }
     static class GridBiomeGrid implements BiomeGrid {
         private Biome defaultBiome = Biome.OCEAN;

@@ -32,7 +32,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1085,6 +1087,37 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
 
     public void setHopperLimit(int limit) {
         config.set("blocks.hopperLimits", limit);
+        dirty = true;
+    }
+
+    public int getSkygridEnterCount(){
+        Date now = new Date();
+        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+        if (!config.contains("skygrid")) {
+            config.set("skygrid",null);
+            dirty = true;
+        }
+        if(!config.contains("skygrid.lastenterdate") || !format.format(now).equals(config.getString("skygrid.lastenterdate",""))){
+            config.set("skygrid.lastenterdate",format.format(now));
+            config.set("skygrid.entercount",0);
+            dirty = true;
+            return 0;
+        }else{
+            return config.getInt("skygrid.entercount",0);
+        }
+    }
+    public void setSkygridEnterCount(){
+        Date now = new Date();
+        SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+        if (!config.contains("skygrid")) {
+            config.set("skygrid",null);
+        }
+        if(!config.contains("skygrid.lastenterdate") || !format.format(now).equals(config.getString("skygrid.lastenterdate",""))){
+            config.set("skygrid.lastenterdate",format.format(now));
+            config.set("skygrid.entercount",1);
+        }else{
+            config.set("skygrid.entercount",1+config.getInt("skygrid.entercount",0));
+        }
         dirty = true;
     }
 

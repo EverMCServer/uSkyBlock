@@ -135,7 +135,7 @@ public class SpawnEvents implements Listener {
     }
     private boolean doPrismarineRoof(Location loc) {
         Random r = new Random();
-        if (r.nextInt(10) != 0)
+        if (r.nextInt(4) != 0)
             return true; 
         List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
         Location tloc = loc.clone();

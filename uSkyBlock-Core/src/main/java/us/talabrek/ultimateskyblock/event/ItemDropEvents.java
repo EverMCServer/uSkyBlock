@@ -113,6 +113,9 @@ public class ItemDropEvents implements Listener {
             clearDropInfo(event.getItem());
             return;
         }
+        if (plugin.getWorldManager().isSkyGrid(player.getWorld())){
+            return;
+        }
         if (wasDroppedBy(player, event) || player.hasPermission("usb.mod.bypassprotection") || plugin.playerIsOnIsland(player) || plugin.playerIsInSpawn(player)) {
             clearDropInfo(event.getItem());
             return; // Allowed

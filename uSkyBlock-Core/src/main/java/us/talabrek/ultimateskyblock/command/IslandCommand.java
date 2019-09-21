@@ -78,6 +78,7 @@ public class IslandCommand extends BaseCommandExecutor {
         add(new Farewellcommand(plugin));
         add(new BuyHopperLimitCommand(plugin));
         add(new TogglePvpCommand(plugin));
+        add(new SkygridCommand(plugin));
     }
 
     @Override

@@ -15,50 +15,35 @@ import us.talabrek.ultimateskyblock.Settings;
 
 
 public class SkyGridGenerator extends ChunkGenerator {
-
-    private final static List<Material> needDirt = Arrays.asList(
-            Material.ACACIA_SAPLING,
-            Material.ALLIUM,
-            Material.AZURE_BLUET,
-            Material.BEETROOTS,
-            Material.BEETROOTS,
-            Material.BIRCH_SAPLING,
-            Material.BLUE_ORCHID,
-            Material.BROWN_MUSHROOM,
-            Material.DANDELION,
-            Material.DARK_OAK_SAPLING,
-            Material.DEAD_BUSH,
-            Material.FERN,
-            Material.GRASS,
-            Material.JUNGLE_SAPLING,
-            Material.LARGE_FERN,
-            Material.LILAC,
-            Material.OAK_SAPLING,
-            Material.ORANGE_TULIP,
-            Material.OXEYE_DAISY,
-            Material.PEONY,
-            Material.PINK_TULIP,
-            Material.POPPY,
-            Material.RED_MUSHROOM,
-            Material.RED_TULIP,
-            Material.ROSE_BUSH,
-            Material.SPRUCE_SAPLING,
-            Material.SUGAR_CANE,
-            Material.SUNFLOWER,
-            Material.SUNFLOWER,
-            Material.TALL_GRASS,
-            Material.WHEAT,
-            Material.WHITE_TULIP
+    private final static List<Material> expensive = Arrays.asList(
+            Material.LAPIS_ORE ,
+            Material.DIAMOND_ORE,
+            Material.EMERALD_ORE,
+            Material.DIAMOND_BLOCK,
+            Material.EMERALD_BLOCK,
+            Material.SEA_LANTERN,
+            Material.SPAWNER,
+            Material.END_STONE,
+            Material.PURPUR_BLOCK,
+            Material.BEACON,
+            Material.CONDUIT,
+            Material.IRON_BLOCK,
+            Material.COAL_BLOCK,
+            Material.CREEPER_HEAD,
+            Material.WITHER_SKELETON_SKULL,
+            Material.SKELETON_SKULL,
+            Material.ZOMBIE_HEAD,
+            Material.NETHER_QUARTZ_ORE
             );
 
-    @Override
+
+	@Override
     public ChunkData generateChunkData(World world, Random random, int chunkX, int chunkZ, ChunkGenerator.BiomeGrid biomeGrid) {
-        
         ChunkData result = createChunkData(world);
         for (int x = 1; x < 16; x += 4) {
             for (int z = 1; z < 16; z += 4) {
                 for (int y = 0; y <= 64; y += 4) {
-                    setBlock(x, y, z, random, result);
+                    setBlock(x, y, z, random, result, Math.abs(chunkX)<14&&Math.abs(chunkZ)<14);
                 }
             }
         }
@@ -71,45 +56,19 @@ public class SkyGridGenerator extends ChunkGenerator {
         return result;
     }
 
-    private void setBlock(int x, int y, int z, Random random, ChunkData result) {
+    private void setBlock(int x, int y, int z, Random random, ChunkData result, boolean exp) {
         Material blockMat = getBlock(random);
         if (!blockMat.isBlock()) {
             result.setBlock( x, y, z, Material.BEDROCK);
             return;
         }
-        if (y == 0 && (needDirt.contains(blockMat) || blockMat == Material.CACTUS || blockMat == Material.LAVA || blockMat == Material.WATER)) {
-            result.setBlock( x, y, z, Material.BEDROCK);
-            return;
-        }
-        if (needDirt.contains(blockMat)) {
-            result.setBlock( x, y, z, Material.DIRT);
-            result.setBlock( x, y+1, z, blockMat);
-            if (blockMat.equals(Material.SUGAR_CANE)) {
-                result.setBlock(x+1, y, z, Material.WATER);
-            }
-        } else {
-            switch (blockMat) {
-            case CACTUS:
-                result.setBlock( x, y, z, Material.SAND);
-                result.setBlock( x, y-1, z, Material.SANDSTONE);
-                result.setBlock( x, y+1, z, blockMat);
-                break;
-            case NETHER_WART:
-                result.setBlock( x, y, z, Material.SOUL_SAND);
-                result.setBlock( x, y+1, z, blockMat);
-                break;
-            case END_ROD:
-                result.setBlock( x, y, z, Material.END_STONE);
-                result.setBlock( x, y+1, z, blockMat);
-                break;
-            case CHORUS_PLANT:
-                result.setBlock( x, y, z, Material.END_STONE);
-                result.setBlock( x, y+1, z, blockMat);
-                break;
-            default:
-                result.setBlock( x, y, z, blockMat);
+        if (exp){
+            if(expensive.contains(blockMat)){
+                result.setBlock( x, y, z, Material.STONE);
+                return;
             }
         }
+        result.setBlock( x, y, z, blockMat);
     }
     private Material getBlock(Random random){
         int a = random.nextInt(Settings.Skygrid_prob);        
