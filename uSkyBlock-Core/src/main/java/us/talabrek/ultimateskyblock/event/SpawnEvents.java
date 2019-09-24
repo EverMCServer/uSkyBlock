@@ -91,6 +91,11 @@ public class SpawnEvents implements Listener {
         if (!event.isCancelled() && ADMIN_INITIATED.contains(event.getSpawnReason())) {
             return; // Allow it, the above method would have blocked it if it should be blocked.
         }
+        if (event.getEntity() instanceof WaterMob) {
+            Random r = new Random();
+            if (r.nextInt(4) != 0)
+                return; 
+        }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (event.getEntity() instanceof WaterMob) {
             Location loc = event.getLocation();
@@ -134,9 +139,6 @@ public class SpawnEvents implements Listener {
         return prismarineBlocks.contains(LocationUtil.findRoofBlock(loc).getType());
     }
     private boolean doPrismarineRoof(Location loc) {
-        Random r = new Random();
-        if (r.nextInt(4) != 0)
-            return true; 
         List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
         Location tloc = loc.clone();
         if(tloc.getBlockY()<47 || tloc.getBlockY()>64)
@@ -150,7 +152,9 @@ public class SpawnEvents implements Listener {
                     loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
                     return true;
                 }else if(tloc.getBlock().getType() == Material.SEA_LANTERN){
-                    loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
+                    Random r = new Random();
+                    if (r.nextInt(4) == 0)
+                        loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
                     return true;
                 }
                 return false;

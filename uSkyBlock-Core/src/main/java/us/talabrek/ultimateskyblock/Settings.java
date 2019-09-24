@@ -50,10 +50,14 @@ public class Settings {
         boolean changed = false;
         try{
             Skygrid_prob=0;
+            Skygrid_blocks = new TreeMap<>();
             for (String key : config.getConfigurationSection("skygrid.blocks").getKeys(false)){
                 int prob = config.getInt("skygrid.blocks." + key);
                 Skygrid_prob += prob;
                 Skygrid_blocks.put(Skygrid_prob, Material.getMaterial(key));
+            }
+            if (Skygrid_prob == 0){
+                throw new Exception();
             }
         }catch (Exception e) {
             log.warning("Skygrid block load failed!");
