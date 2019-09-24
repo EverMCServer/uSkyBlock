@@ -25,6 +25,10 @@
             <id>spigotmc.org</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/public</url>
         </repository>
+        <repository> <!-- PaperLib -->
+            <id>papermc</id>
+            <url>https://papermc.io/repo/repository/maven-public/</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -77,11 +81,10 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.bukkit</groupId>
-                    <artifactId>bukkit</artifactId>
+                    <groupId>com.destroystokyo.paper</groupId>
+                    <artifactId>paper-api</artifactId>
                     <version>1.14.4-R0.1-SNAPSHOT</version>
-                    <optional>true</optional>
-                    <scope>compile</scope>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
         </profile>

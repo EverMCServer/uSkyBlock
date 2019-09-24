@@ -53,6 +53,16 @@ public class NullPlayer implements OfflinePlayer {
     }
 
     @Override
+    public long getLastSeen() {
+        return 0;
+    }
+
+    @Override
+    public long getLastLogin() {
+        return 0;
+    }
+
+    @Override
     public long getLastPlayed() {
         return 0;
     }

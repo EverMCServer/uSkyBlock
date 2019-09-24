@@ -3,8 +3,10 @@ package us.talabrek.ultimateskyblock.event;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.EndGateway;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -17,8 +19,10 @@ import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
@@ -37,7 +41,7 @@ import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
-
+import com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,6 +50,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
+import com.destroystokyo.paper.event.entity.EntityTeleportEndGatewayEvent;
 import com.meowj.langutils.lang.LanguageHelper;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
@@ -171,6 +176,32 @@ public class PlayerEvents implements Listener {
                 Location above = event.getBlock().getLocation().add(0, 1, 0);
                 event.getBlock().getWorld().dropItemNaturally(above, item);
             }
+        }
+    }
+        //WAIT FOR paper
+//    @EventHandler(priority = EventPriority.LOWEST)
+//    public void onPlayerChangeWorld(final PlayerChangedWorldEvent event){
+//        if(plugin.getWorldManager().isSkyGrid(event.getPlayer().getWorld())){
+//            event.getPlayer().setViewDistance(2);
+//        }else{
+//            event.getPlayer().setViewDistance(4);
+//        }
+//    }
+
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerEndPortal(PlayerPortalEvent event){
+        if(event.getTo()==null){
+            event.setCancelled(true);
+        }
+    }
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerEndGateway(PlayerTeleportEndGatewayEvent event){
+        Location loc = event.getGateway().getExitLocation();
+        ///setblock ~ ~ ~ minecraft:end_gateway{Age:61824,ExactTeleport:1,ExitPortal:{X:70,Y:156,Z:24}} replace
+        if(loc.getBlockX()==70 && loc.getBlockY()==156 && loc.getBlockZ()==24){
+            event.getPlayer().performCommand("is grid");
+            event.setCancelled(true);
         }
     }
 

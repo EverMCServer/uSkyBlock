@@ -227,10 +227,9 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.bukkit</groupId>
-                    <artifactId>bukkit</artifactId>
+                    <groupId>com.destroystokyo.paper</groupId>
+                    <artifactId>paper-api</artifactId>
                     <version>1.14.4-R0.1-SNAPSHOT</version>
-                    <optional>true</optional>
                     <scope>compile</scope>
                 </dependency>
             </dependencies>
@@ -328,6 +327,12 @@
     </profiles>
 
     <dependencies>
+        <dependency>
+            <groupId>com.destroystokyo.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>1.14.4-R0.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>dk.lockfuglsang.minecraft</groupId>
             <artifactId>bukkit-utils</artifactId>
