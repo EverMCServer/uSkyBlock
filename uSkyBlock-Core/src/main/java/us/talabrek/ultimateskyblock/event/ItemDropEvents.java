@@ -34,7 +34,7 @@ public class ItemDropEvents implements Listener {
     @SuppressWarnings("unused")
     public void onDropEvent(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
-        if (!plugin.getWorldManager().isSkyWorld(player.getWorld())) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(player.getWorld())) {
             return;
         }
         if (!visitorsCanDrop && !plugin.playerIsOnIsland(player) && !plugin.playerIsInSpawn(player)) {

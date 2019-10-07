@@ -93,8 +93,10 @@ public class SpawnEvents implements Listener {
         }
         if (event.getEntity() instanceof WaterMob) {
             Random r = new Random();
-            if (r.nextInt(4) != 0)
+            if (r.nextInt(10) != 0){
+                event.setCancelled(true);
                 return; 
+            }
         }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (event.getEntity() instanceof WaterMob) {
@@ -153,7 +155,7 @@ public class SpawnEvents implements Listener {
                     return true;
                 }else if(tloc.getBlock().getType() == Material.SEA_LANTERN){
                     Random r = new Random();
-                    if (r.nextInt(4) == 0)
+                    if (r.nextInt(10) == 0)
                         loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
                     return true;
                 }

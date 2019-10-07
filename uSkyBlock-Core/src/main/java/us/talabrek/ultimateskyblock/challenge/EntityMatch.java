@@ -75,7 +75,15 @@ public class EntityMatch {
         } catch (InvocationTargetException | IllegalAccessException e) {
             // Ignore
         } catch (NoSuchMethodException e) {
-            return matchField(entity, key, value);
+            try {
+                Method method = entity.getClass().getMethod("is" + key, null);
+                Object entityValue = method.invoke(entity);
+                return matchValues(entityValue, value);
+            } catch (InvocationTargetException | IllegalAccessException e2) {
+                // Ignore
+            } catch (NoSuchMethodException e2) {
+                return matchField(entity, key, value);
+            }
         }
         return false;
     }

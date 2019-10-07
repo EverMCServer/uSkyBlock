@@ -10,6 +10,8 @@ import org.bukkit.entity.NPC;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.meowj.langutils.lang.LanguageHelper;
+
 /**
  * Handles various entity operations.
  */
@@ -38,6 +40,6 @@ public enum EntityUtil {;
     }
 
     public static String getEntityDisplayName(EntityType entityType) {
-        return FormatUtil.camelcase(entityType.name());
+        return LanguageHelper.getEntityName(entityType, "zh_cn");
     }
 }

@@ -191,7 +191,7 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerEndPortal(PlayerPortalEvent event){
-        if(event.getTo()==null){
+        if(event.getFrom().getBlock().getType()!=Material.NETHER_PORTAL){
             event.setCancelled(true);
         }
     }
