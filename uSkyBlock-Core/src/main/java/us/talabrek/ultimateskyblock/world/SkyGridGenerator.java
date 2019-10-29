@@ -21,7 +21,6 @@ public class SkyGridGenerator extends ChunkGenerator {
             Material.EMERALD_ORE,
             Material.DIAMOND_BLOCK,
             Material.EMERALD_BLOCK,
-            Material.SEA_LANTERN,
             Material.SPAWNER,
             Material.END_STONE,
             Material.PURPUR_BLOCK,

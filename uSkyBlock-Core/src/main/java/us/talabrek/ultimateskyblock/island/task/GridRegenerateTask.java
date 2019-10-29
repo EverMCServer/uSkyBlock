@@ -1,6 +1,7 @@
 package us.talabrek.ultimateskyblock.island.task;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.block.data.BlockData;
@@ -58,17 +59,20 @@ public class GridRegenerateTask{
                             if(temp instanceof Waterlogged) ((Waterlogged)temp).setWaterlogged(false);
                             world.getChunkAt(regen_count / 32 - 16, regen_count % 32 - 16).getBlock(x, y, z).setBlockData(temp);
                         }
+                        for(int y = 65; y < world.getHighestBlockYAt((regen_count / 32 - 16)*16+x,(regen_count % 32 - 16)*16+z); y++)
+                            world.getChunkAt(regen_count / 32 - 16, regen_count % 32 - 16).getBlock(x, y, z).setType(Material.AIR, false);
                     }
                 }
                 if(regen_count % 10 == 0)
                     LogUtil.log(Level.INFO, "regen: " + regen_count);
                 regen_count++;
             } else {
+                plugin.getConfig().set("skygrid.regen",0);
+                task.cancel();
+                LogUtil.log(Level.INFO, "regen OK");
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     player.sendMessage(tr("\u00a79[Skygrid] Skygrid world regenerated."));
                 }
-                plugin.getConfig().set("skygrid.regen",0);
-                task.cancel();
             }
         }, 0L, 2L);
     }
