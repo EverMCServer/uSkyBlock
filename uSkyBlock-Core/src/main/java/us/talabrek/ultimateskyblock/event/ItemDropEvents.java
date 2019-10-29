@@ -159,6 +159,8 @@ public class ItemDropEvents implements Listener {
         if (!plugin.getWorldManager().isSkyWorld(event.getItem().getWorld())) {
             return;
         }
+        // I.e. hoppers...
+        clearDropInfo(event.getItem());
         if (event.getInventory().getHolder() instanceof HopperMinecart){
             Vehicle v = (Vehicle)event.getInventory().getHolder();
             UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
@@ -174,8 +176,6 @@ public class ItemDropEvents implements Listener {
             event.setCancelled(true);
             return;
         }
-        // I.e. hoppers...
-        clearDropInfo(event.getItem());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -318,7 +318,7 @@ public class ItemDropEvents implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryMoveItemEvent(InventoryMoveItemEvent event){
         if (event.isCancelled() || !plugin.getWorldManager().isSkyWorld(event.getInitiator().getLocation().getWorld())) {
             return;
