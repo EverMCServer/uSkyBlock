@@ -125,6 +125,10 @@
             <id>uskyblock-maven</id>
             <url>https://www.uskyblock.ovh/maven/uskyblock/</url>
         </repository>
+        <repository>
+            <id>perfectdreams-repo</id>
+            <url>https://repo.perfectdreams.net/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -184,6 +188,12 @@
                 <artifactId>VaultAPI</artifactId>
                 <optional>true</optional>
                 <version>${vault.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ProtocolSupport</groupId>
+                <artifactId>ProtocolSupport</artifactId>
+                <version>73866ea</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.github.rlf</groupId>
