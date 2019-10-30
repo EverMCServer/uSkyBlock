@@ -275,6 +275,35 @@ public class WorldManager {
         }
         return skyBlockNetherWorld;
     }
+    /**
+     * Gets the skyblock end island {@link World}. Creates and/or imports the world if necessary.
+     * @return Skyblock end island world.
+     */
+    @Nullable
+    public synchronized World getEndWorld() {
+        if (skyBlockEndWorld == null) {
+            skyBlockEndWorld = Bukkit.getWorld(Settings.general_worldName + "_the_end");
+            ChunkGenerator skyGenerator = getEndGenerator();
+            ChunkGenerator worldGenerator = skyBlockEndWorld != null ? skyBlockEndWorld.getGenerator() : null;
+            if (skyBlockEndWorld == null
+                    || skyBlockEndWorld.canGenerateStructures()
+                    || worldGenerator == null
+                    || !worldGenerator.getClass().getName().equals(skyGenerator.getClass().getName())) {
+                    skyBlockEndWorld = WorldCreator
+                        .name(Settings.general_worldName + "_the_end")
+                        .type(WorldType.NORMAL)
+                        .generateStructures(false)
+                        .environment(World.Environment.THE_END)
+                        .generator(skyGenerator)
+                        .createWorld();
+                    skyBlockEndWorld.save();
+            }
+            MultiverseCoreHandler.importNetherWorld(skyBlockEndWorld);
+            setupWorld(skyBlockEndWorld, island_height / 2);
+            MultiverseInventoriesHandler.linkWorlds(getWorld(), skyBlockEndWorld);
+        }
+        return skyBlockEndWorld;
+    }
 
     /**
      * Checks if the given {@link World} is the skyblock island world.
@@ -328,6 +357,6 @@ public class WorldManager {
 
         return world.getName().startsWith(WorldManager.skyBlockWorld.getName())
                 && !(world.getEnvironment() == World.Environment.NETHER && !Settings.nether_enabled)
-                && !(world.getEnvironment() == World.Environment.THE_END);
+                ;
     }
 }

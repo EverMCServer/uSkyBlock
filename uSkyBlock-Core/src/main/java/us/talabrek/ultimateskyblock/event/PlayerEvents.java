@@ -191,8 +191,15 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerEndPortal(PlayerPortalEvent event){
-        if(event.getFrom().getBlock().getType()!=Material.NETHER_PORTAL){
+        if(event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL){
             event.setCancelled(true);
+            Player p = event.getPlayer();
+            IslandInfo is = plugin.getIslandInfo(p.getLocation());
+            if(is == null) return;
+            Location l = is.getIslandLocation();
+            l.setY(64);
+            l.setWorld(plugin.getWorldManager().getEndWorld());
+            p.teleport(l);
         }
     }
     @EventHandler(priority = EventPriority.LOWEST)

@@ -204,7 +204,11 @@ public class ItemDropEvents implements Listener {
     private boolean wasDroppedBy(Player player, EntityPickupItemEvent event) {
         ItemStack itemStack = event.getItem().getItemStack();
         ItemMeta meta = itemStack.getItemMeta();
-        String name = plugin.getPlayerInfo(player).getIslandInfo().getLeader();
+        PlayerInfo _pi = plugin.getPlayerInfo(player);
+        if (_pi == null) return false;
+        IslandInfo _si = _pi.getIslandInfo();
+        if (_si == null) return false;
+        String name = _si.getLeader();
         if (meta != null) {
             List<String> lore = meta.getLore();
             if (lore != null && !lore.isEmpty()) {
@@ -219,62 +223,6 @@ public class ItemDropEvents implements Listener {
         }
         return false;
     }
-    //won't invoke when pushed by piston
-    /*
-    @EventHandler
-    public void onVehicleBlockCollisionEvent(VehicleBlockCollisionEvent event){
-        if (!plugin.getWorldManager().isSkyWorld(event.getBlock().getWorld())) {
-            return;
-        }
-        System.out.println(event.getBlock());
-    }
-    @EventHandler
-    public void onVehicleEntityCollisionEvent(VehicleEntityCollisionEvent event){
-        if (!plugin.getWorldManager().isSkyWorld(event.getEntity().getWorld())) {
-            return;
-        }
-        System.out.println(event.getEntity());
-    }
-    @EventHandler
-    public void onVehicleUpdateEvent(VehicleUpdateEvent event){
-        if (!plugin.getWorldManager().isSkyWorld(event.getVehicle().getWorld())) {
-            return;
-        }
-        System.out.println(event.getVehicle()+event.getHandlers().toString());
-    }
-    @EventHandler
-    public void onVehicleMoveEvent(VehicleMoveEvent event){
-        if (!plugin.getWorldManager().isSkyWorld(event.getFrom().getWorld())) {
-            return;
-        }
-        int fromx = event.getFrom().getBlockX()-64;
-        int tox = event.getTo().getBlockX()-64;
-        if (fromx<0&&tox<0){
-            fromx++;
-            tox++;
-        }
-        int fromz = event.getFrom().getBlockZ()-64;
-        int toz = event.getTo().getBlockZ()-64;
-        if (fromz<0&&toz<0){
-            fromz++;
-            toz++;
-        }
-        if((fromx>=0&&tox<0) ||
-            (fromx<0&&tox>=0) ||
-            (fromx/128!=tox/128) ||
-            (fromz>=0&&toz<0) ||
-            (fromz<0&&toz>=0) ||
-            (fromz/128!=toz/128)){
-                PlayerInfo isfrom = plugin.getPlayerInfo(plugin.getIslandInfo(event.getFrom()).getLeaderUniqueId());
-                PlayerInfo isto = plugin.getPlayerInfo(plugin.getIslandInfo(event.getTo()).getLeaderUniqueId());
-                if(isfrom.checkChallenge("builder5")==0 || isto.checkChallenge("builder5") == 0){
-                    Vehicle v = event.getVehicle();
-                    v.setVelocity(new Vector(0,0,0));
-                    v.teleport(event.getFrom());
-                }
-            }
-    }
-    */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryOpenEvent(InventoryOpenEvent event){
         if (event.isCancelled() || !plugin.getWorldManager().isSkyWorld(event.getPlayer().getWorld())) {
