@@ -36,6 +36,7 @@ public class WorldManager {
     public static volatile World skyBlockWorld;
     public static volatile World skyBlockNetherWorld;
     public static volatile World skyBlockGridWorld;
+    public static volatile World skyBlockEndWorld;
 
     static {
         skyBlockWorld = null;
@@ -177,6 +178,10 @@ public class WorldManager {
     private ChunkGenerator getGridGenerator() {
         return getOverworldGenerator();
     }
+    @NotNull
+    private ChunkGenerator getEndGenerator() {
+        return getOverworldGenerator();
+    }
 
     /**
      * Gets a {@link ChunkGenerator} for use in a default world, as specified in the server configuration
@@ -298,8 +303,8 @@ public class WorldManager {
                         .createWorld();
                     skyBlockEndWorld.save();
             }
-            MultiverseCoreHandler.importNetherWorld(skyBlockEndWorld);
-            setupWorld(skyBlockEndWorld, island_height / 2);
+            MultiverseCoreHandler.importEndWorld(skyBlockEndWorld);
+            setupWorld(skyBlockEndWorld, 64);
             MultiverseInventoriesHandler.linkWorlds(getWorld(), skyBlockEndWorld);
         }
         return skyBlockEndWorld;

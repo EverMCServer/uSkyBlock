@@ -2,6 +2,7 @@ package us.talabrek.ultimateskyblock.event;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.EndGateway;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -198,7 +199,16 @@ public class PlayerEvents implements Listener {
             if(is == null) return;
             Location l = is.getIslandLocation();
             l.setY(64);
-            l.setWorld(plugin.getWorldManager().getEndWorld());
+            l.setX(l.getBlockX()+0.5);
+            l.setZ(l.getBlockZ()+0.5);
+            World end = plugin.getWorldManager().getEndWorld();
+            for (int i = l.getBlockX()-2; i <=l.getBlockX()+2; i++){
+                for (int j = l.getBlockZ()-2; j<=l.getBlockZ()+2; j++){
+                    end.getBlockAt(i, 63, j).setType(Material.AIR);
+                    end.getBlockAt(i, 63, j).setType(Material.OBSIDIAN);
+                }
+            }
+            l.setWorld(end);
             p.teleport(l);
         }
     }
