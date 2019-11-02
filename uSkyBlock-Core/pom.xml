@@ -334,6 +334,12 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.ProtocolSupport</groupId>
+            <artifactId>ProtocolSupport</artifactId>
+            <version>73866ea</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>dk.lockfuglsang.minecraft</groupId>
             <artifactId>bukkit-utils</artifactId>
         </dependency>

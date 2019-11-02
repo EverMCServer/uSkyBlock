@@ -34,6 +34,10 @@ public class SkygridCommand extends AbstractCommand {
     public boolean execute(CommandSender sender, String alias, Map<String, Object> data, String... args) {
         Player player = (Player)sender;
         IslandInfo islandInfo = uSkyBlock.getInstance().getIslandInfo(player);
+        if (islandInfo == null){
+            player.sendMessage(tr("\u00a74No Island. \u00a7eUse \u00a7b/is create\u00a7e to get one"));
+            return true;
+        }
         if (args.length == 0){
             player.sendMessage(tr("\u00a7aSkyGrid World"));
             player.sendMessage(tr("\u00a7bPrice to enter SkyGrid World is {0}",islandInfo.getSkygridEnterCount()*1000));

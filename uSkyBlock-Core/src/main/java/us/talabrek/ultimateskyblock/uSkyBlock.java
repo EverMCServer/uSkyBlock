@@ -112,6 +112,9 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static us.talabrek.ultimateskyblock.util.LocationUtil.isSafeLocation;
 import static us.talabrek.ultimateskyblock.util.LogUtil.log;
 
+import protocolsupport.api.ProtocolSupportAPI;
+import protocolsupport.api.ProtocolVersion;
+
 public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManager.RequirementChecker {
     private static final String CN = uSkyBlock.class.getName();
     private static final String[][] depends = new String[][]{
@@ -220,6 +223,10 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
                 }
                 if (VaultHandler.setupPermissions()) {
                     log(Level.INFO, "Hooked into Vault Permissions");
+                }
+                ProtocolVersion[] singlePassengerVersions = ProtocolVersion.getAllBeforeI(ProtocolVersion.MINECRAFT_1_8);
+                for (ProtocolVersion version : singlePassengerVersions) {
+                    ProtocolSupportAPI.disableProtocolVersion(version);
                 }
                 AsyncWorldEditHandler.onEnable(uSkyBlock.this);
                 WorldGuardHandler.setupGlobal(getWorldManager().getWorld());
