@@ -29,6 +29,8 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.projectiles.ProjectileSource;
+
+import io.papermc.lib.PaperLib;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.async.Callback;
 import us.talabrek.ultimateskyblock.api.event.IslandInfoEvent;
@@ -196,7 +198,17 @@ public class PlayerEvents implements Listener {
             event.setCancelled(true);
             Player p = event.getPlayer();
             IslandInfo is = plugin.getIslandInfo(p.getLocation());
-            if(is == null) return;
+            if(is == null) {
+                is = plugin.getIslandInfo(p);
+                if(is == null) return;
+            }
+            PlayerInfo pi = plugin.getPlayerInfo(is.getLeaderUniqueId());
+            boolean isFirstCompletion = pi.checkChallenge("builder10") == 0;
+            if(isFirstCompletion){
+                plugin.notifyPlayer(p, (tr("\u00a7cYou do not have permission. Complete adept challenges to unlock this command. ")));
+                return;
+            }
+            WorldGuardHandler.updateEndRegion(plugin, p, is);
             Location l = is.getIslandLocation();
             l.setY(64);
             l.setX(l.getBlockX()+0.5);
@@ -209,7 +221,7 @@ public class PlayerEvents implements Listener {
                 }
             }
             l.setWorld(end);
-            p.teleport(l);
+            PaperLib.teleportAsync(p,l);
         }
     }
     @EventHandler(priority = EventPriority.LOWEST)

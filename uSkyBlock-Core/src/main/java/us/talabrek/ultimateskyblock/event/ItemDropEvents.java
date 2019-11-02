@@ -156,11 +156,11 @@ public class ItemDropEvents implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     @SuppressWarnings("unused")
     public void onPickupInventoryEvent(InventoryPickupItemEvent event) {
+        // I.e. hoppers...
+        clearDropInfo(event.getItem());
         if (!plugin.getWorldManager().isSkyWorld(event.getItem().getWorld())) {
             return;
         }
-        // I.e. hoppers...
-        clearDropInfo(event.getItem());
         if (event.getInventory().getHolder() instanceof HopperMinecart){
             Vehicle v = (Vehicle)event.getInventory().getHolder();
             UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
@@ -185,7 +185,7 @@ public class ItemDropEvents implements Listener {
             return;
         }
         Player player = (Player) event.getEntity();
-        if (event.isCancelled() || !plugin.getWorldManager().isSkyAssociatedWorld(player.getWorld())) {
+        if (event.isCancelled() || !plugin.getWorldManager().isSkyWorld(player.getWorld())) {
             clearDropInfo(event.getItem());
             return;
         }

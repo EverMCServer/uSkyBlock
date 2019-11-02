@@ -88,6 +88,21 @@ public class WorldGuardHandler {
         }
         return false;
     }
+    public static boolean updateEndRegion(uSkyBlock plugin, Player sender, IslandInfo islandConfig) {
+        try {
+            RegionManager regionManager = getRegionManager(plugin.getWorldManager().getEndWorld());
+            String regionName = islandConfig.getName() + "end";
+            if (islandConfig != null && noOrOldRegion(regionManager, regionName, islandConfig)) {
+                updateRegion(islandConfig);
+                islandConfig.setRegionVersion(getVersion());
+                return true;
+            }
+        } catch (Exception ex) {
+            String name = islandConfig != null ? islandConfig.getLeader() : "Unknown";
+            LogUtil.log(Level.SEVERE, "ERROR: Failed to update end  " + name + "'s Island (" + sender.getName() + ")", ex);
+        }
+        return false;
+    }
 
     private static String getVersion() {
         return VERSION + " " + I18nUtil.getLocale();
@@ -106,6 +121,14 @@ public class WorldGuardHandler {
             if (netherWorld != null) {
                 regionManager = getRegionManager(netherWorld);
                 regionManager.removeRegion(netherName);
+                regionManager.addRegion(region);
+            }
+            String endName = islandInfo.getName() + "end";
+            region = setRegionFlags(islandInfo, endName);
+            World endWorld = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+            if (endWorld != null) {
+                regionManager = getRegionManager(endWorld);
+                regionManager.removeRegion(endName);
                 regionManager.addRegion(region);
             }
             islandInfo.setRegionVersion(getVersion());
