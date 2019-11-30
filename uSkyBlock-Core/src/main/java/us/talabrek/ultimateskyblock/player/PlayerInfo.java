@@ -122,6 +122,20 @@ public class PlayerInfo implements Serializable, us.talabrek.ultimateskyblock.ap
     }
 
     @Override
+    public Location getIslandEndLocation() {        
+        Location l = getIslandLocation();
+        World end = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+        if (end == null) {
+            return null;
+        }
+        if (l != null) {
+            l.setWorld(end);
+            l.setY(64);
+        }
+        return l;
+    }
+
+    @Override
     public Location getIslandNetherLocation() {
         Location l = getIslandLocation();
         World nether = uSkyBlock.getInstance().getWorldManager().getNetherWorld();

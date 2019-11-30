@@ -24,6 +24,8 @@ public interface PlayerInfo {
 
     Location getIslandNetherLocation();
 
+    Location getIslandEndLocation();
+
     Location getHomeLocation();
 
     String getDisplayName();

@@ -258,6 +258,9 @@ public class WorldGuardHandler {
             if (!id.equalsIgnoreCase("__global__") && (id.endsWith("island") || id.endsWith("nether"))) {
                 return id.substring(0, id.length() - 6);
             }
+            if (!id.equalsIgnoreCase("__global__") && (id.endsWith("end"))) {
+                return id.substring(0, id.length() - 3);
+            }
         }
         return null;
     }
@@ -270,7 +273,7 @@ public class WorldGuardHandler {
         Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
         for (ProtectedRegion region : applicableRegions) {
             String id = region.getId().toLowerCase();
-            if (!id.equalsIgnoreCase("__global__") && (id.endsWith("island") || id.endsWith("nether"))) {
+            if (!id.equalsIgnoreCase("__global__") && (id.endsWith("island") || id.endsWith("nether") || id.endsWith("end"))) {
                 return region;
             }
         }
@@ -311,7 +314,23 @@ public class WorldGuardHandler {
         }
         return null;
     }
-
+    public static ProtectedRegion getEndRegionAt(Location location) {
+        if (location == null) {
+            return null;
+        }
+        RegionManager regionManager = getRegionManager(location.getWorld());
+        if (regionManager == null) {
+            return null;
+        }
+        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
+        for (ProtectedRegion region : applicableRegions) {
+            String id = region.getId().toLowerCase();
+            if (!id.equalsIgnoreCase("__global__") && id.endsWith("end")) {
+                return region;
+            }
+        }
+        return null;
+    }
     public static void removeIslandRegion(String islandName) {
         RegionManager regionManager = getRegionManager(uSkyBlock.getInstance().getWorldManager().getWorld());
         regionManager.removeRegion(islandName + "island");

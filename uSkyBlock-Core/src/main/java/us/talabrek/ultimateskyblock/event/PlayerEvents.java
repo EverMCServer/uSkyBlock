@@ -3,11 +3,14 @@ package us.talabrek.ultimateskyblock.event;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.EndGateway;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -19,6 +22,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -28,6 +32,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.projectiles.ProjectileSource;
 
 import io.papermc.lib.PaperLib;
@@ -35,18 +40,22 @@ import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.async.Callback;
 import us.talabrek.ultimateskyblock.api.event.IslandInfoEvent;
 import us.talabrek.ultimateskyblock.api.model.IslandScore;
+import us.talabrek.ultimateskyblock.challenge.ChallengeCompletion;
 import us.talabrek.ultimateskyblock.challenge.ChallengeCompletionLogic;
 import us.talabrek.ultimateskyblock.handler.VaultHandler;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.island.BlockLimitLogic;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
+import us.talabrek.ultimateskyblock.island.task.SetBiomeTask;
 import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -55,6 +64,7 @@ import java.util.WeakHashMap;
 
 import com.destroystokyo.paper.event.entity.EntityTeleportEndGatewayEvent;
 import com.meowj.langutils.lang.LanguageHelper;
+import com.sk89q.worldedit.event.platform.BlockInteractEvent;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -221,7 +231,51 @@ public class PlayerEvents implements Listener {
                 }
             }
             l.setWorld(end);
+            new SetBiomeTask(plugin, l, Biome.THE_END,()->{});
             PaperLib.teleportAsync(p,l);
+        }
+    }
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onEntityPortalEvent(EntityPortalEvent event){
+        if(event.getFrom().getBlock().getType() != Material.NETHER_PORTAL){
+            event.setCancelled(true);
+            IslandInfo is = plugin.getIslandInfo(event.getFrom());
+            if(is == null)return;
+            Location l = is.getIslandLocation();
+            l.setY(64);
+            l.setX(l.getBlockX()+0.5);
+            l.setZ(l.getBlockZ()+0.5);
+            World end = plugin.getWorldManager().getEndWorld();
+            l.setWorld(end);
+            if(event.getEntity() instanceof FallingBlock){
+                FallingBlock fb = (FallingBlock)event.getEntity();
+                PaperLib.teleportAsync(event.getEntity(), l);
+                Location l2 = event.getFrom();
+                if(l2.getBlockY()<=1)return;
+                l2.setY(l2.getBlockY()-1);
+                if(end.getBlockAt(l2).getType()!=Material.AIR)return;
+                end.spawnFallingBlock(l2, fb.getBlockData());
+                return;
+            }
+            if(event.getEntity() instanceof Item){
+                Item it = (Item)event.getEntity();
+                ItemStack stack = it.getItemStack();
+                ItemMeta meta = stack.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.getLore();
+                    if (lore != null && !lore.isEmpty()) {
+                        lore.removeIf(line -> line.contains("Owner: "));
+                        meta.setLore(lore);
+                        stack.setItemMeta(meta);
+                        it.setItemStack(stack);
+                    }
+                }
+                end.dropItem(l, stack);
+                it.remove();
+                return;
+            }
+            PaperLib.teleportAsync(event.getEntity(), l);
+            return;
         }
     }
     @EventHandler(priority = EventPriority.LOWEST)
@@ -323,6 +377,22 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
+        //test nether
+        if (event.getTo().getWorld().getName().equals("world_skyland_nether")){
+            if(plugin.getPlayerInfo(event.getPlayer()).checkChallenge("builder5")==0){
+                event.setCancelled(true);
+                plugin.notifyPlayer(event.getPlayer(), (tr("\u00a7cYou do not have permission. Complete newbie challenges to unlock this command. ")));
+                return;
+            }
+        }
+        //test end
+        if (event.getTo().getWorld().getName().equals("world_skyland_the_end")){
+            if(plugin.getPlayerInfo(event.getPlayer()).checkChallenge("builder10")==0){
+                event.setCancelled(true);
+                plugin.notifyPlayer(event.getPlayer(), (tr("\u00a7cYou do not have permission. Complete adept challenges to unlock this command. ")));
+                return;
+            }
+        }
         if (event.getTo() != null || !plugin.getWorldManager().isSkyWorld(event.getTo().getWorld())) {
             return;
         }
@@ -387,20 +457,23 @@ public class PlayerEvents implements Listener {
             return;
         }
         Material type = event.getBlock().getType();
-        if(type == Material.OBSIDIAN){
-            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
-            boolean isFirstCompletion = playerInfo.checkChallenge("builder5") == 0;
-            if(isFirstCompletion){
-                event.setCancelled(true);
-                player.sendMessage(tr("You do not have permission to place {0}",tr("Obsidian")));
-            }
-        }
-        if(type == Material.CHORUS_FLOWER){
-            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
-            boolean isFirstCompletion = playerInfo.checkChallenge("builder10") == 0;
-            if(isFirstCompletion){
-                event.setCancelled(true);
-                player.sendMessage(tr("You do not have permission to place {0}",tr("Chorus Flower")));
+        
+        Map<Material, String> regulation;
+        regulation = new HashMap<Material,String>();
+        regulation.put(Material.OBSIDIAN, "builder5");
+        regulation.put(Material.CHORUS_FLOWER, "builder10");
+        regulation.put(Material.END_PORTAL_FRAME, "desserttemple");
+
+        for (Material m : regulation.keySet()){
+            if(type == m){
+                if(m == Material.END_PORTAL_FRAME && plugin.getWorldManager().isSkyWorld(player.getWorld()))continue;
+                PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+                ChallengeCompletion cc = playerInfo.getChallenge(regulation.get(m));
+                String name = plugin.getChallengeLogic().getChallenge(cc.getName()).getDisplayName();
+                if(cc.getTimesCompleted() == 0){
+                    event.setCancelled(true);
+                    player.sendMessage(tr("You cannot place {0} before complete {1}", LanguageHelper.getItemDisplayName(new ItemStack(m), "zh_cn"), name));
+                }
             }
         }
         BlockLimitLogic.CanPlace canPlace = plugin.getBlockLimitLogic().canPlace(type, islandInfo);

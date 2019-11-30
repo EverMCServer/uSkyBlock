@@ -180,7 +180,7 @@ public class WorldManager {
     }
     @NotNull
     private ChunkGenerator getEndGenerator() {
-        return getOverworldGenerator();
+        return new SkyBlockEndChunkGenerator();
     }
 
     /**
@@ -348,7 +348,20 @@ public class WorldManager {
 
         World gridWorld = getGridWorld();
         return gridWorld != null && world.getName().equalsIgnoreCase(gridWorld.getName());
-    }
+    }    
+    /**
+    * Checks if the given {@link World} is the skyblock nether island world.
+    * @param world World to check.
+    * @return True if the given world is the skyblock nether island world, false otherwise.
+    */
+   public boolean isSkyEnd(@Nullable World world) {
+       if (world == null) {
+           return false;
+       }
+
+       World endWorld = getEndWorld();
+       return endWorld != null && world.getName().equalsIgnoreCase(endWorld.getName());
+   }
 
     /**
      * Checks if the given {@link World} is associated with Ultimate Skyblock.

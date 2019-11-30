@@ -50,6 +50,10 @@ public class LimitLogic {
             if (nether != null) {
                 creatures.addAll(WorldGuardHandler.getCreaturesInRegion(nether, islandRegionAt));
             }
+            World end = plugin.getWorldManager().getEndWorld();
+            if (end != null) {
+                creatures.addAll(WorldGuardHandler.getCreaturesInRegion(end, islandRegionAt));
+            }
             for (LivingEntity creature : creatures) {
                 CreatureType key = getCreatureType(creature);
                 if (!mapCount.containsKey(key)) {
