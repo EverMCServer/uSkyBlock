@@ -27,10 +27,6 @@ public class ChallengeCompleteCommand extends AbstractCommand {
             sender.sendMessage(tr("\u00a7cCommand only available for players."));
             return false;
         }
-        if (!((Player)sender).isOp()) {
-            sender.sendMessage(tr("\u00a7cYou have no permission."));
-            return true;
-        }
         if (args == null || args.length == 0) {
             return false;
         }

@@ -10,6 +10,7 @@ import org.bukkit.entity.Ghast;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.WaterMob;
 import org.bukkit.entity.Squid;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Wither;
 import org.bukkit.event.Cancellable;
@@ -93,10 +94,13 @@ public class SpawnEvents implements Listener {
         }
         if (event.getEntity() instanceof WaterMob) {
             Random r = new Random();
-            if (r.nextInt(10) != 0){
+            if (r.nextInt(20) != 0){
                 event.setCancelled(true);
                 return; 
             }
+        }
+        if (event.getEntity() instanceof ArmorStand){
+            return;
         }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (event.getEntity() instanceof WaterMob) {

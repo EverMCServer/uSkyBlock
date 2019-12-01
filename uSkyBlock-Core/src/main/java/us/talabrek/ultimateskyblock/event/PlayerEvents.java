@@ -445,6 +445,36 @@ public class PlayerEvents implements Listener {
     }
     
     @EventHandler(ignoreCancelled = true)
+    public void onPlaceEnderEye(PlayerInteractEvent event){
+        final Player player = event.getPlayer();
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(player.getWorld())) {
+            return; // Skip
+        }
+        if (event.getClickedBlock().getType() != Material.END_PORTAL_FRAME){
+            return;
+        }
+        if (event.getItem() == null || event.getItem().getType() != Material.ENDER_EYE){
+            return;
+        }
+        IslandInfo isi = plugin.getIslandInfo(player.getLocation());
+        if (isi == null){
+            event.setCancelled(true);
+            player.sendMessage(tr("You cannot place {0} before complete {1}", "末影之眼", "准备沙漠神殿材料"));
+            return;
+        }
+        PlayerInfo playerInfo = plugin.getPlayerInfo(isi.getLeaderUniqueId());
+        if (playerInfo == null){
+            event.setCancelled(true);
+            player.sendMessage(tr("You cannot place {0} before complete {1}", "末影之眼", "准备沙漠神殿材料"));
+            return;
+        }
+        int times = playerInfo.checkChallenge("desserttemple");
+        if (times == 0){
+            event.setCancelled(true);
+            player.sendMessage(tr("You cannot place {0} before complete {1}", "末影之眼", "准备沙漠神殿材料"));
+        }
+    }
+    @EventHandler(ignoreCancelled = true)
     public void onBlockPlaceEvent(BlockPlaceEvent event)
     {
         final Player player = event.getPlayer();
@@ -462,14 +492,23 @@ public class PlayerEvents implements Listener {
         regulation = new HashMap<Material,String>();
         regulation.put(Material.OBSIDIAN, "builder5");
         regulation.put(Material.CHORUS_FLOWER, "builder10");
-        regulation.put(Material.END_PORTAL_FRAME, "desserttemple");
 
         for (Material m : regulation.keySet()){
             if(type == m){
-                if(m == Material.END_PORTAL_FRAME && plugin.getWorldManager().isSkyWorld(player.getWorld()))continue;
-                PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+                String name = plugin.getChallengeLogic().getChallenge(regulation.get(m)).getDisplayName();
+                IslandInfo isi = plugin.getIslandInfo(player.getLocation());
+                if (isi == null){
+                    event.setCancelled(true);
+                    player.sendMessage(tr("You cannot place {0} before complete {1}", LanguageHelper.getItemDisplayName(new ItemStack(m), "zh_cn"), name));
+                    return;
+                }
+                PlayerInfo playerInfo = plugin.getPlayerInfo(isi.getLeaderUniqueId());
+                if (playerInfo == null){
+                    event.setCancelled(true);
+                    player.sendMessage(tr("You cannot place {0} before complete {1}", LanguageHelper.getItemDisplayName(new ItemStack(m), "zh_cn"), name));
+                    return;
+                }
                 ChallengeCompletion cc = playerInfo.getChallenge(regulation.get(m));
-                String name = plugin.getChallengeLogic().getChallenge(cc.getName()).getDisplayName();
                 if(cc.getTimesCompleted() == 0){
                     event.setCancelled(true);
                     player.sendMessage(tr("You cannot place {0} before complete {1}", LanguageHelper.getItemDisplayName(new ItemStack(m), "zh_cn"), name));
