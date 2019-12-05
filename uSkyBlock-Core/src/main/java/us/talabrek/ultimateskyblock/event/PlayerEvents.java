@@ -65,6 +65,8 @@ import java.util.WeakHashMap;
 import com.destroystokyo.paper.event.entity.EntityTeleportEndGatewayEvent;
 import com.meowj.langutils.lang.LanguageHelper;
 import com.sk89q.worldedit.event.platform.BlockInteractEvent;
+import com.sk89q.worldguard.domains.DefaultDomain;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -233,7 +235,19 @@ public class PlayerEvents implements Listener {
             l.setWorld(end);
             new SetBiomeTask(plugin, l, Biome.THE_END,()->{});
             PaperLib.teleportAsync(p,l);
+            ProtectedRegion pr = WorldGuardHandler.getEndRegionAt(l);
+            DefaultDomain dd = pr.getMembers();
+            dd.removeAll();
+            pr.setMembers(dd);
         }
+    }
+    private boolean checkMaterial(Material c){
+        return c == Material.SAND || c == Material.RED_SAND || c == Material.GRAVEL || c == Material.WHITE_CONCRETE_POWDER ||
+        c == Material.RED_CONCRETE_POWDER || c == Material.CYAN_CONCRETE_POWDER || c == Material.GREEN_CONCRETE_POWDER ||
+        c == Material.BLACK_CONCRETE_POWDER || c == Material.ORANGE_CONCRETE_POWDER || c == Material.MAGENTA_CONCRETE_POWDER ||
+        c == Material.LIGHT_BLUE_CONCRETE_POWDER || c == Material.YELLOW_CONCRETE_POWDER || c == Material.LIME_CONCRETE_POWDER ||
+        c == Material.PINK_CONCRETE_POWDER || c == Material.GRAY_CONCRETE_POWDER || c == Material.LIGHT_GRAY_CONCRETE_POWDER ||
+        c == Material.PURPLE_CONCRETE_POWDER || c == Material.BLUE_CONCRETE_POWDER || c == Material.BROWN_CONCRETE_POWDER ;
     }
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityPortalEvent(EntityPortalEvent event){
@@ -249,12 +263,22 @@ public class PlayerEvents implements Listener {
             l.setWorld(end);
             if(event.getEntity() instanceof FallingBlock){
                 FallingBlock fb = (FallingBlock)event.getEntity();
-                PaperLib.teleportAsync(event.getEntity(), l);
                 Location l2 = event.getFrom();
-                if(l2.getBlockY()<=1)return;
+                if (
+                    l2.getBlockY()<=1 || 
+                    (Math.abs(l2.getX() - l.getX())<5 && Math.abs(l2.getZ() - l.getZ())<5) || 
+                    (!checkMaterial(fb.getBlockData().getMaterial())) || 
+                    end.getBlockAt(l2.getBlockX(), l2.getBlockY()-1, l2.getBlockZ()).getType() != Material.AIR
+                    ){
+                    PaperLib.teleportAsync(event.getEntity(), l);
+                    return;
+                }
                 l2.setY(l2.getBlockY()-1);
-                if(end.getBlockAt(l2).getType()!=Material.AIR)return;
-                end.spawnFallingBlock(l2, fb.getBlockData());
+                PaperLib.teleportAsync(event.getEntity(), l2);
+                Random r = new Random();
+                if (r.nextInt(10) == 0) {
+                    end.spawnFallingBlock(l, fb.getBlockData());
+                }
                 return;
             }
             if(event.getEntity() instanceof Item){
