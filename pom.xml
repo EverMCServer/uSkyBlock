@@ -129,6 +129,10 @@
             <id>perfectdreams-repo</id>
             <url>https://repo.perfectdreams.net/</url>
         </repository>
+        <repository>
+            <id>lang-utils-repo</id>
+            <url>https://ci.nyaacat.com/maven/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
