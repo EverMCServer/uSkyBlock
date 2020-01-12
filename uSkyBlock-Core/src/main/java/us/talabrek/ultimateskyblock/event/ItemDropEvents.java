@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.block.BlockDispenseArmorEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
@@ -85,7 +86,15 @@ public class ItemDropEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDispenseItem(BlockDispenseEvent event){
-        String player = plugin.getIslandInfo(event.getBlock().getLocation()).getLeader();
+        if (event instanceof BlockDispenseArmorEvent) return;
+        
+        // workaround for dispense entity...
+        Vector v = event.getVelocity();
+        if (Math.abs(v.getX())>=1.0 || Math.abs(v.getY())>=1.0 || Math.abs(v.getZ())>=1.0) return;
+        
+        IslandInfo is = plugin.getIslandInfo(event.getBlock().getLocation());
+        if (is == null) return;
+        String player = is.getLeader();
         ItemStack item = event.getItem();
         addDropInfo(player, item);
         event.setItem(item);
