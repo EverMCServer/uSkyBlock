@@ -7,8 +7,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import us.talabrek.ultimateskyblock.player.UltimateHolder;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
-import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
-import static dk.lockfuglsang.minecraft.util.FormatUtil.stripFormatting;
 
 /**
  * Menu events.
