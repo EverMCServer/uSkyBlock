@@ -7,6 +7,7 @@ import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Ghast;
+import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.WaterMob;
 import org.bukkit.entity.Squid;
@@ -91,6 +92,15 @@ public class SpawnEvents implements Listener {
         }
         if (!event.isCancelled() && ADMIN_INITIATED.contains(event.getSpawnReason())) {
             return; // Allow it, the above method would have blocked it if it should be blocked.
+        }
+        if (event.getEntity() instanceof Phantom) {
+            IslandInfo is = plugin.getIslandInfo(event.getLocation());
+            if(is != null){
+                if (plugin.getPlayerInfo(is.getLeader()).checkChallenge("builder5")==0){
+                    // newbie protection
+                    return;
+                }
+            }
         }
         if (event.getEntity() instanceof WaterMob) {
             Random r = new Random();
