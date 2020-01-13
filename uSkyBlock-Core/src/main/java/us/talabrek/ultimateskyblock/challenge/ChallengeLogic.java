@@ -146,6 +146,10 @@ public class ChallengeLogic implements Listener {
             player.sendMessage(tr("\u00a74The {0} challenge is not available yet!", challenge.getDisplayName()));
             return;
         }
+        if (!challenge.getMissingRequirements(pi).isEmpty()) {
+            player.sendMessage(tr("\u00a74The {0} challenge is not available yet!", challenge.getDisplayName()));
+            return;
+        }
         challengeName = challenge.getName();
         ChallengeCompletion completion = pi.getChallenge(challengeName);
         if (completion.getTimesCompleted() > 0 && (!challenge.isRepeatable() || challenge.getType() == Challenge.Type.ISLAND)) {

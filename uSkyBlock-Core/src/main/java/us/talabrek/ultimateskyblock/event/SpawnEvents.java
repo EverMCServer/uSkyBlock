@@ -27,6 +27,7 @@ import org.bukkit.material.SpawnEgg;
 import org.bukkit.metadata.FixedMetadataValue;
 import us.talabrek.ultimateskyblock.api.IslandInfo;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
+import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
 
@@ -96,8 +97,10 @@ public class SpawnEvents implements Listener {
         if (event.getEntity() instanceof Phantom) {
             IslandInfo is = plugin.getIslandInfo(event.getLocation());
             if(is != null){
-                if (plugin.getPlayerInfo(is.getLeader()).checkChallenge("builder5")==0){
+                PlayerInfo pi = plugin.getPlayerInfo(is.getLeader());
+                if (pi != null && pi.checkChallenge("builder5")==0){
                     // newbie protection
+                    event.setCancelled(true);
                     return;
                 }
             }
