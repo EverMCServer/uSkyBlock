@@ -30,8 +30,10 @@ import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
+import static us.talabrek.ultimateskyblock.util.LogUtil.log;
 
 import java.util.*;
+import java.util.logging.Level;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static org.bukkit.block.Biome.THE_END;
@@ -111,12 +113,12 @@ public class SpawnEvents implements Listener {
                         event.setCancelled(true);
                         pi = null; is = null;
                         newbieisland.put(island, true);
-                        System.out.println("Add inf Phantom: "+island+" : T");
+                        log(Level.INFO, "Add inf Phantom Protection: "+island+" : protect");
                         return;
                     }
                     pi = null; is = null;
                     newbieisland.put(island, false);
-                    System.out.println("Add inf Phantom: "+island+" : F");
+                    log(Level.INFO, "Add inf Phantom Protection: "+island+" : Not-protect");
                 }
             }else{
                 if (newbieisland.get(island) == true){
