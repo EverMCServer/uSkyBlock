@@ -85,6 +85,7 @@ public class ItemDropEvents implements Listener {
         IslandInfo is = plugin.getIslandInfo(event.getBlock().getLocation());
         if (is == null) return;
         String player = is.getLeader();
+        is = null;
         ItemStack item = event.getItem();
         addDropInfo(player, item);
         event.setItem(item);

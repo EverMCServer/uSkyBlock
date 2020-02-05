@@ -49,7 +49,7 @@ public class SpawnEvents implements Listener {
     private static final Set<CreatureSpawnEvent.SpawnReason> ADMIN_INITIATED = new HashSet<>(Arrays.asList(
             CreatureSpawnEvent.SpawnReason.SPAWNER_EGG
     ));
-
+    private HashMap<String, Boolean> newbieisland = new HashMap<>();
     private final uSkyBlock plugin;
 
     public SpawnEvents(uSkyBlock plugin) {
@@ -85,6 +85,10 @@ public class SpawnEvents implements Listener {
     private boolean isSpawnEgg(ItemStack item) {
         return item.getType().name().endsWith("_SPAWN_EGG") && item.getData() instanceof MonsterEggs;
     }
+    private int fastpos(int pos){
+        pos+=64;
+        return (pos<0)?((pos+1)/128):(pos/128);
+    }
 
     @EventHandler(ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
@@ -94,12 +98,28 @@ public class SpawnEvents implements Listener {
         if (!event.isCancelled() && ADMIN_INITIATED.contains(event.getSpawnReason())) {
             return; // Allow it, the above method would have blocked it if it should be blocked.
         }
+        
         if (event.getEntity() instanceof Phantom) {
-            IslandInfo is = plugin.getIslandInfo(event.getLocation());
-            if(is != null){
-                PlayerInfo pi = plugin.getPlayerInfo(is.getLeader());
-                if (pi != null && pi.checkChallenge("builder5")==0){
-                    // newbie protection
+            String island = fastpos(event.getLocation().getBlockX()) + "," + fastpos(event.getLocation().getBlockZ());
+
+            if(newbieisland.get(island) == null){
+                IslandInfo is = plugin.getIslandInfo(event.getLocation());
+                if(is != null){
+                    PlayerInfo pi = plugin.getPlayerInfo(is.getLeader());
+                    if (pi != null && pi.checkChallenge("builder5")==0){
+                        // newbie protection
+                        event.setCancelled(true);
+                        pi = null; is = null;
+                        newbieisland.put(island, true);
+                        System.out.println("Add inf Phantom: "+island+" : T");
+                        return;
+                    }
+                    pi = null; is = null;
+                    newbieisland.put(island, false);
+                    System.out.println("Add inf Phantom: "+island+" : F");
+                }
+            }else{
+                if (newbieisland.get(island) == true){
                     event.setCancelled(true);
                     return;
                 }
