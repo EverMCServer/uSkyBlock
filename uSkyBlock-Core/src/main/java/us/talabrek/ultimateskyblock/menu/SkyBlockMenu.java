@@ -668,6 +668,15 @@ public class SkyBlockMenu {
         menu.setItem(13,menuItem);
         lores.clear();
 
+        menuItem = new ItemStack(Material.DIAMOND_PICKAXE, 1);
+        meta4 = menuItem.getItemMeta();
+        meta4.setDisplayName(tr("\u00a7a\u00a7lResource World"));
+        addLore(lores, "\u00a7f", tr("Go to resource world."));
+        meta4.setLore(lores);
+        menuItem.setItemMeta(meta4);
+        menu.setItem(14,menuItem);
+        lores.clear();
+
         menuItem = new ItemStack(Material.OAK_DOOR, 1);
         meta4 = menuItem.getItemMeta();
         meta4.setDisplayName(tr("\u00a7a\u00a7lHomes"));
@@ -994,6 +1003,9 @@ public class SkyBlockMenu {
         } else if (currentItem.getType() == Material.DIAMOND_SWORD) {
             p.closeInventory();
             p.performCommand("warp pvp");
+        } else if (currentItem.getType() == Material.DIAMOND_PICKAXE) {
+            p.closeInventory();
+            p.performCommand("is grid");
         } else if (currentItem.getType() == Material.GRASS_PATH) {
             p.closeInventory();
             p.performCommand("island sethome");
