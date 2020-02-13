@@ -223,10 +223,13 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
                 }
                 if (VaultHandler.setupPermissions()) {
                     log(Level.INFO, "Hooked into Vault Permissions");
-                }
-                ProtocolVersion[] singlePassengerVersions = ProtocolVersion.getAllBeforeI(ProtocolVersion.MINECRAFT_1_8);
-                for (ProtocolVersion version : singlePassengerVersions) {
-                    ProtocolSupportAPI.disableProtocolVersion(version);
+                }                
+                Plugin plugin = uSkyBlock.getInstance().getServer().getPluginManager().getPlugin("ProtocolSupport");
+                if (plugin != null) {
+                    ProtocolVersion[] singlePassengerVersions = ProtocolVersion.getAllBeforeI(ProtocolVersion.MINECRAFT_1_8);
+                    for (ProtocolVersion version : singlePassengerVersions) {
+                        ProtocolSupportAPI.disableProtocolVersion(version);
+                    }
                 }
                 AsyncWorldEditHandler.onEnable(uSkyBlock.this);
                 WorldGuardHandler.setupGlobal(getWorldManager().getWorld());

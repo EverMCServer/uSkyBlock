@@ -47,6 +47,8 @@ import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -60,6 +62,19 @@ import java.util.WeakHashMap;
 import com.meowj.langutils.lang.LanguageHelper;
 import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldedit.function.pattern.Pattern;
+import com.sk89q.worldedit.math.BlockVector2;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Polygonal2DRegion;
+import com.sk89q.worldedit.world.block.BaseBlock;
+import com.sk89q.worldedit.world.block.BlockState;
+import com.sk89q.worldedit.world.block.BlockType;
+import com.sk89q.worldedit.world.block.BlockTypes;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -491,6 +506,58 @@ public class PlayerEvents implements Listener {
             player.sendMessage(tr("You cannot place {0} before complete {1}", "末影之眼", "准备沙漠神殿材料"));
         }
     }
+
+
+    @EventHandler(ignoreCancelled = true)
+    public void netherBasaltGen(BlockPlaceEvent event){
+        Block bl = event.getBlock();
+        if (bl.getType() != Material.NETHERRACK){
+            return;
+        }
+        World wd = event.getPlayer().getWorld();
+        if (!plugin.getWorldManager().isSkyNether(wd)) {
+            return; 
+        }
+        int x = bl.getX();
+        int y;
+        int z = bl.getZ();
+        for (y = 120; y >= 9; y --){
+            if (wd.getBlockAt(x, y, z).getType() != Material.NETHERRACK)
+            return;
+        }
+        for (x = bl.getX()-1; x <= bl.getX()+1; x++){
+            for (z = bl.getZ()-1; z <= bl.getZ()+1; z++){
+                if (wd.getBlockAt(x, 8, z).getType() != Material.NETHERRACK)
+                return;
+            }
+        }
+        x = bl.getX();
+        z = bl.getZ();
+        event.getPlayer().sendMessage("恭喜你发现了一个彩蛋呀~");
+        BukkitWorld weWorld = new BukkitWorld(wd);
+        List<BlockVector2> points = new ArrayList<BlockVector2>();
+        points.add(BlockVector2.at(x-1, z));
+        points.add(BlockVector2.at(x, z-1));
+        points.add(BlockVector2.at(x+1, z));
+        points.add(BlockVector2.at(x, z+1));
+        Polygonal2DRegion region = new Polygonal2DRegion(weWorld, points, 9, 120);
+        CuboidRegion region2 = new CuboidRegion(weWorld, BlockVector3.at(x-3, 8, z-3), BlockVector3.at(x+3, 8, z+3));
+        EditSession es = WorldEdit.getInstance().getEditSessionFactory().getEditSession(weWorld, -1);
+        es.setFastMode(true);
+        BaseBlock bb = BlockTypes.NETHERRACK.getDefaultState().toBaseBlock();
+        Set<BaseBlock> sbb = new HashSet<BaseBlock>();
+        sbb.add(bb);
+        BaseBlock bt = BlockTypes.STONE.getDefaultState().toBaseBlock();
+        try {
+            es.replaceBlocks(region, sbb, bt);
+            es.replaceBlocks(region2, sbb, bt);
+            es.flushSession();
+        } catch (Exception e) {
+            e.printStackTrace();
+            event.getPlayer().sendMessage("Error - ");
+        }
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onBlockPlaceEvent(BlockPlaceEvent event)
     {
