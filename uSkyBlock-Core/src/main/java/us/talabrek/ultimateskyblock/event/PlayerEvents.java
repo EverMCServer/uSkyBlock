@@ -5,8 +5,12 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Leaves;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -66,14 +70,11 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.function.pattern.Pattern;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.world.block.BaseBlock;
-import com.sk89q.worldedit.world.block.BlockState;
-import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
@@ -211,6 +212,37 @@ public class PlayerEvents implements Listener {
 //        }
 //    }
 
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityChangeBlock(EntityChangeBlockEvent event) {
+        Block block = event.getBlock();
+        Material toType = event.getTo();
+        Material fromType = block.getType();
+        if (fromType == Material.AIR){
+            if (toType == Material.ANVIL || toType == Material.CHIPPED_ANVIL || toType == Material.DAMAGED_ANVIL){
+                // 铁砧落下
+                Block change = block.getRelative(BlockFace.DOWN);
+                Material changet = change.getType();
+                BlockData changed = change.getBlockData();
+                if (changed instanceof Leaves){
+                    change.setType(Material.AIR);
+                    return;
+                }
+                if (changet == Material.STONE_BRICKS){
+                    change.setType(Material.CRACKED_STONE_BRICKS);
+                    return;
+                }
+                if (changet == Material.COBBLESTONE){
+                    Random r = new Random();
+                    if (r.nextInt(100) == 0) {
+                        change.setType(Material.GRAVEL);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+     
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerEndPortal(PlayerPortalEvent event){
