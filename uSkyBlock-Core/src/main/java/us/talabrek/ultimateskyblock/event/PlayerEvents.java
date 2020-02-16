@@ -10,7 +10,9 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Leaves;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
+import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -21,11 +23,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -243,10 +248,75 @@ public class PlayerEvents implements Listener {
         }
     }
      
-
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerBreakEndWorld(BlockBreakEvent event){
+        if (event.getBlock().getWorld().getName().equals("world_test_the_end")){
+            if (isEndBlock(event.getBlock().getType())){
+                event.getPlayer().sendMessage("\u00a7cYou can't break this.");
+                event.setCancelled(true);
+            }
+        }
+    }
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerPlaceEndWorld(BlockPlaceEvent event){
+        if (event.getBlock().getWorld().getName().equals("world_test_the_end")){
+            if (isEndBlock(event.getBlock().getType())){
+                event.getPlayer().sendMessage("\u00a7cYou can't place this.");
+                event.setCancelled(true);
+            }
+        }
+    }
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerPlaceLavaEndWorld(PlayerBucketEmptyEvent event){
+        if (event.getBlock().getWorld().getName().equals("world_test_the_end")){
+            if(event.getBucket() == Material.LAVA_BUCKET){
+                event.getPlayer().sendMessage("\u00a7cYou can't place this.");
+                event.setCancelled(true);
+            }
+        }
+    }
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerKillEnderDragon(EntityDeathEvent event){
+        //generate a deagon egg whenever dragon dies
+        if (event.getEntityType() == EntityType.ENDER_DRAGON){
+            event.getEntity().getLocation().getWorld().getBlockAt(0, 64, 0).setType(Material.DRAGON_EGG);
+        }
+    }
+    private boolean isEndBlock(Material m){
+        return (m == Material.END_STONE || m == Material.OBSIDIAN);
+    }
+    
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (event.getLocation().getWorld().getName().equals("world_test_the_end")){
+            if (!event.isCancelled() && event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
+                return; 
+            }
+            if (!event.isCancelled() && event.getEntity() instanceof Enderman) {
+                if (event.getLocation().getBlock().getRelative(BlockFace.DOWN).getType() != Material.END_STONE){
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+    }
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerEndPortal(PlayerPortalEvent event){
         if(event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL){
+            if (event.getFrom().getBlock().getRelative(BlockFace.DOWN).getType() == Material.BEDROCK){
+                Player p = event.getPlayer();
+                IslandInfo is = plugin.getIslandInfo(p);
+                if (is != null){
+                    PlayerInfo pi = plugin.getPlayerInfo(is.getLeaderUniqueId());
+                    boolean isFirstCompletion = pi.checkChallenge("builder5") == 0;
+                    if(!isFirstCompletion){
+                        return;
+                    }
+                }
+                plugin.notifyPlayer(p, (tr("\u00a7cYou do not have permission. Complete newbie challenges to unlock this command. ")));
+                event.setCancelled(true);
+                return;
+            }
             event.setCancelled(true);
             Player p = event.getPlayer();
             IslandInfo is = plugin.getIslandInfo(p.getLocation());
@@ -345,10 +415,15 @@ public class PlayerEvents implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerEndGateway(PlayerTeleportEndGatewayEvent event){
         Location loc = event.getGateway().getExitLocation();
+        if (loc.getWorld().getName().equals("world_test_the_end")){
+            event.setCancelled(true);
+            return;
+        }
         ///setblock ~ ~ ~ minecraft:end_gateway{Age:61824,ExactTeleport:1,ExitPortal:{X:70,Y:156,Z:24}} replace
         if(loc.getBlockX()==70 && loc.getBlockY()==156 && loc.getBlockZ()==24){
             event.getPlayer().performCommand("is grid");
             event.setCancelled(true);
+            return;
         }
     }
 
@@ -442,7 +517,7 @@ public class PlayerEvents implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
         //test nether
-        if (event.getTo().getWorld().getName().equals("world_skyland_nether")){
+        if (event.getTo().getWorld().getName().equals("world_skyland_nether") || event.getTo().getWorld().getName().equals("world_test_the_end")){
             if(plugin.getPlayerInfo(event.getPlayer()).checkChallenge("builder5")==0){
                 event.setCancelled(true);
                 plugin.notifyPlayer(event.getPlayer(), (tr("\u00a7cYou do not have permission. Complete newbie challenges to unlock this command. ")));
