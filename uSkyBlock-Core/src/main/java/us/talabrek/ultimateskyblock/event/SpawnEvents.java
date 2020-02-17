@@ -195,11 +195,13 @@ public class SpawnEvents implements Listener {
                 continue;
             }else{
                 if(prismarineBlocks.contains(tloc.getBlock().getType())){
-                    loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+                    Random r = new Random();
+                    if (r.nextInt(3) == 0)
+                        loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
                     return true;
                 }else if(tloc.getBlock().getType() == Material.SEA_LANTERN){
                     Random r = new Random();
-                    if (r.nextInt(10) == 0)
+                    if (r.nextInt(30) == 0)
                         loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
                     return true;
                 }

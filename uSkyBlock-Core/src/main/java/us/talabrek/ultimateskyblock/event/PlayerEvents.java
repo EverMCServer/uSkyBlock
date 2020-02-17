@@ -226,6 +226,9 @@ public class PlayerEvents implements Listener {
         if (fromType == Material.AIR){
             if (toType == Material.ANVIL || toType == Material.CHIPPED_ANVIL || toType == Material.DAMAGED_ANVIL){
                 // 铁砧落下
+                for (Player p : plugin.getIslandInfo(event.getEntity().getLocation()).getOnlineMembers()){
+                    p.sendMessage("你离彩蛋很近啦，是和铁砧相关的彩蛋呢~");
+                }
                 Block change = block.getRelative(BlockFace.DOWN);
                 Material changet = change.getType();
                 BlockData changed = change.getBlockData();
@@ -625,6 +628,7 @@ public class PlayerEvents implements Listener {
         if (!plugin.getWorldManager().isSkyNether(wd)) {
             return; 
         }
+        event.getPlayer().sendMessage("你离彩蛋近了一步，好像是和玄武岩有关的彩蛋呢");
         int x = bl.getX();
         int y;
         int z = bl.getZ();
