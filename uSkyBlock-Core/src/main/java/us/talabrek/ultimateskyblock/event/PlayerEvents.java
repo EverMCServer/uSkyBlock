@@ -51,6 +51,7 @@ import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.island.BlockLimitLogic;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.island.task.SetBiomeTask;
+import us.talabrek.ultimateskyblock.menu.IntegerEditMenu;
 import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
@@ -217,7 +218,7 @@ public class PlayerEvents implements Listener {
 //        }
 //    }
 
-
+    Map <Player, Integer> anvilLog = new HashMap <Player,Integer>();
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
         Block block = event.getBlock();
@@ -227,7 +228,12 @@ public class PlayerEvents implements Listener {
             if (toType == Material.ANVIL || toType == Material.CHIPPED_ANVIL || toType == Material.DAMAGED_ANVIL){
                 // 铁砧落下
                 for (Player p : plugin.getIslandInfo(event.getEntity().getLocation()).getOnlineMembers()){
-                    p.sendMessage("你离彩蛋很近啦，是和铁砧相关的彩蛋呢~");
+                    if (anvilLog.get(p) == null || anvilLog.get(p) > 10){
+                        p.sendMessage("你离彩蛋很近啦，是和铁砧相关的彩蛋呢~ 换一种方块试试？(这条消息一段时间内只发送一次，注意保密哦~)");
+                        anvilLog.put(p,1);
+                    }else{
+                        anvilLog.put(p,anvilLog.get(p)+1);
+                    }
                 }
                 Block change = block.getRelative(BlockFace.DOWN);
                 Material changet = change.getType();
@@ -617,18 +623,24 @@ public class PlayerEvents implements Listener {
         }
     }
 
-
+    Map <Player, Integer> besaltLog = new HashMap<Player, Integer>();
     @EventHandler(ignoreCancelled = true)
     public void netherBasaltGen(BlockPlaceEvent event){
         Block bl = event.getBlock();
         if (bl.getType() != Material.NETHERRACK){
             return;
         }
-        World wd = event.getPlayer().getWorld();
+        Player p = event.getPlayer();
+        World wd = p.getWorld();
         if (!plugin.getWorldManager().isSkyNether(wd)) {
             return; 
         }
-        event.getPlayer().sendMessage("你离彩蛋近了一步，好像是和玄武岩有关的彩蛋呢");
+        if (besaltLog.get(p) == null || besaltLog.get(p) > 20){
+            p.sendMessage("你离彩蛋近了一步，好像是和玄武岩有关的彩蛋呢！玄武岩是什么样子的呢~ (这条消息一段时间内只发送一次，注意保密哦~)");
+            besaltLog.put(p,1);
+        }else{
+            besaltLog.put(p,besaltLog.get(p)+1);
+        }
         int x = bl.getX();
         int y;
         int z = bl.getZ();
