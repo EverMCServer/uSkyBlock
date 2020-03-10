@@ -220,8 +220,6 @@ public class PlayerEvents implements Listener {
 //            event.getPlayer().setViewDistance(4);
 //        }
 //    }
-
-    Map <Player, Integer> anvilLog = new HashMap <Player,Integer>();
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
         Block block = event.getBlock();
@@ -230,14 +228,6 @@ public class PlayerEvents implements Listener {
         if (fromType == Material.AIR){
             if (toType == Material.ANVIL || toType == Material.CHIPPED_ANVIL || toType == Material.DAMAGED_ANVIL){
                 // 铁砧落下
-                for (Player p : plugin.getIslandInfo(event.getEntity().getLocation()).getOnlineMembers()){
-                    if (anvilLog.get(p) == null || anvilLog.get(p) > 10){
-                        p.sendMessage("你离彩蛋很近啦，是和铁砧相关的彩蛋呢~ 换一种方块试试？(这条消息一段时间内只发送一次，注意保密哦~)");
-                        anvilLog.put(p,1);
-                    }else{
-                        anvilLog.put(p,anvilLog.get(p)+1);
-                    }
-                }
                 Block change = block.getRelative(BlockFace.DOWN);
                 Material changet = change.getType();
                 BlockData changed = change.getBlockData();

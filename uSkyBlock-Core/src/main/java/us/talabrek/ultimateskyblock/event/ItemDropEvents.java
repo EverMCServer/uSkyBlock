@@ -342,10 +342,14 @@ public class ItemDropEvents implements Listener {
         int y = pl.getLocation().getBlockY();
         int z = pl.getLocation().getBlockZ();
         if (
-            (x % 128 == 64 && pl.getWorld().getBlockAt(x-1,y,z).getType().equals(pl.getType())) ||
-            (x % 128 == 63 && pl.getWorld().getBlockAt(x+1,y,z).getType().equals(pl.getType())) ||
-            (z % 128 == 64 && pl.getWorld().getBlockAt(x,y,z-1).getType().equals(pl.getType())) ||
-            (z % 128 == 63 && pl.getWorld().getBlockAt(x,y,z+1).getType().equals(pl.getType()))){
+            (x % 128 == 64  && pl.getWorld().getBlockAt(x-1,y,z).getType().equals(pl.getType())) ||
+            (x % 128 == -64 && pl.getWorld().getBlockAt(x-1,y,z).getType().equals(pl.getType())) ||
+            (x % 128 == 63  && pl.getWorld().getBlockAt(x+1,y,z).getType().equals(pl.getType())) ||
+            (x % 128 == -65 && pl.getWorld().getBlockAt(x+1,y,z).getType().equals(pl.getType())) ||
+            (z % 128 == 64  && pl.getWorld().getBlockAt(x,y,z-1).getType().equals(pl.getType())) ||
+            (z % 128 == -64 && pl.getWorld().getBlockAt(x,y,z-1).getType().equals(pl.getType())) ||
+            (z % 128 == 63  && pl.getWorld().getBlockAt(x,y,z+1).getType().equals(pl.getType())) ||
+            (z % 128 == -65 && pl.getWorld().getBlockAt(x,y,z+1).getType().equals(pl.getType()))){
                 plugin.notifyPlayer(event.getPlayer(), tr("You cannot place this block here!"));
                 event.setCancelled(true);
             }
