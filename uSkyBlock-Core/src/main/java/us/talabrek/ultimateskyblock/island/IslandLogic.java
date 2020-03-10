@@ -412,6 +412,7 @@ public class IslandLogic {
             }
             WorldGuardHandler.removeIslandRegion(islandName);
             deleteIslandConfig(islandName);
+            orphanLogic.save();
             return true;
         }
         return false;

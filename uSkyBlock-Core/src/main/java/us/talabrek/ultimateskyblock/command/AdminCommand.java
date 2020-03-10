@@ -12,6 +12,7 @@ import us.talabrek.ultimateskyblock.command.admin.ChunkCommand;
 import us.talabrek.ultimateskyblock.command.admin.ConfigCommand;
 import us.talabrek.ultimateskyblock.command.admin.CooldownCommand;
 import us.talabrek.ultimateskyblock.command.admin.DebugCommand;
+import us.talabrek.ultimateskyblock.command.admin.EntityCheck;
 import us.talabrek.ultimateskyblock.command.admin.FlatlandFixCommand;
 import us.talabrek.ultimateskyblock.command.admin.FlushCommand;
 import us.talabrek.ultimateskyblock.command.admin.GenTopTenCommand;
@@ -90,5 +91,6 @@ public class AdminCommand extends BaseCommandExecutor {
         add(new ProtectAllCommand(plugin));
         add(new ChunkCommand());
         add(new GridCommand(plugin));
+        add(new EntityCheck(plugin));
     }
 }

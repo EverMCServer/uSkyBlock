@@ -147,13 +147,8 @@ public class AdminIslandCommand extends CompositeCommand {
                     return false;
                 } else {
                     String islandName = islandInfo.getName();
-                    if (sender instanceof Player && confirmHandler.checkCommand((Player) sender, cmd)) {
-                        plugin.getIslandLogic().purge(islandName);
-                        sender.sendMessage(tr("\u00a7cPURGE: \u00a79Purged island at {0}", islandName));
-                    } else if (!(sender instanceof Player)) {
-                        plugin.getIslandLogic().purge(islandName);
-                        sender.sendMessage(tr("\u00a7cPURGE: \u00a79Purged island at {0}", islandName));
-                    }
+                    plugin.getIslandLogic().purge(islandName);
+                    sender.sendMessage(tr("\u00a7cPURGE: \u00a79Purged island at {0}", islandName));
                 }
                 return true;
             }
