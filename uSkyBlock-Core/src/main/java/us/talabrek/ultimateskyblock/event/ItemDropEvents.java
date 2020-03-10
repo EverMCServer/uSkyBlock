@@ -217,8 +217,9 @@ public class ItemDropEvents implements Listener {
                 if(si == null)return false;
                 if(si.getTrusteeUUIDs().contains(player.getUniqueId()))return true;
             }
+            return true;
         }
-        return false;
+        return true;
     }
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryOpenEvent(InventoryOpenEvent event){

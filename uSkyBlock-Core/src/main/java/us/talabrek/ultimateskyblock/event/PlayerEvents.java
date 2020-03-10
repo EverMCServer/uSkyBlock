@@ -83,6 +83,9 @@ import com.sk89q.worldedit.regions.Polygonal2DRegion;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockTypes;
 
+import java.util.logging.Level;
+import static us.talabrek.ultimateskyblock.util.LogUtil.log;
+
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 public class PlayerEvents implements Listener {
@@ -146,7 +149,7 @@ public class PlayerEvents implements Listener {
                 && player.getItemInHand().getType() == Material.BUCKET
                 && block != null
                 && block.getType() == Material.OBSIDIAN
-                && !testForObsidian(block)) {
+                ) {
             if (inventory.firstEmpty() != -1) {
                 obsidianClick.put(player.getUniqueId(), now);
                 player.sendMessage(tr("\u00a7eChanging your obsidian back into lava. Be careful!"));
@@ -289,6 +292,7 @@ public class PlayerEvents implements Listener {
         //generate a deagon egg whenever dragon dies
         if (event.getEntityType() == EntityType.ENDER_DRAGON){
             event.getEntity().getLocation().getWorld().getBlockAt(0, 64, 0).setType(Material.DRAGON_EGG);
+            log(Level.INFO, "Dragon egg spawned.");
         }
     }
     private boolean isEndBlock(Material m){

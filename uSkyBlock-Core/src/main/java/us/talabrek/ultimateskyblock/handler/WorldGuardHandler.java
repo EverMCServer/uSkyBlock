@@ -344,7 +344,8 @@ public class WorldGuardHandler {
             if (global == null) {
                 global = new GlobalProtectedRegion("__global__");
             }
-            global.setFlag(Flags.BUILD, StateFlag.State.DENY);
+            if (world.getName().indexOf("_grid") == -1)
+                global.setFlag(Flags.BUILD, StateFlag.State.DENY);
             if (Settings.island_allowPvP) {
                 global.setFlag(Flags.PVP, StateFlag.State.ALLOW);
             } else {
