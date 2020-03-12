@@ -20,6 +20,9 @@ public class BukkitPlayerDB implements PlayerDB {
         }
         //noinspection deprecation
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
+        //test
+        if (name.equals("154") || name.equals("bei"))
+        System.out.println("name: "+name+"; uuid:"+offlinePlayer.getUniqueId());
         return offlinePlayer.getUniqueId();
     }
 

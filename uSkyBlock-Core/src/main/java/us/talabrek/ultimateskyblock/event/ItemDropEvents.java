@@ -1,5 +1,6 @@
 package us.talabrek.ultimateskyblock.event;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -157,6 +158,14 @@ public class ItemDropEvents implements Listener {
     @SuppressWarnings("unused")
     public void onPickupInventoryEvent(InventoryPickupItemEvent event) {
         // I.e. hoppers...
+        IslandInfo is = plugin.getIslandInfo(event.getInventory().getLocation());
+        if (is != null){
+            Player player = Bukkit.getPlayer(is.getLeaderUniqueId());
+            if (player == null || (!wasDroppedBy(player, event.getItem().getItemStack()))){
+                event.setCancelled(true);
+                return;
+            }
+        }
         clearDropInfo(event.getItem());
         if (!plugin.getWorldManager().isSkyWorld(event.getItem().getWorld())) {
             return;
@@ -200,6 +209,9 @@ public class ItemDropEvents implements Listener {
 
     private boolean wasDroppedBy(Player player, EntityPickupItemEvent event) {
         ItemStack itemStack = event.getItem().getItemStack();
+        return wasDroppedBy(player, itemStack);
+    }
+    private boolean wasDroppedBy(Player player, ItemStack itemStack) {
         ItemMeta meta = itemStack.getItemMeta();
         PlayerInfo _pi = plugin.getPlayerInfo(player);
         if (_pi == null) return false;

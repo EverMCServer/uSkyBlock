@@ -74,7 +74,10 @@ public class LimitLogic {
     }
 
     public CreatureType getCreatureType(LivingEntity creature) {
-        if (creature instanceof Monster
+        if (creature instanceof WaterMob
+                || creature instanceof Guardian) {
+            return CreatureType.WATERMOB;
+        } else if (creature instanceof Monster
                 || creature instanceof Slime
                 || creature instanceof Ghast
                 || creature instanceof Shulker) {
@@ -86,8 +89,6 @@ public class LimitLogic {
         } else if (creature instanceof IronGolem
                 || creature instanceof Snowman) {
             return CreatureType.GOLEM;
-        } else if (creature instanceof WaterMob) {
-            return CreatureType.WATERMOB;
         }
         return CreatureType.UNKNOWN;
     }
