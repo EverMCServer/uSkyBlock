@@ -134,6 +134,10 @@
             <id>lang-utils-repo</id>
             <url>https://ci.nyaacat.com/maven/</url>
         </repository>
+        <repository>
+            <id>ess-repo</id>
+            <url>https://ci.ender.zone/plugin/repository/everything/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>

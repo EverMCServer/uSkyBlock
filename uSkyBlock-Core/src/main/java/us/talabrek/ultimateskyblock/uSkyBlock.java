@@ -114,6 +114,7 @@ import static us.talabrek.ultimateskyblock.util.LogUtil.log;
 
 import protocolsupport.api.ProtocolSupportAPI;
 import protocolsupport.api.ProtocolVersion;
+import net.ess3.api.IEssentials;
 
 public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManager.RequirementChecker {
     private static final String CN = uSkyBlock.class.getName();
@@ -168,6 +169,7 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
     private BlockLimitLogic blockLimitLogic;
     private Metrics metrics;
 
+    public IEssentials ess = null;
     public uSkyBlock() {
     }
 
@@ -231,6 +233,13 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
                         ProtocolSupportAPI.disableProtocolVersion(version);
                     }
                 }
+                Plugin pess = uSkyBlock.getInstance().getServer().getPluginManager().getPlugin("Essentials");
+                if (pess instanceof IEssentials){
+                    ess = (IEssentials)pess;
+                    double tps = ess.getTimer().getAverageTPS();
+                    log(Level.INFO, "Hook into EssentialsX, tps="+tps);
+                }
+
                 AsyncWorldEditHandler.onEnable(uSkyBlock.this);
                 WorldGuardHandler.setupGlobal(getWorldManager().getWorld());
                 WorldGuardHandler.setupGlobal(getWorldManager().getGridWorld());

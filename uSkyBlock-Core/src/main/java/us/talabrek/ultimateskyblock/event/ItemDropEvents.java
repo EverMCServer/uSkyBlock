@@ -16,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockDispenseArmorEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -34,6 +35,7 @@ import us.talabrek.ultimateskyblock.player.PlayerInfo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
@@ -55,6 +57,12 @@ public class ItemDropEvents implements Listener {
     public void onDropEvent(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
         if (!plugin.getWorldManager().isSkyAssociatedWorld(player.getWorld())) {
+            return;
+        }
+        if (plugin.getWorldManager().isSkyGrid(player.getWorld())){
+            return;
+        }
+        if (player.isOp()){
             return;
         }
         if (!visitorsCanDrop && !plugin.playerIsOnIsland(player) && !plugin.playerIsInSpawn(player)) {
@@ -160,8 +168,7 @@ public class ItemDropEvents implements Listener {
         // I.e. hoppers...
         IslandInfo is = plugin.getIslandInfo(event.getInventory().getLocation());
         if (is != null){
-            Player player = Bukkit.getPlayer(is.getLeaderUniqueId());
-            if (player == null || (!wasDroppedBy(player, event.getItem().getItemStack()))){
+            if (!wasDroppedBy(is.getLeaderUniqueId(), event.getItem().getItemStack())){
                 event.setCancelled(true);
                 return;
             }
@@ -172,8 +179,14 @@ public class ItemDropEvents implements Listener {
         }
         if (event.getInventory().getHolder() instanceof HopperMinecart){
             Vehicle v = (Vehicle)event.getInventory().getHolder();
-            UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
-            UUID leader = plugin.getIslandInfo(event.getInventory().getLocation()).getLeaderUniqueId();
+            IslandInfo owneris = plugin.getIslandInfo(v.getOrigin());
+            IslandInfo leaderis = plugin.getIslandInfo(event.getInventory().getLocation());
+            if (owneris == null || leaderis == null){
+                event.setCancelled(true);
+                return;
+            }
+            UUID owner = owneris.getLeaderUniqueId();
+            UUID leader = leaderis.getLeaderUniqueId();
             //check if the same island
             if(owner.equals(leader)){
                 return;
@@ -209,9 +222,9 @@ public class ItemDropEvents implements Listener {
 
     private boolean wasDroppedBy(Player player, EntityPickupItemEvent event) {
         ItemStack itemStack = event.getItem().getItemStack();
-        return wasDroppedBy(player, itemStack);
+        return wasDroppedBy(player.getUniqueId(), itemStack);
     }
-    private boolean wasDroppedBy(Player player, ItemStack itemStack) {
+    private boolean wasDroppedBy(UUID player, ItemStack itemStack) {
         ItemMeta meta = itemStack.getItemMeta();
         PlayerInfo _pi = plugin.getPlayerInfo(player);
         if (_pi == null) return false;
@@ -227,7 +240,8 @@ public class ItemDropEvents implements Listener {
                 if(pi == null)return false;
                 IslandInfo si = plugin.getIslandInfo(pi);
                 if(si == null)return false;
-                if(si.getTrusteeUUIDs().contains(player.getUniqueId()))return true;
+                if(si.getTrusteeUUIDs().contains(player))return true;
+                return false;
             }
             return true;
         }
@@ -240,8 +254,14 @@ public class ItemDropEvents implements Listener {
         }
         if (event.getInventory().getHolder() instanceof HopperMinecart || event.getInventory().getHolder() instanceof StorageMinecart){
             Vehicle v = (Vehicle)event.getInventory().getHolder();
-            UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
-            UUID leader = plugin.getIslandInfo(event.getInventory().getLocation()).getLeaderUniqueId();
+            IslandInfo owneris = plugin.getIslandInfo(v.getOrigin());
+            IslandInfo leaderis = plugin.getIslandInfo(event.getInventory().getLocation());
+            if (owneris == null || leaderis == null){
+                event.setCancelled(true);
+                return;
+            }
+            UUID owner = owneris.getLeaderUniqueId();
+            UUID leader = leaderis.getLeaderUniqueId();
             //check if the same island
             if(owner.equals(leader)){
                 return;
@@ -263,9 +283,15 @@ public class ItemDropEvents implements Listener {
             return;
         }
         Vehicle v = (Vehicle)event.getVehicle();
-        UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
-        UUID loc = plugin.getIslandInfo(event.getVehicle().getLocation()).getLeaderUniqueId();
-        if (owner.equals(loc)){
+        IslandInfo owneris = plugin.getIslandInfo(v.getOrigin());
+        IslandInfo leaderis = plugin.getIslandInfo(event.getVehicle().getLocation());
+        if (owneris == null || leaderis == null){
+            event.setCancelled(true);
+            return;
+        }
+        UUID owner = owneris.getLeaderUniqueId();
+        UUID leader = leaderis.getLeaderUniqueId();
+        if (owner.equals(leader)){
             return;
         }else{
             if(event.getAttacker() instanceof Player){
@@ -284,8 +310,14 @@ public class ItemDropEvents implements Listener {
         // first - check HopperMinecart and StorageMinecart
         if (event.getSource().getHolder() instanceof HopperMinecart || event.getSource().getHolder() instanceof StorageMinecart){
             Vehicle v = (Vehicle)event.getSource().getHolder();
-            UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
-            UUID leader = plugin.getIslandInfo(event.getDestination().getLocation()).getLeaderUniqueId();
+            IslandInfo owneris = plugin.getIslandInfo(v.getOrigin());
+            IslandInfo leaderis = plugin.getIslandInfo(event.getDestination().getLocation());
+            if (owneris == null || leaderis == null){
+                event.setCancelled(true);
+                return;
+            }
+            UUID owner = owneris.getLeaderUniqueId();
+            UUID leader = leaderis.getLeaderUniqueId();
             //check if the same island
             if(owner.equals(leader)){
                 return;
@@ -299,8 +331,14 @@ public class ItemDropEvents implements Listener {
         }
         if (event.getDestination().getHolder() instanceof HopperMinecart || event.getDestination().getHolder() instanceof StorageMinecart){
             Vehicle v = (Vehicle)event.getDestination().getHolder();
-            UUID owner = plugin.getIslandInfo(v.getOrigin()).getLeaderUniqueId();
-            UUID leader = plugin.getIslandInfo(event.getDestination().getLocation()).getLeaderUniqueId();
+            IslandInfo owneris = plugin.getIslandInfo(v.getOrigin());
+            IslandInfo leaderis = plugin.getIslandInfo(event.getDestination().getLocation());
+            if (owneris == null || leaderis == null){
+                event.setCancelled(true);
+                return;
+            }
+            UUID owner = owneris.getLeaderUniqueId();
+            UUID leader = leaderis.getLeaderUniqueId();
             //check if the same island
             if(owner.equals(leader)){
                 return;
@@ -315,30 +353,31 @@ public class ItemDropEvents implements Listener {
         // then - check item movement between islands 
         Location from = event.getSource().getLocation();
         Location to = event.getDestination().getLocation();
-        int fromx = from.getBlockX()-64;
-        int tox = to.getBlockX()-64;
-        if (fromx<0&&tox<0){
-            fromx++;
-            tox++;
+        if (from == null || to == null){
+            return;
         }
-        int fromz = from.getBlockZ()-64;
-        int toz = to.getBlockZ()-64;
-        if (fromz<0&&toz<0){
-            fromz++;
-            toz++;
-        }
-        if((fromx>=0&&tox<0) ||
-            (fromx<0&&tox>=0) ||
-            (fromx/128!=tox/128) ||
-            (fromz>=0&&toz<0) ||
-            (fromz<0&&toz>=0) ||
-            (fromz/128!=toz/128)){
-                PlayerInfo isfrom = plugin.getPlayerInfo(plugin.getIslandInfo(from).getLeaderUniqueId());
-                PlayerInfo isto = plugin.getPlayerInfo(plugin.getIslandInfo(to).getLeaderUniqueId());
-                if(isfrom.checkChallenge("builder5")==0 || isto.checkChallenge("builder5") == 0){
-                    event.setCancelled(true);
-                    return;
+        int fromx = from.getBlockX();
+        int tox = to.getBlockX();
+        int fromz = from.getBlockZ();
+        int toz = to.getBlockZ();
+        if (
+            (tox == fromx - 1 && toz == fromz && (fromx % 128 == 64 || fromx % 128 == -64)) ||
+            (tox == fromx + 1 && toz == fromz && (fromx % 128 == 63 || fromx % 128 == -65)) ||
+            (toz == fromz - 1 && tox == fromx && (fromz % 128 == 63 || fromz % 128 == -65)) ||
+            (toz == fromz + 1 && tox == fromx && (fromz % 128 == 63 || fromz % 128 == -65))){
+                IslandInfo fromis = plugin.getIslandInfo(from);
+                IslandInfo tois = plugin.getIslandInfo(to);
+                if (fromis != null && tois != null) {
+                    PlayerInfo frompi = plugin.getPlayerInfo(fromis.getLeaderUniqueId());
+                    PlayerInfo topi = plugin.getPlayerInfo(tois.getLeaderUniqueId());
+                    if (frompi != null && topi != null){
+                        if (frompi.checkChallenge("builder5") != 0 || topi.checkChallenge("builder5") != 0){
+                            return;
+                        }
+                    }
                 }
+                event.setCancelled(true);
+                return;
             }
     }
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -365,5 +404,22 @@ public class ItemDropEvents implements Listener {
                 plugin.notifyPlayer(event.getPlayer(), tr("You cannot place this block here!"));
                 event.setCancelled(true);
             }
+    }
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    private void onSandFall(EntityChangeBlockEvent event){
+        if(event.getEntityType()==EntityType.FALLING_BLOCK && event.getTo()==Material.AIR){
+            if(event.getBlock().getType()==Material.SAND){
+                if (plugin.ess == null) return;
+                Random r = new Random();
+                if (r.nextInt(20) == 0){
+                    double tps = plugin.ess.getTimer().getAverageTPS();
+                    if (tps <= 17.0){
+                        event.setCancelled(true);
+                        //Update the block to fix a visual client bug, but don't apply physics
+                        event.getBlock().getState().update(false, false);
+                    }
+                }
+            }
+        }
     }
 }

@@ -74,8 +74,7 @@ public class LimitLogic {
     }
 
     public CreatureType getCreatureType(LivingEntity creature) {
-        if (creature instanceof WaterMob
-                || creature instanceof Guardian) {
+        if (creature instanceof WaterMob) {
             return CreatureType.WATERMOB;
         } else if (creature instanceof Monster
                 || creature instanceof Slime
@@ -94,7 +93,9 @@ public class LimitLogic {
     }
 
     public CreatureType getCreatureType(EntityType entityType) {
-        if (Monster.class.isAssignableFrom(entityType.getEntityClass())
+        if (WaterMob.class.isAssignableFrom(entityType.getEntityClass())) {
+            return CreatureType.WATERMOB;
+        }else if (Monster.class.isAssignableFrom(entityType.getEntityClass())
                 || Slime.class.isAssignableFrom(entityType.getEntityClass())
                 || Ghast.class.isAssignableFrom(entityType.getEntityClass())
                 || Shulker.class.isAssignableFrom(entityType.getEntityClass())
@@ -106,8 +107,6 @@ public class LimitLogic {
             return CreatureType.VILLAGER;
         } else if (Golem.class.isAssignableFrom(entityType.getEntityClass())) {
             return CreatureType.GOLEM;
-        } else if (WaterMob.class.isAssignableFrom(entityType.getEntityClass())) {
-            return CreatureType.WATERMOB;
         }
         return CreatureType.UNKNOWN;
     }
