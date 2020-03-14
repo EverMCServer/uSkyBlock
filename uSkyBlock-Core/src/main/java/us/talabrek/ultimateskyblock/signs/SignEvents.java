@@ -145,7 +145,22 @@ public class SignEvents implements Listener {
     }
 
     private boolean isSign(Material material) {
-        return Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(material) || material == SkyBlockMenu.SIGN_MATERIAL;
+        Material signs[]={
+        Material.getMaterial("OAK_WALL_SIGN"),
+        Material.getMaterial("SPRUCE_WALL_SIGN"),
+        Material.getMaterial("BIRCH_WALL_SIGN"),
+        Material.getMaterial("JUNGLE_WALL_SIGN"),
+        Material.getMaterial("ACACIA_WALL_SIGN"),
+        Material.getMaterial("DARK_OAK_WALL_SIGN"),
+        Material.getMaterial("OAK_SIGN"),
+        Material.getMaterial("SPRUCE_SIGN"),
+        Material.getMaterial("BIRCH_SIGN"),
+        Material.getMaterial("JUNGLE_SIGN"),
+        Material.getMaterial("ACACIA_SIGN"),
+        Material.getMaterial("DARK_OAK_SIGN")
+        };
+        //return Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(material) || material == SkyBlockMenu.SIGN_MATERIAL;
+        return Arrays.asList(signs).contains(material);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
