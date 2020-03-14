@@ -169,7 +169,6 @@ public class SignEvents implements Listener {
         if (e.getPlayer() == null
                 || e.getClickedBlock() == null
                 || e.getAction() != Action.RIGHT_CLICK_BLOCK
-                || e.getPlayer().getGameMode() != GameMode.SURVIVAL
                 || !isSign(e.getClickedBlock().getType())
                 || !player.hasPermission("usb.island.signs.use")
                 || !plugin.getWorldManager().isSkyAssociatedWorld(player.getWorld())) {
