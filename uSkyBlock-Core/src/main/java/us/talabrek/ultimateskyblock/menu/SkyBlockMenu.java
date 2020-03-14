@@ -46,9 +46,15 @@ public class SkyBlockMenu {
     public static final Material SIGN_MATERIAL = Material.getMaterial("SIGN") == null
             ? Material.getMaterial("OAK_SIGN")
             : Material.getMaterial("SIGN");
-    public static final Material WALL_SIGN_MATERIAL = Material.getMaterial("WALL_SIGN") == null
+    public static final Material WALL_SIGN_MATERIAL[] = {Material.getMaterial("OAK_WALL_SIGN"),
+            Material.getMaterial("SPRUCE_WALL_SIGN"),
+            Material.getMaterial("BIRCH_WALL_SIGN"),
+            Material.getMaterial("JUNGLE_WALL_SIGN"),
+            Material.getMaterial("ACACIA_WALL_SIGN"),
+            Material.getMaterial("DARK_OAK_WALL_SIGN")
+            };/*Material.getMaterial("WALL_SIGN") == null
             ? Material.getMaterial("OAK_WALL_SIGN")
-            : Material.getMaterial("WALL_SIGN");
+            : Material.getMaterial("WALL_SIGN");*/
     private final Pattern PERM_VALUE_PATTERN = Pattern.compile("(\\[(?<perm>(?<not>[!])?[^\\]]+)\\])?(?<value>.*)");
     private final Pattern CHALLENGE_PAGE_HEADER = Pattern.compile(tr("Challenge Menu") + ".*\\((?<p>[0-9]+)/(?<max>[0-9]+)\\)");
     private uSkyBlock plugin;

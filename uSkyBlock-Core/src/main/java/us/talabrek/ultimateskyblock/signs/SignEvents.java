@@ -23,6 +23,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import us.talabrek.ultimateskyblock.menu.SkyBlockMenu;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -44,7 +45,7 @@ public class SignEvents implements Listener {
                 || e.getPlayer() == null
                 || (e.getAction() != Action.RIGHT_CLICK_BLOCK && e.getAction() != Action.LEFT_CLICK_BLOCK)
                 || e.getClickedBlock() == null
-                || e.getClickedBlock().getType() != SkyBlockMenu.WALL_SIGN_MATERIAL
+                || !Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(e.getClickedBlock().getType())
                 || !(e.getClickedBlock().getState() instanceof Sign)
                 || !e.getPlayer().hasPermission("usb.island.signs.use")
                 || !plugin.getWorldManager().isSkyAssociatedWorld(e.getPlayer().getWorld())
@@ -66,9 +67,10 @@ public class SignEvents implements Listener {
                 || !e.getLines()[0].equalsIgnoreCase("[usb]")
                 || e.getLines()[1].trim().isEmpty()
                 || !e.getPlayer().hasPermission("usb.island.signs.place")
-                || !(e.getBlock().getType() == SkyBlockMenu.WALL_SIGN_MATERIAL)
+                || !(Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(e.getBlock().getType()))
                 || !(e.getBlock().getState() instanceof Sign)
                 ) {
+            System.out.println(e.getBlock().getType());
             return;
         }
         Sign sign = (Sign) e.getBlock().getState();
@@ -129,13 +131,13 @@ public class SignEvents implements Listener {
     public void onSignOrChestBreak(BlockBreakEvent e) {
         if (e.isCancelled()
                 || e.getBlock() == null
-                || (e.getBlock().getType() != SkyBlockMenu.WALL_SIGN_MATERIAL && !(e.getBlock().getType() == Material.CHEST || e.getBlock().getType() == Material.TRAPPED_CHEST))
+                || (!Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(e.getBlock().getType()) && !(e.getBlock().getType() == Material.CHEST || e.getBlock().getType() == Material.TRAPPED_CHEST))
                 || e.getBlock().getLocation() == null
                 || !plugin.getWorldManager().isSkyAssociatedWorld(e.getBlock().getLocation().getWorld())
                 ) {
             return;
         }
-        if (e.getBlock().getType() == SkyBlockMenu.WALL_SIGN_MATERIAL) {
+        if (Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(e.getBlock().getType())) {
             logic.removeSign(e.getBlock().getLocation());
         } else {
             logic.removeChest(e.getBlock().getLocation());
@@ -143,7 +145,7 @@ public class SignEvents implements Listener {
     }
 
     private boolean isSign(Material material) {
-        return material == SkyBlockMenu.WALL_SIGN_MATERIAL || material == SkyBlockMenu.SIGN_MATERIAL;
+        return Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(material) || material == SkyBlockMenu.SIGN_MATERIAL;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

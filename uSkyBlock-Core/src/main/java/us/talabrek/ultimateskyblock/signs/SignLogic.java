@@ -25,6 +25,7 @@ import us.talabrek.ultimateskyblock.util.LocationUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
@@ -206,7 +207,7 @@ public class SignLogic {
         Block signBlock = signLoc != null ? signLoc.getBlock() : null;
         if (chestBlock != null && signBlock != null
                 && isChest(chestBlock)
-                && signBlock.getType() == SkyBlockMenu.WALL_SIGN_MATERIAL && signBlock.getState() instanceof Sign
+                && Arrays.asList(SkyBlockMenu.WALL_SIGN_MATERIAL).contains(signBlock.getType()) && signBlock.getState() instanceof Sign
                 ) {
             Sign sign = (Sign) signBlock.getState();
             Chest chest = (Chest) chestBlock.getState();
