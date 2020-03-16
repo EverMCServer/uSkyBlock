@@ -28,7 +28,11 @@ public class LimitLogic {
         marktr("GOLEM");
         marktr("WATERMOB");
     }
-
+    class CreatureCountCache{
+        int ttl;
+        Map <CreatureType, Integer> count ;
+    }
+    private HashMap <String, CreatureCountCache> creatureCountCache = new HashMap<String, CreatureCountCache>();
     private final uSkyBlock plugin;
 
     public LimitLogic(uSkyBlock plugin) {
@@ -112,7 +116,23 @@ public class LimitLogic {
     }
 
     public boolean canSpawn(EntityType entityType, us.talabrek.ultimateskyblock.api.IslandInfo islandInfo) {
-        Map<CreatureType, Integer> creatureCount = getCreatureCount(islandInfo);
+        CreatureCountCache cc;
+        if (creatureCountCache.containsKey(islandInfo.getName())){
+            cc = creatureCountCache.get(islandInfo.getName());
+            if (cc.ttl > 0){
+                CreatureType creatureType = getCreatureType(entityType);
+                cc.count.put(creatureType, cc.count.get(creatureType)+1);
+            } else {
+                cc.ttl = 100;
+                cc.count = getCreatureCount(islandInfo);
+            }
+        } else {
+            cc = new CreatureCountCache();
+            cc.count = getCreatureCount(islandInfo);
+            cc.ttl = 100;
+            creatureCountCache.put(islandInfo.getName(), cc);
+        }
+        Map<CreatureType, Integer> creatureCount = cc.count;
         CreatureType creatureType = getCreatureType(entityType);
         int max = getMax(islandInfo, creatureType);
         if (creatureCount.containsKey(creatureType) && creatureCount.get(creatureType) >= max) {

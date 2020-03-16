@@ -292,32 +292,27 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
 
     @Override
     public int getMaxAnimals() {
-        return getMaxPartyIntValue("maxAnimals",
-                plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getAnimals());
+        return plugin.getConfig().getInt("options.island.spawn-limits.animals");
     }
 
     @Override
     public int getMaxMonsters() {
-        return getMaxPartyIntValue("maxMonsters",
-                plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getMonsters());
+        return plugin.getConfig().getInt("options.island.spawn-limits.monsters");
     }
 
     @Override
     public int getMaxVillagers() {
-        return getMaxPartyIntValue("maxVillagers",
-                plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getVillagers());
+        return plugin.getConfig().getInt("options.island.spawn-limits.villagers");
     }
 
     @Override
     public int getMaxGolems() {
-        return getMaxPartyIntValue("maxGolems",
-                plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getGolems());
+        return plugin.getConfig().getInt("options.island.spawn-limits.golems");
     }
 
     @Override
     public int getMaxWatermobs() {
-        return getMaxPartyIntValue("maxWatermobs",
-                plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getWatermobs());
+        return plugin.getConfig().getInt("options.island.spawn-limits.watermobs");
     }
 
     @Override
