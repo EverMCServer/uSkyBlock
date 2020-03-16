@@ -1,6 +1,5 @@
 package us.talabrek.ultimateskyblock.event;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -405,18 +404,24 @@ public class ItemDropEvents implements Listener {
                 event.setCancelled(true);
             }
     }
+    private boolean stopSandFall = false;
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     private void onSandFall(EntityChangeBlockEvent event){
         if(event.getEntityType()==EntityType.FALLING_BLOCK && event.getTo()==Material.AIR){
             if(event.getBlock().getType()==Material.SAND){
+                if (stopSandFall){
+                    event.setCancelled(true);
+                    //Update the block to fix a visual client bug, but don't apply physics
+                    event.getBlock().getState().update(false, false);
+                }
                 if (plugin.ess == null) return;
                 Random r = new Random();
                 if (r.nextInt(20) == 0){
                     double tps = plugin.ess.getTimer().getAverageTPS();
                     if (tps <= 17.0){
-                        event.setCancelled(true);
-                        //Update the block to fix a visual client bug, but don't apply physics
-                        event.getBlock().getState().update(false, false);
+                        stopSandFall = true;
+                    }else {
+                        stopSandFall = false;
                     }
                 }
             }
