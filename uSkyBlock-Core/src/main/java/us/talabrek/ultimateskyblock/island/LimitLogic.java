@@ -122,6 +122,7 @@ public class LimitLogic {
             if (cc.ttl > 0){
                 CreatureType creatureType = getCreatureType(entityType);
                 cc.count.put(creatureType, cc.count.get(creatureType)+1);
+                cc.ttl --;
             } else {
                 cc.ttl = 100;
                 cc.count = getCreatureCount(islandInfo);
