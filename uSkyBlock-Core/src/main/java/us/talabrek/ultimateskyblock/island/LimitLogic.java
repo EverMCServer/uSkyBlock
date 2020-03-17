@@ -115,13 +115,20 @@ public class LimitLogic {
         return CreatureType.UNKNOWN;
     }
 
+    public void deSpawn(EntityType entityType, us.talabrek.ultimateskyblock.api.IslandInfo islandInfo) {
+        CreatureCountCache cc;
+        if (creatureCountCache.containsKey(islandInfo.getName())){
+            cc = creatureCountCache.get(islandInfo.getName());
+            CreatureType creatureType = getCreatureType(entityType);
+            int v = cc.count.get(creatureType);
+            if (v > 0)cc.count.put(creatureType, v-1);
+        }
+    }
     public boolean canSpawn(EntityType entityType, us.talabrek.ultimateskyblock.api.IslandInfo islandInfo) {
         CreatureCountCache cc;
         if (creatureCountCache.containsKey(islandInfo.getName())){
             cc = creatureCountCache.get(islandInfo.getName());
             if (cc.ttl > 0){
-                CreatureType creatureType = getCreatureType(entityType);
-                cc.count.put(creatureType, cc.count.get(creatureType)+1);
                 cc.ttl --;
             } else {
                 cc.ttl = 100;
@@ -139,6 +146,7 @@ public class LimitLogic {
         if (creatureCount.containsKey(creatureType) && creatureCount.get(creatureType) >= max) {
             return false;
         }
+        cc.count.put(creatureType, cc.count.get(creatureType)+1);
         return true;
     }
 

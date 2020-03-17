@@ -283,6 +283,17 @@ public class PlayerEvents implements Listener {
             log(Level.INFO, "Dragon egg spawned.");
         }
     }
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityDeath(EntityDeathEvent event){
+        if (!plugin.getWorldManager().isSkyWorld(event.getEntity().getWorld())) {
+            return;
+        }
+        Location l = event.getEntity().getLocation();
+        l.setY(150.0);
+        IslandInfo is = plugin.getIslandInfo(l);
+        if (is == null) return;
+        plugin.getLimitLogic().deSpawn(event.getEntityType(), is);
+    }
     private boolean isEndBlock(Material m){
         return (m == Material.END_STONE || m == Material.OBSIDIAN);
     }
