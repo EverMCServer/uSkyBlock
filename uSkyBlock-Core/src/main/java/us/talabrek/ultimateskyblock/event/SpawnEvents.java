@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.WaterMob;
 import org.bukkit.entity.Squid;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Drowned;
 import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Wither;
 import org.bukkit.event.Cancellable;
@@ -196,8 +197,27 @@ public class SpawnEvents implements Listener {
             }else{
                 if(prismarineBlocks.contains(tloc.getBlock().getType())){
                     Random r = new Random();
-                    if (r.nextInt(5) == 0)
-                        loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+                    if (r.nextInt(5) == 0){
+                        if(r.nextInt(1000) == 0){
+                            if(r.nextInt(1000)==0){
+                                Drowned drowned= (Drowned) loc.getWorld().spawnEntity(loc, EntityType.DROWNED);
+                                drowned.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
+                                System.out.println(java.time.Clock.systemUTC().instant()+" "+plugin.getIslandInfo(loc).getLeader()+" RANDOM TRIDENT");
+                            }
+                            else{
+                                Drowned drowned= (Drowned) loc.getWorld().spawnEntity(loc, EntityType.DROWNED);
+                                if(drowned.getEquipment().getItemInMainHand().equals(new ItemStack(Material.TRIDENT))){
+                                    System.out.println(java.time.Clock.systemUTC().instant()+" "+plugin.getIslandInfo(loc).getLeader()+" DROWNED TRIDENT");
+                                }
+                                else{
+                                    System.out.println(java.time.Clock.systemUTC().instant()+" "+plugin.getIslandInfo(loc).getLeader()+" DROWNED NO TRIDENT");
+                                }
+                            }
+                        }
+                        else{
+                            loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+                        }
+                    }
                     return true;
                 }else if(tloc.getBlock().getType() == Material.SEA_LANTERN){
                     Random r = new Random();
