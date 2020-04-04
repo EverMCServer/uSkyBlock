@@ -13,8 +13,15 @@
 
     <properties>
         <github.global.server>github</github.global.server>
-        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>maven-djytw</id>
+            <url>ftps://waws-prod-hk1-025.ftp.azurewebsites.windows.net/site/wwwroot/maven-repository</url>
+        </repository>
+    </distributionManagement>
 
     <build>
         <finalName>uSkyBlock-${project.version}</finalName>
@@ -44,6 +51,12 @@
                 </configuration>
             </plugin>
         </plugins>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+            </extension>
+        </extensions>
     </build>
 
     <dependencies>
