@@ -1,5 +1,6 @@
 package us.talabrek.ultimateskyblock.event;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -25,6 +26,7 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
@@ -151,15 +153,28 @@ public class ItemDropEvents implements Listener {
     private void clearDropInfo(Item item) {
         ItemStack stack = item.getItemStack();
         ItemMeta meta = stack.getItemMeta();
+        String name = "";
         if (meta != null) {
             List<String> lore = meta.getLore();
             if (lore != null && !lore.isEmpty()) {
+                for (String str:lore){
+                    if (str.startsWith("Owner: ")) {
+                        name = str.substring(7);
+                        break;
+                    }
+                }
                 lore.removeIf(line -> line.contains("Owner: "));
                 meta.setLore(lore);
                 stack.setItemMeta(meta);
                 item.setItemStack(stack);
             }
         }
+        final String pname = name;
+        Bukkit.getScheduler().runTaskLater(plugin, ()->{
+            if (item.isValid()) {
+                addDropInfo(pname, item.getItemStack());
+            }
+        }, 1);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -176,10 +191,10 @@ public class ItemDropEvents implements Listener {
                 return;
             }
         }
-        clearDropInfo(event.getItem());
         if (!plugin.getWorldManager().isSkyWorld(event.getItem().getWorld())) {
             return;
         }
+        clearDropInfo(event.getItem());
         if (event.getInventory().getHolder() instanceof HopperMinecart){
             Vehicle v = (Vehicle)event.getInventory().getHolder();
             IslandInfo owneris = plugin.getIslandInfo(v.getOrigin());
