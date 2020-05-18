@@ -3,6 +3,7 @@ package us.talabrek.ultimateskyblock.event;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -252,6 +253,11 @@ public class ItemDropEvents implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryOpenEvent(InventoryOpenEvent event){
         if (event.isCancelled() || !plugin.getWorldManager().isSkyWorld(event.getPlayer().getWorld())) {
+            return;
+        }
+        if (event.getInventory().getHolder() instanceof AbstractHorse && !event.getPlayer().isOp()) {
+            plugin.notifyPlayer(((Player)event.getPlayer()), tr("You cannot open this!"));
+            event.setCancelled(true);
             return;
         }
         if (event.getInventory().getHolder() instanceof HopperMinecart || event.getInventory().getHolder() instanceof StorageMinecart){

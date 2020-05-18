@@ -259,6 +259,10 @@ public class SpawnEvents implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (!islandInfo.hasOnlineMembers()) {
+            event.setCancelled(true);
+            return;
+        }
         if (!plugin.getLimitLogic().canSpawn(entityType, islandInfo)) {
             event.setCancelled(true);
         }
