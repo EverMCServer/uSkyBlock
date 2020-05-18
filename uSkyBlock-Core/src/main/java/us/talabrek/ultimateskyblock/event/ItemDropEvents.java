@@ -165,6 +165,9 @@ public class ItemDropEvents implements Listener {
     @SuppressWarnings("unused")
     public void onPickupInventoryEvent(InventoryPickupItemEvent event) {
         // I.e. hoppers...
+        if (event.isCancelled()) {
+            return;
+        }
         IslandInfo is = plugin.getIslandInfo(event.getInventory().getLocation());
         if (is != null){
             if (!wasDroppedBy(is.getLeaderUniqueId(), event.getItem().getItemStack())){
