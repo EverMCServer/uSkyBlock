@@ -15,7 +15,7 @@ public class EntityCheck extends CompositeCommand {
     private final uSkyBlock plugin;
 
     public EntityCheck(uSkyBlock plugin) {
-        super("entitycheck", "usb.admin.chunk", "entitycheck");
+        super("entitycheck", "usb.admin.entitycheck", "entitycheck");
         this.plugin = plugin;
     }    
     private int fastpos(int pos){
