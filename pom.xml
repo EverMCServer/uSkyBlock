@@ -94,10 +94,6 @@
             <id>papermc</id>
             <url>https://papermc.io/repo/repository/maven-public/</url>
         </repository>
-        <repository> <!-- Vault API -->
-            <id>vault-repo</id>
-            <url>http://nexus.hc.to/content/repositories/pub_releases</url>
-        </repository>
         <repository> <!-- WorldEdit/WorldGuard -->
             <id>sk89q-repo</id>
             <url>http://maven.sk89q.com/repo/</url>
@@ -114,7 +110,7 @@
             <id>mvdw-software</id>
             <url>https://repo.mvdw-software.com/content/groups/public/</url>
         </repository>
-        <repository> <!-- Jitpack for AnvilGUI -->
+        <repository> <!-- Jitpack for AnvilGUI and Vault -->
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
