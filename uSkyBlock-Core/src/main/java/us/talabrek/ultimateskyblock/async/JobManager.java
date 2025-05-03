@@ -53,8 +53,16 @@ public enum JobManager {
         public synchronized void complete(IncrementalRunnable runnable) {
             jobsRunning--;
             ticks += runnable.getTicksConsumed();
-            timeActive = timeActive.plus(runnable.getProcessingTimeUsed());
-            timeElapsed = timeElapsed.plus(runnable.getTimeElapsed());
+            if (timeActive == null) {
+                timeActive = runnable.getProcessingTimeUsed();
+            } else {
+                timeActive = timeActive.plus(runnable.getProcessingTimeUsed());
+            }
+            if (timeElapsed == null) {
+                timeElapsed = runnable.getProcessingTimeUsed();
+            } else {
+                timeElapsed = timeElapsed.plus(runnable.getTimeElapsed());
+            }
         }
 
         public int getJobs() {
