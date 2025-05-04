@@ -22,12 +22,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.api.IslandInfo;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
+import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
 
 import java.util.*;
+import java.util.logging.Level;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static us.talabrek.ultimateskyblock.util.LogUtil.log;
 
 /**
  * Responsible for controlling spawns on uSkyBlock islands.
@@ -36,6 +39,7 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 public class SpawnEvents implements Listener {
     private static final Set<Action> RIGHT_CLICKS = Set.of(Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK);
 
+    private HashMap<String, Boolean> newbieisland = new HashMap<>();
     private final uSkyBlock plugin;
 
     private boolean phantomsInOverworld;
@@ -90,6 +94,12 @@ public class SpawnEvents implements Listener {
         }
     }
 
+    private int fastpos(int pos){
+        pos+=64;
+        return (pos<0)?((pos+1)/128):(pos/128);
+    }
+
+
     @EventHandler(ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         if (event == null || !plugin.getWorldManager().isSkyAssociatedWorld(event.getLocation().getWorld())) {
@@ -97,6 +107,32 @@ public class SpawnEvents implements Listener {
         }
         if (event.getSpawnReason().equals(CreatureSpawnEvent.SpawnReason.SPAWNER_EGG)) {
             return; // Allow it, the above method would have blocked it if it should be blocked.
+        }
+        if (event.getEntity() instanceof Phantom) {
+            String island = fastpos(event.getLocation().getBlockX()) + "," + fastpos(event.getLocation().getBlockZ());
+
+            if(newbieisland.get(island) == null){
+                IslandInfo is = plugin.getIslandInfo(event.getLocation());
+                if(is != null){
+                    PlayerInfo pi = plugin.getPlayerInfo(is.getLeader());
+                    if (pi != null && pi.checkChallenge("page1finished")==0){
+                        // newbie protection
+                        event.setCancelled(true);
+                        pi = null; is = null;
+                        newbieisland.put(island, true);
+                        log(Level.INFO, "Add inf Phantom Protection: "+island+" : protect");
+                        return;
+                    }
+                    pi = null; is = null;
+                    newbieisland.put(island, false);
+                    log(Level.INFO, "Add inf Phantom Protection: "+island+" : Not-protect");
+                }
+            }else{
+                if (newbieisland.get(island) == true){
+                    event.setCancelled(true);
+                    return;
+                }
+            }
         }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (event.getEntity() instanceof WaterMob) {
