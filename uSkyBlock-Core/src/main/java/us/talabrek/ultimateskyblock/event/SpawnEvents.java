@@ -24,7 +24,7 @@ import us.talabrek.ultimateskyblock.api.IslandInfo;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
-import us.talabrek.ultimateskyblock.util.LocationUtil;
+import us.talabrek.ultimateskyblock.util.LogUtil;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -39,7 +39,7 @@ import static us.talabrek.ultimateskyblock.util.LogUtil.log;
 public class SpawnEvents implements Listener {
     private static final Set<Action> RIGHT_CLICKS = Set.of(Action.RIGHT_CLICK_AIR, Action.RIGHT_CLICK_BLOCK);
 
-    private HashMap<String, Boolean> newbieisland = new HashMap<>();
+    private HashMap<String, Boolean> newIsland = new HashMap<>();
     private final uSkyBlock plugin;
 
     private boolean phantomsInOverworld;
@@ -111,7 +111,7 @@ public class SpawnEvents implements Listener {
         if (event.getEntity() instanceof Phantom) {
             String island = fastpos(event.getLocation().getBlockX()) + "," + fastpos(event.getLocation().getBlockZ());
 
-            if(newbieisland.get(island) == null){
+            if(newIsland.get(island) == null){
                 IslandInfo is = plugin.getIslandInfo(event.getLocation());
                 if(is != null){
                     PlayerInfo pi = plugin.getPlayerInfo(is.getLeader());
@@ -119,28 +119,36 @@ public class SpawnEvents implements Listener {
                         // newbie protection
                         event.setCancelled(true);
                         pi = null; is = null;
-                        newbieisland.put(island, true);
+                        newIsland.put(island, true);
                         log(Level.INFO, "Add inf Phantom Protection: "+island+" : protect");
                         return;
                     }
                     pi = null; is = null;
-                    newbieisland.put(island, false);
+                    newIsland.put(island, false);
                     log(Level.INFO, "Add inf Phantom Protection: "+island+" : Not-protect");
                 }
             }else{
-                if (newbieisland.get(island) == true){
+                if (newIsland.get(island) == true){
                     event.setCancelled(true);
                     return;
                 }
             }
         }
+        if (event.getEntity() instanceof WaterMob) {
+            Random r = new Random();
+            if (r.nextInt(20) != 0){
+                event.setCancelled(true);
+                return;
+            }
+        }
+        if (event.getEntity() instanceof ArmorStand){
+            return;
+        }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
         if (event.getEntity() instanceof WaterMob) {
             Location loc = event.getLocation();
-            if (isPrismarineRoof(loc)) {
-                loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+            if(doPrismarineRoof(loc))
                 event.setCancelled(true);
-            }
         }
         if (!event.isCancelled() && event.getEntity() instanceof Enderman) {
             Location loc = event.getLocation();
@@ -168,9 +176,49 @@ public class SpawnEvents implements Listener {
         return ret;
     }
 
-    private boolean isPrismarineRoof(Location loc) {
-        Collection<Material> prismarineBlocks = Set.of(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
-        return prismarineBlocks.contains(LocationUtil.findRoofBlock(loc).getType());
+    private boolean doPrismarineRoof(Location loc) {
+        List<Material> prismarineBlocks = Arrays.asList(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
+        Location tloc = loc.clone();
+        if(tloc.getBlockY()<47 || tloc.getBlockY()>64)
+            return false;
+        while(tloc.getBlockY()<=70){
+            if (tloc.getBlock().getType() == Material.WATER){
+                tloc.add(0,1,0);
+            }else{
+                if(prismarineBlocks.contains(tloc.getBlock().getType())){
+                    Random r = new Random();
+                    if (r.nextInt(5) == 0){
+                        if(r.nextInt(1000) == 0){
+                            if(r.nextInt(1000)==0){
+                                Drowned drowned= (Drowned) loc.getWorld().spawnEntity(loc, EntityType.DROWNED);
+                                drowned.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
+                                LogUtil.log(Level.INFO, java.time.Clock.systemUTC().instant()+" "+plugin.getIslandInfo(loc).getLeader()+" RANDOM TRIDENT");
+                            }
+                            else{
+                                Drowned drowned= (Drowned) loc.getWorld().spawnEntity(loc, EntityType.DROWNED);
+                                if(drowned.getEquipment().getItemInMainHand().equals(new ItemStack(Material.TRIDENT))){
+                                    LogUtil.log(Level.INFO,java.time.Clock.systemUTC().instant()+" "+plugin.getIslandInfo(loc).getLeader()+" DROWNED TRIDENT");
+                                }
+                                else{
+                                    LogUtil.log(Level.INFO,java.time.Clock.systemUTC().instant()+" "+plugin.getIslandInfo(loc).getLeader()+" DROWNED NO TRIDENT");
+                                }
+                            }
+                        }
+                        else{
+                            loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+                        }
+                    }
+                    return true;
+                }else if(tloc.getBlock().getType() == Material.SEA_LANTERN){
+                    Random r = new Random();
+                    if (r.nextInt(50) == 0)
+                        loc.getWorld().spawnEntity(loc, EntityType.ELDER_GUARDIAN);
+                    return true;
+                }
+                return false;
+            }
+        }
+        return false;
     }
 
     private boolean isEndBiome(Location loc) {
