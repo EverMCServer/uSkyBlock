@@ -65,11 +65,6 @@ public class GriefEvents implements Listener {
             && !isValidTarget(((Creeper)event.getEntity()).getTarget()))
         {
             event.setCancelled(true);
-        } else if (event.getEntity() instanceof TNTPrimed) {
-            TNTPrimed tntPrimed = (TNTPrimed) event.getEntity();
-            if (tntPrimed.getSource() instanceof Player && !isValidTarget(tntPrimed.getSource())) {
-                event.setCancelled(true);
-            }
         }
     }
 

@@ -47,6 +47,11 @@ public class ItemDropEvents implements Listener {
             plugin.notifyPlayer(player, tr("\u00a7eVisitors can't drop items!"));
             return;
         }
+        if (plugin.playerIsInSpawn(player)) {
+            event.setCancelled(true);
+            plugin.notifyPlayer(player, tr("\u00a7eSpawn point can't drop items!"));
+            return;
+        }
         addDropInfo(player, event.getItemDrop().getItemStack());
     }
 
