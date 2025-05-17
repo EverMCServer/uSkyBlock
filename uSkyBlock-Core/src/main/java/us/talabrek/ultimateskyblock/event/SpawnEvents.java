@@ -234,11 +234,6 @@ public class SpawnEvents implements Listener {
             event.setCancelled(true); // Only allow spawning on active islands...
             return;
         }
-        if (entityType.equals(EntityType.GHAST) && location.getWorld().getEnvironment() != World.Environment.NETHER) {
-            // Disallow ghasts for now...
-            event.setCancelled(true);
-            return;
-        }
         IslandInfo islandInfo = plugin.getIslandInfo(islandName);
         if (islandInfo == null) {
             // Disallow spawns on inactive islands

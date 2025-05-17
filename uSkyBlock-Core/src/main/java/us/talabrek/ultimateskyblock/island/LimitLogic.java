@@ -115,10 +115,7 @@ public class LimitLogic {
         Map<CreatureType, Integer> creatureCount = getCreatureCount(islandInfo);
         CreatureType creatureType = getCreatureType(entityType);
         int max = getMax(islandInfo, creatureType);
-        if (creatureCount.containsKey(creatureType) && creatureCount.get(creatureType) >= max) {
-            return false;
-        }
-        return true;
+        return !creatureCount.containsKey(creatureType) || creatureCount.get(creatureType) < max;
     }
 
     private int getMax(us.talabrek.ultimateskyblock.api.IslandInfo islandInfo, CreatureType creatureType) {

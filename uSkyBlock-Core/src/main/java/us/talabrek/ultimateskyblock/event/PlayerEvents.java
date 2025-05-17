@@ -1,8 +1,10 @@
 package us.talabrek.ultimateskyblock.event;
 
+import com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import dk.lockfuglsang.minecraft.util.ItemStackUtil;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -11,6 +13,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -20,15 +23,9 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.entity.*;
+import org.bukkit.event.player.*;
+import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.projectiles.ProjectileSource;
@@ -43,6 +40,7 @@ import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
+import us.talabrek.ultimateskyblock.util.LogUtil;
 import us.talabrek.ultimateskyblock.world.WorldManager;
 
 import java.time.Duration;
@@ -54,6 +52,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -319,6 +318,29 @@ public class PlayerEvents implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerPortal(EntityPortalEnterEvent event) {
+        if (event.getEntityType() == EntityType.PLAYER) {
+            Player player = (Player) event.getEntity();
+            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+            boolean isFirstCompletion = playerInfo.checkChallenge("page1finished") == 0;
+            if (isFirstCompletion || player.isOp()){
+                event.setCancelled(true);
+                player.sendMessage("地狱门已被禁用");
+            }
+        }
+        else {
+            IslandInfo islandInfo = plugin.getIslandInfo(event.getLocation());
+            if (islandInfo != null) {
+                PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeader());
+                boolean isFirstCompletion = playerInfo.checkChallenge("page1finished") == 0;
+                if (isFirstCompletion){
+                    event.setCancelled(true);
+                }
+            }
+        }
+    }
+
     /**
      * This EventHandler handles {@link BlockBreakEvent} to detect if a player broke leaves in the skyworld,
      * and will drop a sapling if so. This will prevent cases where the default generated tree on a new
@@ -349,14 +371,6 @@ public class PlayerEvents implements Listener {
             return;
         }
         Material type = event.getBlock().getType();
-        if(type == Material.OBSIDIAN){
-            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
-            boolean isFirstCompletion = playerInfo.checkChallenge("page1finished") == 0;
-            if(isFirstCompletion){
-                event.setCancelled(true);
-                player.sendMessage(tr("完成第一页任务前你没有权限在这里放置 {0}",tr("Obsidian")));
-            }
-        }
         BlockLimitLogic.CanPlace canPlace = plugin.getBlockLimitLogic().canPlace(type, islandInfo);
         if (canPlace == BlockLimitLogic.CanPlace.UNCERTAIN) {
             event.setCancelled(true);
