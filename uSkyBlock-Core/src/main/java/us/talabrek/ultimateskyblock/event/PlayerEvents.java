@@ -1,6 +1,7 @@
 package us.talabrek.ultimateskyblock.event;
 
 import com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import dk.lockfuglsang.minecraft.util.ItemStackUtil;
@@ -318,15 +319,20 @@ public class PlayerEvents implements Listener {
         }
     }
 
+    private RateLimiter rateLimiter = RateLimiter.create(1);
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(EntityPortalEnterEvent event) {
         if (event.getEntityType() == EntityType.PLAYER) {
             Player player = (Player) event.getEntity();
             PlayerInfo playerInfo = plugin.getPlayerInfo(player);
             boolean isFirstCompletion = playerInfo.checkChallenge("page1finished") == 0;
-            if (isFirstCompletion || player.isOp()){
+            if (player.isOp()) return;
+            if (isFirstCompletion){
                 event.setCancelled(true);
-                player.sendMessage("地狱门已被禁用");
+                if (rateLimiter.tryAcquire()) {
+                    player.sendMessage("\u00a7c地狱门已被禁用");
+                }
             }
         }
         else {

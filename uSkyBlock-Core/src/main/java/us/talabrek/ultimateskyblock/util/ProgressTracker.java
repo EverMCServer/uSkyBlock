@@ -29,6 +29,7 @@ public class ProgressTracker {
     public void progressUpdate(long progress, long total, Object... args) {
         Instant now = Instant.now();
         float pct = 100f * progress / (total > 0 ? total : 1f);
+        if (lastProgressTime == null) { lastProgressTime = now; }
         if (now.isAfter(lastProgressTime.plus(progressEvery)) || pct > (lastProgressPct + progressEveryPct)) {
             lastProgressPct = pct;
             lastProgressTime = now;
