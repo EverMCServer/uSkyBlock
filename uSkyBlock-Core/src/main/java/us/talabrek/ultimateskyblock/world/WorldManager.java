@@ -161,7 +161,7 @@ public class WorldManager {
     private ChunkGenerator getOverworldGenerator() {
         try {
             String clazz = config.getYamlConfig().getString("options.advanced.chunk-generator",
-                "us.talabrek.ultimateskyblock.world.SkyBlockChunkGenerator");
+                "us.talabrek.ultimateskyblock.world.AcidIslandChunkGenerator");
             Object generator = Class.forName(clazz).getDeclaredConstructor().newInstance();
             if (generator instanceof ChunkGenerator) {
                 return (ChunkGenerator) generator;
@@ -172,7 +172,7 @@ public class WorldManager {
                  NoSuchMethodException ex) {
             logger.log(Level.WARNING, "Unable to instantiate overworld chunk-generator: " + ex);
         }
-        return new SkyBlockChunkGenerator();
+        return new AcidIslandChunkGenerator();
     }
 
     /**
@@ -184,7 +184,7 @@ public class WorldManager {
     private ChunkGenerator getNetherGenerator() {
         try {
             String clazz = config.getYamlConfig().getString("nether.chunk-generator",
-                "us.talabrek.ultimateskyblock.world.SkyBlockNetherChunkGenerator");
+                "us.talabrek.ultimateskyblock.world.AcidNetherChunkGenerator");
             Object generator = Class.forName(clazz).getDeclaredConstructor().newInstance();
             if (generator instanceof ChunkGenerator) {
                 return (ChunkGenerator) generator;
@@ -195,7 +195,7 @@ public class WorldManager {
                  NoSuchMethodException ex) {
             logger.log(Level.WARNING, "Unable to instantiate nether chunk-generator: " + ex);
         }
-        return new SkyBlockNetherChunkGenerator();
+        return new AcidNetherChunkGenerator();
     }
 
     /**

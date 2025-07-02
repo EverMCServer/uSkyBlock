@@ -61,7 +61,7 @@ public class IslandGenerator {
             directorySchematics.mkdir();
         }
         copySchematicsFromJar();
-        netherSchematic = getSchematicFile(config.getYamlConfig().getString("nether.schematicName", "uSkyBlockNether"));
+        netherSchematic = getSchematicFile(config.getYamlConfig().getString("nether.schematicName", "acidIslandNether"));
 
         schemFiles = loadSchematics(config);
         if (schemFiles == null) {
@@ -98,8 +98,8 @@ public class IslandGenerator {
         next.setYaw(0);
         next.setPitch(0);
         next.setY((double) Settings.island_height);
-        File schemFile = getSchematicFile(cSchem != null ? cSchem : "default");
-        File netherFile = getSchematicFile(cSchem != null ? cSchem + "Nether" : "uSkyBlockNether");
+        File schemFile = getSchematicFile(cSchem != null ? cSchem : "acidIsland");
+        File netherFile = getSchematicFile(cSchem != null ? cSchem + "Nether" : "acidIslandNether");
         if (netherFile == null) {
             netherFile = netherSchematic;
         }

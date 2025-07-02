@@ -33,7 +33,7 @@ options:
   island:
 
     # [integer] The y-coordinate (height) where islands are spawned.
-    height: 150
+    height: 63
 
     # [integer] The number of blocks between islands.
     distance: 128
@@ -44,7 +44,7 @@ options:
 
     # [filename] The schematic to use for island generation.
     # Put your schematic in the 'uSkyBlock/schematics' folder, you don't need to add the '.schematic' part below.
-    schematicName: default
+    schematicName: acidIsland
 
     # [true/false] If true, remove all hostile mobs when a player teleports back to their island.
     removeCreaturesByTeleport: false
@@ -377,11 +377,11 @@ worldguard:
   exit-message: true
 nether:
   enabled: true
-  height: 75
+  height: 35
   lava_level: 7
   activate-at:
     level: 100
-  schematicName: uSkyBlockNether
+  schematicName: acidIslandNether
   terraform-enabled: true
 
   # The distance to search for valid terra-form location.

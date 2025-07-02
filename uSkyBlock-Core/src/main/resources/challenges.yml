@@ -1,209 +1,169 @@
 # ======================================================================================================================
 #
-# Here follows the format and explanation for the challenge group and challenges setup. The single commented (#) are the
-# most used settings while the double commented (##) are optional if you like to use those settings.
+# 以下是挑战组和挑战设置的格式说明。单行注释(#)表示最常用的设置，双行注释(##)表示可选设置。
 #
-# Item type format
-# Item types are defined as in the minecraft /give command, i.e. with their minecraft key and possible components in
-# square brackets. For example, 'minecraft:diamond_sword[damage=42]'. Refer to the Minecraft wiki for more information:
-# https://minecraft.wiki/w/Data_component_format. You can also use the command '/usb iteminfo' to get the information.
+# 物品类型格式:
+# 物品类型按照Minecraft的/give命令格式定义，即使用Minecraft键名和方括号内的可选组件。
+# 例如: 'minecraft:diamond_sword[damage=42]'。参考Minecraft维基获取更多信息:
+# https://minecraft.wiki/w/Data_component_format。也可以使用命令'/usb iteminfo'获取物品信息。
 #
-# This item type is supplemented with additional information depending on where it is used:
+# 根据使用场景不同，物品类型会补充额外信息:
 #
-# display-item: <type>
-# An item to be displayed in a GUI. It only defines the item type as above, without any additional information.
-# For example: 'cobblestone', 'minecraft:stone', 'diamond_sword[damage=42]'.
+# 展示物品(display-item): <类型>
+# 用于在GUI中显示的物品。仅定义物品类型，不包含额外信息。
+# 例如: 'cobblestone', 'minecraft:stone', 'diamond_sword[damage=42]'。
 #
-# item-requirement: <type>:<amount>[;+<increment>]
-# An item requirement for a challenge. The amount is the number of items required. The optional +<amount> is the number
-# of items to add to the required amount for each repeat of the challenge. For example, 'cobblestone:64;+16' would
-# require 64 cobblestone for the first completion and 80 cobblestone for the second completion. Other options are
-# -, *, and / for subtraction, multiplication, and division, respectively. For example, 'cobblestone:64;*2' would
-# require 64 cobblestone for the first completion, 128 cobblestone for the second completion, and 256 cobblestone for
-# the third completion.
+# 物品需求(item-requirement): <类型>:<数量>[;+<增量>]
+# 挑战所需的物品。数量是需要的物品数。可选的+<数量>表示每次重复挑战时需要增加的物品数。
+# 例如: 'cobblestone:64;+16'表示第一次完成需要64圆石，第二次需要80圆石。
+# 其他操作符包括-、*、/，分别表示减法、乘法和除法。
+# 例如: 'cobblestone:64;*2'表示第一次64，第二次128，第三次256。
 #
-# item-reward: [{p=<probability>}]<type>:<amount>
-# An item reward for a challenge. The amount is the number of items to give. The optional {p=<probability>} is the
-# probability of the item being given. For example, 'cobblestone:64' would give 64 cobblestone every time the challenge
-# is completed, while '{p=0.1}cobblestone:64' would give 64 cobblestone 10% of the time.
+# 物品奖励(item-reward): [{p=<概率>}]<类型>:<数量>
+# 挑战完成的物品奖励。数量是给予的物品数。可选的{p=<概率>}表示给予该物品的概率。
+# 例如: 'cobblestone:64'每次完成都会给予64圆石，而'{p=0.1}cobblestone:64'只有10%概率给予。
 #
 # ======================================================================================================================
-# All challenges are defined in the ranks section. Each rank is a tier of challenges that players can complete.
+# 所有挑战都在ranks部分定义。每个rank代表玩家可以完成的一个挑战层级。
 #
 # ranks:
-#  # [text] name of the challenge Rank.
-#  TierX:
-#    # [text] The name of the challenge rank that shows when you do /challenges (supports capitals and color codes).
-#    name: '&aCustom Challenges rank name'
-#    # [display-item] The item to be displayed in the challenge menu for completed challenges.
-#    displayItem: 'cyan_terracotta'
-#    # [integer] The time in hours before required items reset to default (this overwrites the main reset time)
-#    resetInHours: 20
-#    # These requirements controls when a challenge group will be available to a player.
-#    requires:
-#      # [integer] The number of tasks per rank that can be left uncompleted to advance to the next rank. For example,
-#                  if you have 4 challenges with a rankLeeway of 1, a player would only need to complete 3 to advance to
-#                  the next rank. A rankLeeway of 0 would require them all.
-#      rankLeeway: 8
-#      # [List[text]] Challenges that have to be completed before this group will available to a player.
-#      challenges:
-#      - a challenge name
+#   # [文本] 挑战等级的名称
+#   TierX:
+#     # [文本] 执行/challenges时显示的挑战等级名称(支持大写和颜色代码)
+#     name: '&a自定义挑战等级名称'
+#     # [展示物品] 在挑战菜单中用于表示已完成挑战的物品
+#     displayItem: '青色陶瓦'
+#     # [整数] 物品需求重置为默认值的小时数(覆盖主重置时间)
+#     resetInHours: 20
+#     # 这些要求控制挑战组何时对玩家可用
+#     requires:
+#       # [整数] 允许未完成任务数的容差值。例如如果有4个挑战且rankLeeway为1，
+#       #        玩家只需完成3个即可进入下一等级。设为0则需要全部完成。
+#       rankLeeway: 8
+#       # [文本列表] 必须先完成这些挑战才能解锁本组挑战
+#       challenges:
+#       - 挑战名称
 # ======================================================================================================================
 #    challenges:
-#      # [text] The name of the challenge. All challenge names should be lower-case.
+#      # [文本] 挑战名称。所有挑战名称应为小写
 #      defaultchallenge:
-#      # [text] The name of the challenge that shows in /challenges (this supports capitals and color codes).
-#        name: '&a Default Challenge'
-#        # [text] The descriptions players see when they do /challenges <challengename>
+#      # [文本] 在/challenges中显示的挑战名称(支持大写和颜色代码)
+#        name: '&a默认挑战'
+#        # [文本] 玩家执行/challenges <挑战名称>时看到的描述
 #        description:
-#        # [onIsland/onPlayer/islandLevel] This defines whether the required blocks/items should be in the player's
-#        # inventory or on their island. When using onIsland, the player must within 10 blocks from the required blocks
-#        # on his island. When using islandLevel, the 'requiredItems' field should be the island level required. The
-#        # player must use /island level first to update their level.
+#        # [onIsland/onPlayer/islandLevel] 定义所需方块/物品应在玩家物品栏中还是岛上。
+#        # 使用onIsland时，玩家必须距离岛上所需方块10格范围内。
+#        # 使用islandLevel时，'requiredItems'字段应为所需的岛屿等级。
+#        # 玩家必须先使用/island level更新等级。
 #        type: onPlayer
 #        ## type: islandLevel
 #        ## type: onIsland
-#        # [integer] Overrides the default radius of 10 blocks when using onIsland.
+#        # [整数] 使用onIsland时覆盖默认的10格半径
 #        ## radius: 20
-#        # List[item-requirement] The items required to complete the challenge.
+#        # [物品需求列表] 完成挑战所需的物品
 #        requiredItems:
 #        - stone:64;+16
 #        - cobblestone:64;+16
-#        # List[block-requirement] The blocks required to complete the challenge.
+#        # [方块需求列表] 完成挑战所需的方块
 #        requiredBlocks:
 #        - stone:64
 #        - cobblestone:64
-#        # [true/false] If the challenge can be repeated or not.
+#        # [true/false] 挑战是否可重复完成
 #        ## repeatable: true
-#        # [integer] The maximum number of times the challenge can be completed. Overrides the default repeatLimit.
-#        #           A value of 0 means unlimited repeats.
+#        # [整数] 挑战可完成的最大次数(覆盖默认repeatLimit)。0表示无限次。
 #        ## repeatLimit: 5
-#        # [display-item] The item to be displayed in the challenge menu for completed challenges.
+#        # [展示物品] 在挑战菜单中用于表示已完成挑战的物品
 #        displayItem: cobblestone
-#        # [integer] The time in hours before required items reset to default (overwrites the main and rank defaults).
+#        # [整数] 物品需求重置为默认值的小时数(覆盖主设置和等级默认值)
 #        ## resetInHours: 4
-#        # [true/false] Take required items on completing a challenge.
+#        # [true/false] 完成挑战时是否收取所需物品
 #        ## takeItems: true
-#        # The rewards players get for completing the challenge
+#        # 玩家完成挑战获得的奖励
 #        reward:
-#          # [text] Description of the reward.
-#          text: 'Mossy cobblestone and an iron pickaxe with unbreaking 1'
-#          # [List[item-requirement]] A list of items given to the player for completing the challenge.
+#          # [文本] 奖励描述
+#          text: '苔石和带有耐久1的铁镐'
+#          # [物品需求列表] 完成挑战给予玩家的物品
 #          items:
 #          - mossy_cobblestone:16
 #          - iron_pickaxe[enchantments={levels:{unbreaking:1}}]:1
-#          # [permission node] A permission granted for completion. Multiple permissions are space-separated.
+#          # [权限节点] 完成时授予的权限(多个权限用空格分隔)
 #          ## permission: 'test.permission'
-#          # [integer] How much currency to give for completion. (requires an economy plugin)
+#          # [整数] 给予的货币数量(需要经济插件)
 #          ## currency: 0
-#          # [integer] How much xp to give to the player for completion.
+#          # [整数] 给予玩家的经验值
 #          ## xp: 0
-#          # [List[Text]] Executes the given command upon completion. Prepend with "op" or "console" to run the commands
-#                         as OP or from the Console. Examples:
-#          # Possible command arguments are:
-#          # {player}     - The name of the player
-#          # {playerName} - The display name of the player
-#          # {challenge}  - The name of the challenge
-#          # {position}   - The position of the player
-#          # {party}      - Execute the command once for each member of the party (substituting the name)
+#          # [文本列表] 完成时执行的命令。添加"op"或"console"前缀表示以OP或控制台身份执行。
+#          # 可用参数:
+#          # {player}     - 玩家名称
+#          # {playerName} - 玩家显示名称
+#          # {challenge}  - 挑战名称
+#          # {position}   - 玩家位置
+#          # {party}      - 为队伍每个成员执行一次命令(替换名称)
 #          ## commands:
-#          ## - 'op: me are the GOD of things'
-#          ## - 'console: give {party} aweseomestuff 32'
-#        # reward section to reward the player for completing a repeated challenge (any time after the first). The
-#        # structure is identical to the 'reward' section.
+#          ## - 'op: 我是万物的主宰'
+#          ## - 'console: give {party} 超棒物品 32'
+#        # 重复完成挑战时的奖励部分(第一次之后的任何完成)。结构与'reward'相同。
 #        repeatReward:
-#          text: 'Mossy cobblestone'
+#          text: '苔石'
 #          items:
 #          - mossy_cobblestone:16
 #
 # ======================================================================================================================
-
-# [true/false] Enable the use of the challenges command.
 allowChallenges: true
-
-# [island/player] Whether challenges are tracked per player, or per island
 challengeSharing: island
-
-# [true/false] If true, first time challenge completions are broadcast to the whole server.
 broadcastCompletion: true
-
-# [text] The color/formatting of the broadcast text when showing first time completions.
 broadcastText: '&6'
-
-# [true/false] If true, challenges in higher level ranks require challenges in lower level ranks to be completed.
 requirePreviousRank: true
-
-# [integer] The number of tasks per rank that can be left uncompleted to advance to the next rank. For example, if you have 4 easy challenges
-# with a rankLeeway of 1, a player would only need to complete 3 to advance to the next rank.
-# A rankLeeway of 0 would require them all.
 rankLeeway: 12
-
-# [integer] The time in hours before required items reset to default. (only if not specified in the challenges below)
 defaultResetInHours: 20
-
-# [integer] The default radius in blocks when using onIsland. Can be overridden in the challenges below.
 radius: 10
-
-# [integer] The maximum number of times a challenge can be completed by default. 0 means unlimited. Can be overridden in the challenge definition below.
 repeatLimit: 0
-
-# [color code] The color to use for uncompleted challenges in the list.
 challengeColor: '&e'
-
-# [color code] The color to use for completed challenges in the list. (non-repeatable)
 finishedColor: '&2'
-
-# [color code] The color to use for completed challenges in the list. (repeatable)
 repeatableColor: '&a'
-
-# [true/false] If true, enables vault to handle currency rewards.
 enableEconomyPlugin: true
-
-# [true/false] If false, challenges are not reset on island creation (or restart)
 resetChallengesOnCreate: true
-
-# Material to show for locked challenges (i.e. STAINED_GLASS_PANE:14 for a red glass-pane, or 160:14)
-lockedDisplayItem: red_stained_glass_pane
-
-# Material to show for onIsland challenges when locked
+lockedDisplayItem: gray_stained_glass_pane
 ISLAND:
   lockedDisplayItem: blue_stained_glass_pane
-
-# Material to show for islandLevel challenges when locked
 ISLAND_LEVEL:
   lockedDisplayItem: black_stained_glass_pane
-
-# Whether to show the name of locked challenges
 showLockedChallengeName: true
-
-# When creating your own challenges you will have
-# to uncomment the section below or the default challenges
-# will be re-added on every server restart. When altering
-# the default challenges this should be fine to leave.
-# merge-ignore:
-#  - 'ranks'
-#
-# ===============================================
-# An explanation to setup your own challenges
-# can be found at the bottom of this file.
-# ===============================================
 ranks:
   Tier1:
-    name: '&7Novice'
-    displayItem: cyan_terracotta
+    name: '&7新手民工'
+    displayItem: iron_axe
     resetInHours: 20
     challenges:
-      cobblestonegenerator:
-        name: '&7Cobble Stone Generator'
-        description: Mine from a cobblestone generator.
+      start:
+        name: '&6开始咯'
+        description: 蒲公英x2。
         type: onPlayer
         requiredItems:
-          - cobblestone:64;+2
+          - 'dandelion:2'
+        displayItem: dandelion
+        resetInHours: 6
+        reward:
+          text: 水和岩浆
+          items:
+            - ice:2
+            - lava_bucket:1
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: ''
+      cobblestonegenerator:
+        name: '&7石头！'
+        description: 造个刷石机 这还要我教吗
+        requiredChallenges:
+          - start
+        type: onPlayer
+        requiredItems:
+          - cobblestone:64
         displayItem: cobblestone
-        lockedDisplayItem: gray_stained_glass_pane
         resetInHours: 12
         reward:
-          text: 3 leather, 20% chance to get a book
+          text: 皮革x3
           items:
             - leather:3
             - '{p=0.2}book:1'
@@ -212,541 +172,66 @@ ranks:
           commands:
             - op:effect give {player} regeneration
         repeatReward:
-          text: 1 leather, 10% chance to get a book
+          text: 皮革x1
           items:
             - leather:1
             - '{p=0.1}book:1'
           currency: 5
           xp: 5
-      applecollector:
-        name: '&6Apple Collector'
-        description: Collect apples from trees.
-        type: onPlayer
-        requiredItems:
-          - apple:2;+1
-        displayItem: apple
-        lockedDisplayItem: brown_stained_glass_pane
-        resetInHours: 6
-        reward:
-          text: 1 of each sapling, (4 dark oak)
-          items:
-            - oak_sapling:1
-            - spruce_sapling:1
-            - birch_sapling:1
-            - jungle_sapling:1
-            - acacia_sapling:1
-            - dark_oak_sapling:4
-            - '{p=0.2}jungle_sapling:3'
-          currency: 20
-          xp: 20
-        repeatReward:
-          text: 1 of each sapling (4 dark oak)
-          items:
-            - oak_sapling:1
-            - spruce_sapling:1
-            - birch_sapling:1
-            - jungle_sapling:1
-            - acacia_sapling:1
-            - dark_oak_sapling:4
-            - '{p=0.1}jungle_sapling:3'
-          currency: 10
-          xp: 10
-      sugarplanter:
-        name: '&9Sugar Planter'
-        type: onIsland
-        displayItem: sugar_cane
-        lockedDisplayItem: brown_stained_glass_pane
-        requiredBlocks:
-          - sugar_cane:4
-        reward:
-          text: 4 dirt
-          items:
-            - dirt:4
-          currency: 20
-          xp: 20
-      sugarfarmer:
-        name: '&6Sugar Farmer'
-        description: Harvest sugarcane from a farm.
-        type: onPlayer
-        requiredItems:
-          - sugar_cane:64;+16
-        offset: -1
-        displayItem: sugar_cane
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 8 dirt
-          items:
-            - dirt:8
-            - '{p=0.1}bone:1'
-          currency: 20
-          xp: 20
-        repeatReward:
-          text: 4 dirt
-          items:
-            - dirt:4
-            - '{p=0.05}dirt:4'
-          currency: 10
-          xp: 10
-      melonfarmer:
-        name: '&6Melon Farmer'
-        description: Harvest slices of melon from a farm.
-        type: onPlayer
-        requiredItems:
-          - melon_slice:128;+8
-        displayItem: melon
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 8 dirt
-          items:
-            - dirt:8
-          currency: 20
-          xp: 20
-        repeatReward:
-          text: 4 dirt
-          items:
-            - dirt:4
-          currency: 10
-          xp: 10
-      cactusfarmer:
-        name: '&6Cactus Farmer'
-        description: Harvest cacti from a farm.
-        type: onPlayer
-        requiredItems:
-          - cactus:64;+16
-        displayItem: cactus
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 8 sand, 20% chance to get a bone
-          items:
-            - sand:8
-            - '{p=0.2}bone:1'
-            - '{p=0.1}wooden_hoe:1'
-          currency: 20
-          xp: 20
-        repeatReward:
-          text: 4 sand
-          items:
-            - sand:4
-            - '{p=0.1}bone:1'
-          currency: 10
-          xp: 10
-      pumpkinfarmer:
-        name: '&6Pumpkin Farmer'
-        description: Harvest pumpkins from a farm.
-        type: onPlayer
-        requiredItems:
-          - pumpkin:64;+4
-        displayItem: pumpkin
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 8 dirt
-          items:
-            - dirt:8
-            - '{p=0.3}jack_o_lantern:1'
-          currency: 20
-          xp: 20
-        repeatReward:
-          text: 4 dirt
-          items:
-            - dirt:4
-            - '{p=0.05}jack_o_lantern:1'
-          currency: 10
-          xp: 10
-      stonebrickmaker:
-        name: '&aStone Brick Maker'
-        description: Make 64 Stone Bricks.
-        type: onPlayer
-        requiredItems:
-          - stone_bricks:64;+8
-          - stone_brick_slab:30;+6
-          - chiseled_stone_bricks:30;+6
-          - stone_brick_stairs:16;+4
-        displayItem: stone_bricks
-        lockedDisplayItem: gray_stained_glass_pane
-        reward:
-          text: 4 redstone ore, 4 iron ore, 1 chicken
-          items:
-            - redstone_ore:4
-            - iron_ore:4
-            - chicken_spawn_egg:1
-          currency: 30
-          xp: 30
-        repeatReward:
-          text: 1 redstone ore, 1 iron ore
-          items:
-            - redstone_ore:1
-            - iron_ore:1
-          currency: 15
-          xp: 15
-      novicebuilder:
-        name: '&7Novice Builder'
-        description: Reach island level 20.
-        type: islandLevel
-        requiredLevel: 20
-        displayItem: coal_ore
-        reward:
-          text: 8 dirt, 8 sand, 5 emeralds
-          items:
-            - dirt:8
-            - sand:8
-            - emerald:5
-            - diamond:1
-          currency: 20
-          xp: 20
-          commands:
-            - op:effect give {party} regeneration
-      adeptbuilder:
-        name: '&aAdept Builder'
-        description: Reach island level 50.
-        type: islandLevel
-        requiredLevel: 50
-        displayItem: iron_ore
-        offset: -1
-        reward:
-          text: 10 obsidian, 2 diamonds, 5 emeralds
-          items:
-            - obsidian:10
-            - emerald:5
-            - diamond:2
-          currency: 100
-          xp: 100
-      expertbuilder:
-        name: '&eExpert Builder'
-        description: Reach island level 100.
-        type: islandLevel
-        requiredLevel: 100
-        displayItem: gold_ore
-        offset: -1
-        reward:
-          text: 16 dirt, 16 sand, 3 diamonds, 5 emeralds
-          items:
-            - dirt:16
-            - sand:16
-            - emerald:5
-            - diamond:3
-          currency: 250
-          xp: 250
-      masterbuilder:
-        name: '&cMaster Builder'
-        description: Reach island level 250.
-        type: islandLevel
-        requiredLevel: 250
-        displayItem: diamond_ore
-        offset: -1
-        reward:
-          text: 32 dirt, 32 sand, 4 diamonds, 5 emeralds
-          items:
-            - dirt:32
-            - sand:32
-            - emerald:5
-            - diamond:4
-          currency: 500
-          xp: 500
-      skylord:
-        name: '&4Sky Lord'
-        description: Reach island level 500.
-        type: islandLevel
-        requiredLevel: 500
-        displayItem: emerald_ore
-        offset: -1
-        reward:
-          text: 64 dirt, 64 sand, 5 diamond, 5 emeralds
-          items:
-            - dirt:64
-            - sand:64
-            - diamond:5
-            - emerald:5
-          currency: 1000
-          xp: 1000
-  Tier2:
-    name: '&aAdept'
-    displayItem: lime_terracotta
-    resetInHours: 20
-    requires:
-
-      # means disabled in effect
-      rankLeeway: 99
-      challenges:
-        - cobblestonegenerator
-        - novicebuilder
-    challenges:
-      lumberjack:
-        name: '&3Lumberjack'
-        description: Collect all types of wood logs.
-        type: onPlayer
-        requiredItems:
-          - oak_log:16;+2
-          - spruce_log:16;+2
-          - birch_log:16;+2
-          - jungle_log:16;+2
-          - acacia_log:16;+2
-          - dark_oak_log:16;+2
-        displayItem: oak_log
-        lockedDisplayItem: cyan_stained_glass_pane
-        reward:
-          text: 4 redstone ore, 4 iron ore, 1 wolf
-          items:
-            - redstone_ore:4
-            - iron_ore:4
-            - wolf_spawn_egg:1
-          currency: 30
-          xp: 30
-        repeatReward:
-          text: 1 redstone ore, 1 iron ore
-          items:
-            - redstone_ore:1
-            - iron_ore:1
-          currency: 15
-          xp: 15
-      shroompicker:
-        name: '&6Shroom Picker'
-        description: Collect red and brown mushrooms.
-        type: onPlayer
-        requiredItems:
-          - brown_mushroom:64;+4
-          - red_mushroom:64;+4
-        displayItem: red_mushroom
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 8 mycelium, 4 podzol
-          items:
-            - mycelium:8
-            - podzol:4
-          currency: 30
-          xp: 30
-        repeatReward:
-          text: 4 mycelium
-          items:
-            - mycelium:4
-            - '{p=0.02}mycelium:4'
-            - '{p=0.02}podzol:2'
-          currency: 15
-          xp: 15
-      potatofarmer:
-        name: '&6Potato Farmer'
-        description: Harvest potato's from a farm.
-        type: onPlayer
-        requiredItems:
-          - potato:64;+16
-        displayItem: potato
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 1 carrot, 4 dirt
-          items:
-            - carrot:1
-            - dirt:4
-            - '{p=0.10}beetroot_seeds:1'
-            - '{p=0.05}red_sand:1'
-            - '{p=0.01}diamond:1'
-          currency: 50
-          xp: 50
-        repeatReward:
-          text: 4 dirt and a baked potato
-          items:
-            - dirt:4
-            - baked_potato:1
-            - '{p=0.10}beetroot_seeds:1'
-            - '{p=0.05}red_sand:1'
-            - '{p=0.01}diamond:1'
-          currency: 25
-          xp: 25
-      carrotfarmer:
-        name: '&6Carrot Farmer'
-        description: Harvest carrot's from a farm.
-        type: onPlayer
-        requiredItems:
-          - carrot:64;+16
-        displayItem: carrot
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: a pig with saddle and a potato
-          items:
-            - saddle:1
-            - potato:1
-            - pig_spawn_egg:1
-            - '{p=0.05}red_sand:1'
-            - '{p=0.01}diamond:1'
-          currency: 50
-          xp: 50
-        repeatReward:
-          text: 1 golden carrot
-          items:
-            - golden_carrot:1
-            - '{p=0.05}sand:1'
-            - '{p=0.01}diamond:1'
-          currency: 25
-          xp: 25
-      wheatfarmer:
-        name: '&6Wheat Farmer'
-        description: Harvest wheat from a farm.
-        type: onPlayer
-        requiredItems:
-          - wheat:64;+16
-        displayItem: wheat
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 8 dirt
-          items:
-            - dirt:8
-          currency: 20
-          xp: 20
-        repeatReward:
-          text: 4 dirt
-          items:
-            - dirt:4
-            - '{p=0.2}bone:1'
-          currency: 10
-          xp: 10
-      monsterfarm:
-        name: '&5Monster Farm'
-        description: Build a mob farm and collect mob loot.
-        type: onPlayer
-        requiredItems:
-          - rotten_flesh:64;+4
-          - string:32;+2
-          - arrow:32;+2
-          - bone:32;+2
-          - gunpowder:16;+1
-          - spider_eye:5
-        displayItem: rotten_flesh
-        lockedDisplayItem: purple_stained_glass_pane
-        reward:
-          text: 4 redstone ore, 4 iron ore and 1 flint
-          items:
-            - redstone_ore:4
-            - iron_ore:4
-            - flint:1
-            - '{p=0.10}potato:1'
-            - '{p=0.10}carrot:1'
-          currency: 30
-          xp: 30
-        repeatReward:
-          text: 1 redstone ore, 1 iron ore, 1 flint
-          items:
-            - redstone_ore:1
-            - iron_ore:4
-            - flint:1
-            - '{p=0.05}potato:1'
-            - '{p=0.05}carrot:1'
-          currency: 15
-          xp: 15
-      homeowner:
-        name: '&9Home Owner'
-        description: Build a house with furnishings.
-        type: onIsland
-        requiredChallenges:
-          - stonebrickmaker
-        requiredBlocks:
-          - red_bed:1
-          - crafting_table:1
-          - glass:1
-          - oak_door:1
-          - furnace:1
-          - bookshelf:1
-          - torch:1
-        lockedDisplayItem: blue_stained_glass_pane
-        displayItem: oak_door
-        reward:
-          text: 4 redstone ore, 5 inksac, 4 iron ore and some seeds
-          items:
-            - redstone_ore:4
-            - iron_ore:4
-            - ink_sac:5
-            - beetroot_seeds:1
-          currency: 40
-          xp: 40
-      netherportal:
-        name: '&9Nether Portal'
-        description: Build a nether portal on your island.
-        type: onIsland
-        requiredChallenges:
-          - adeptbuilder
-          - homeowner
-        requiredBlocks:
-          - obsidian:10
-          - nether_portal:1
-        displayItem: obsidian
-        lockedDisplayItem: blue_stained_glass_pane
-        reward:
-          text: 1 iron pickaxe, 1 iron shovel
-          items:
-            - iron_shovel:1
-            - iron_pickaxe:1
-          currency: 40
-          xp: 40
-      nethermining:
-        name: '&7Nether Mining'
-        description: Mine from your Nether island.
-        type: onPlayer
-        displayItem: netherrack
-        lockedDisplayItem: gray_stained_glass_pane
-        offset: -1
-        requiredItems:
-          - netherrack:64;+2
-          - soul_sand:16;+2
-          - gravel:16;+2
-          - quartz:32;+2
-          - glowstone:16;+2
-          - coarse_dirt:4;+2
-        reward:
-          text: 1 ghast tear, 1 magic bow
-          items:
-            - ghast_tear:1
-            - 'bow[enchantments={levels:{infinity:1,unbreaking:3}}]:1'
-          currency: 40
-          xp: 40
-        repeatReward:
-          text: a blaze-rod and a chance of ghast tear
-          items:
-            - blaze_rod:1
-            - '{p=0.10}ghast_tear:1'
-          currency: 20
-          xp: 20
-  Tier3:
-    name: '&eExpert'
-    displayItem: yellow_terracotta
-    resetInHours: 20
-    requires:
-      challenges:
-        - adeptbuilder
-    challenges:
       toolmaker:
-        name: '&3Tool Maker'
-        description: Make all stone tools
-        type: onPlayer
+        name: '&3工欲善其事...'
+        description: 准备全套石头工具
         requiredChallenges:
-          - lumberjack
+          - start
+        type: onPlayer
         requiredItems:
-          - stone_shovel:1
-          - stone_pickaxe:1
-          - stone_axe:1
-          - stone_hoe:1
+          - stone_shovel:1;+0
+          - stone_pickaxe:1;+0
+          - stone_axe:1;+0
+          - stone_hoe:1;+0
         displayItem: stone_axe
-        lockedDisplayItem: cyan_stained_glass_pane
+        resetInHours: 12
         reward:
-          text: 4 redstone ore, 4 iron, 1 pig
+          text: 红石矿x4,铁矿x4,猪x1,各种树苗x1
           items:
             - redstone_ore:4
             - iron_ore:4
             - pig_spawn_egg:1
+            - oak_sapling:1
+            - spruce_sapling:1
+            - birch_sapling:1
+            - jungle_sapling:4
+            - acacia_sapling:1
+            - dark_oak_sapling:4
           currency: 30
           xp: 30
-      sawmill:
-        name: '&3Saw Mill'
-        description: Deliver a collection of processed wood
+        repeatReward:
+          text: 红石矿x4
+          items:
+            - redstone_ore:4
+            - '{p=0.1}iron_ore:1'
+          currency: 5
+          xp: 5
+      woodpractice:
+        name: '&3木工实习'
+        description: 收集所有类型的原木。
         type: onPlayer
-        offset: -1
         requiredChallenges:
-          - toolmaker
+          - start
         requiredItems:
-          - stripped_oak_log:8;+2
-          - stripped_spruce_log:8;+2
-          - stripped_birch_log:8;+2
-          - stripped_jungle_log:8;+2
-          - stripped_acacia_log:8;+2
-          - stripped_dark_oak_log:8;+2
-        displayItem: iron_axe
-        lockedDisplayItem: cyan_stained_glass_pane
+          - oak_log:2;+2
+          - spruce_log:2;+2
+          - birch_log:2;+2
+          - jungle_log:2;+2
+          - acacia_log:2;+2
+          - dark_oak_log:2;+2
+          - stripped_oak_log:2;+2
+          - stripped_spruce_log:2;+2
+          - stripped_birch_log:2;+2
+          - stripped_jungle_log:2;+2
+          - stripped_acacia_log:2;+2
+          - stripped_dark_oak_log:2;+2
+        displayItem: oak_log
         reward:
           text: 4 redstone ore, 4 iron, cocoa and a mule
           items:
@@ -764,72 +249,507 @@ ranks:
             - '{p=0.05}gold_ore:1'
           currency: 15
           xp: 15
-      torchmaker:
-        name: '&3Torch Maker'
-        description: Make 128 torches.
+      stonepractice:
+        name: '&3碳酸钙 吗'
+        description: 烧制石头。
         type: onPlayer
         requiredChallenges:
-          - lumberjack
+          - start
         requiredItems:
-          - torch:128;+32
-        displayItem: torch
-        lockedDisplayItem: cyan_stained_glass_pane
+          - stone:64
+        displayItem: stone
         reward:
-          text: 4 redstone ore, 4 iron ore
+          text: 平滑石头x64
+          items:
+            - smooth_stone:64
+            - '{p=0.2}redstone:4'
+          currency: 10
+          xp: 10
+          commands:
+            - op:effect give {player} regeneration
+        repeatReward:
+          text: 平滑石头x64
+          items:
+            - smooth_stone:64
+            - '{p=0.2}redstone:1'
+          currency: 5
+          xp: 5
+      stonebrickmaker:
+        name: '&a工业进阶'
+        description: 制作64个石砖。
+        type: onPlayer
+        requiredChallenges:
+          - start
+        requiredItems:
+          - stone_bricks:64;+8
+          - stone_brick_slab:30;+6
+          - chiseled_stone_bricks:30;+6
+          - stone_brick_stairs:16;+4
+        displayItem: stone_bricks
+        reward:
+          text: 4个红石矿石，4个铁矿石，1只鸡
           items:
             - redstone_ore:4
             - iron_ore:4
+            - chicken_spawn_egg:1
           currency: 30
           xp: 30
         repeatReward:
-          text: 1 redstone ore, 1 iron ore
+          text: 1个红石矿石，1个铁矿石
           items:
             - redstone_ore:1
             - iron_ore:1
           currency: 15
           xp: 15
-      expertfarmer:
-        name: '&6Expert Farmer'
-        description: Harvest many different farming resources.
-        type: onPlayer
-        displayItem: iron_hoe
-        lockedDisplayItem: brown_stained_glass_pane
+      coalboss:
+        name: '&7煤老板上班'
+        description: 木炭x64。
+        displayItem: coal_ore
         requiredChallenges:
-          - applecollector
-          - melonfarmer
-          - pumpkinfarmer
-          - wheatfarmer
-          - carrotfarmer
-          - potatofarmer
-          - cactusfarmer
-          - sugarfarmer
-          - shroompicker
+          - start
         requiredItems:
-          - melon_slice:256;+2
-          - sugar_cane:128;+2
-          - wheat:128;+2
-          - potato:128;+2
-          - carrot:128;+2
-          - pumpkin:128;+2
-          - cactus:128;+2
-          - beetroot:128;+2
+          - charcoal:64;+0
         reward:
-          text: a bucket, cocoa and a cow
+          text: 煤炭x64
           items:
-            - bucket:1
-            - cocoa_beans:1
-            - cow_spawn_egg:1
+            - coal:64
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+        repeatReward:
+          text: 煤炭x64
+          items:
+            - coal:64
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+      workerfinished:
+        name: '&a完成新手民工任务'
+        description: 完成新手民工任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - toolmaker
+          - woodpractice
+          - stonepractice
+          - stonebrickmaker
+          - coalboss
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier2:
+    name: '&a新手农民'
+    displayItem: wheat
+    resetInHours: 20
+    requires:
+      challenges:
+        - cobblestonegenerator
+    challenges:
+      farmerpack:
+        name: '&e农场主礼包'
+        description: 开始你的农场主生涯吧。
+        type: onPlayer
+        displayItem: wheat
+        reward:
+          text: 农场主礼包x1
+          items:
+            - cactus:1
+            - pumpkin:1
+            - sugar_cane:1
+            - melon_seeds:1
+            - beetroot_seeds:1
+            - brown_mushroom:1
+            - red_mushroom:1
+            - carrot:1
+            - potato:1
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: ''
+          items:
+          currency: 0
+          xp: 0
+      cactusfarmer:
+        name: '&6仙人掌君'
+        description: 开始生产仙人掌
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - cactus:64;+16
+        displayItem: cactus
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个沙子, 20%几率获得骨头
+          items:
+            - sand:8
+            - '{p=0.2}bone:1'
+            - '{p=0.1}wooden_hoe:1'
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个沙子
+          items:
+            - sand:4
+            - '{p=0.1}bone:1'
+          currency: 10
+          xp: 10
+      pumpkinfarmer:
+        name: '&6吓人的南瓜'
+        description: 种植南瓜
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - pumpkin:64;+4
+        displayItem: pumpkin
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+            - '{p=0.3}jack_o_lantern:1'
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.05}jack_o_lantern:1'
+          currency: 10
+          xp: 10
+      sugarfarmer:
+        name: '&6来点甘蔗'
+        description: 从农场收获甘蔗并做成糖和纸。
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - paper:32;+4
+          - sugar:32;+4
+        displayItem: carrot
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 1只猪
+          items:
+            - pig_spawn_egg:1
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
           currency: 50
           xp: 50
         repeatReward:
-          text: a cow
+          text: 1个金胡萝卜
           items:
-            - cow_spawn_egg:1
+            - golden_carrot:1
+            - '{p=0.05}sand:1'
+            - '{p=0.01}diamond:1'
           currency: 25
           xp: 25
+      shroompicker:
+        name: '&6发配云南'
+        description: 收集64个红蘑菇和棕蘑菇.
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - brown_mushroom:64;+4
+          - red_mushroom:64;+4
+        displayItem: red_mushroom
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8 菌丝, 4 灰化土
+          items:
+            - mycelium:8
+            - podzol:4
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 4 菌丝
+          items:
+            - mycelium:4
+            - '{p=0.02}mycelium:4'
+            - '{p=0.02}podzol:2'
+          currency: 15
+          xp: 15
+      melonfarmer:
+        name: '&6夏天来块西瓜吧'
+        description: 种植西瓜
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - melon_slice:128;+8
+        displayItem: melon
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+          currency: 10
+          xp: 10
+      beetrootfarmer:
+        name: '&6甜菜根'
+        description: 种植甜菜根
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - beetroot:64;+16
+        displayItem: beetroot
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.2}bone:1'
+          currency: 10
+          xp: 10
+      farmerfinished:
+        name: '&a完成新手农场主任务'
+        description: 完成新手农场主任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - farmerpack
+          - cactusfarmer
+          - pumpkinfarmer
+          - sugarfarmer
+          - shroompicker
+          - melonfarmer
+          - beetrootfarmer
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier3:
+    name: '&e新手怪物猎人'
+    displayItem: iron_sword
+    resetInHours: 20
+    requires:
+      challenges:
+        - start
+        - cobblestonegenerator
+    challenges:
+      monsterfarm:
+        name: '&5怪物猎人'
+        description: 开始猎杀怪物
+        type: onPlayer
+        requiredItems:
+          - rotten_flesh:32;+4
+          - bone:32;+2
+          - gunpowder:32;+1
+        displayItem: rotten_flesh
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石矿, 4个铁矿, 1个燧石
+          items:
+            - redstone_ore:4
+            - iron_ore:4
+            - flint:1
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石矿, 1个铁矿, 1个燧石
+          items:
+            - redstone_ore:1
+            - iron_ore:1
+            - flint:1
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      witchfarm:
+        name: '&5女巫猎人'
+        description: 猎杀女巫
+        type: onPlayer
+        requiredItems:
+          - glass_bottle:5;+5
+          - glowstone_dust:5;+5
+          - redstone:5;+5
+        displayItem: glowstone_dust
+        reward:
+          text: 4个沙子, 4个铁矿
+          items:
+            - sand:4
+            - iron_ore:4
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 2个沙子, 2个铁矿
+          items:
+            - sand:4
+            - iron_ore:2
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      slimefarm:
+        name: '&5史莱姆农场'
+        description: 收集史莱姆球
+        type: onPlayer
+        requiredItems:
+          - slime_ball:64;+4
+        displayItem: slime_ball
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石矿，1个绿宝石
+          items:
+            - redstone_ore:4
+            - emerald:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 8个红石
+          items:
+            - redstone:8
+          currency: 35
+          xp: 35
+      woolwhere:
+        name: '&5无中生有'
+        description: 收集羊毛
+        type: onPlayer
+        displayItem: white_wool
+        lockedDisplayItem: purple_stained_glass_pane
+        requiredItems:
+          - white_wool:5;+5
+        reward:
+          text: 2个钻石，2只羊
+          items:
+            - diamond:2
+            - sheep_spawn_egg:2
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 一个绿宝石
+          items:
+            - emerald:1
+          currency: 10
+          xp: 10
+      goldwhere:
+        name: '&5土法炼金'
+        description: 想办法制作3个金锭
+        type: onPlayer
+        displayItem: gold_ingot
+        lockedDisplayItem: purple_stained_glass_pane
+        requiredItems:
+          - gold_ingot:3
+        reward:
+          text: 4个钻石
+          items:
+            - diamond:4
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 10 coin
+          currency: 10
+          xp: 10
+      itemfarm:
+        name: '&5神射手'
+        description: 获得一些箭
+        type: onPlayer
+        requiredItems:
+          - arrow:128;+32
+        displayItem: arrow
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石矿, 4个铁矿, 1个燧石
+          items:
+            - redstone_ore:4
+            - iron_ore:4
+            - flint:1
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 2个沙子
+          items:
+            - sand:2
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      killenderman1:
+        name: '&5杀点小黑 之一'
+        description: 收集末影珍珠.
+        type: onPlayer
+        requiredItems:
+          - ender_pearl:10;+4
+        displayItem: ender_pearl
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 5个金矿 1个绿宝石
+          items:
+            - gold_ore:5
+            - emerald:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 1个金矿
+          items:
+            - gold_ore:1
+          currency: 35
+          xp: 35
+      mhfinished:
+        name: '&a完成新手怪物猎人任务'
+        description: 完成新手怪物猎人任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - monsterfarm
+          - witchfarm
+          - slimefarm
+          - woolwhere
+          - goldwhere
+          - killenderman1
+          - itemfarm
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier4:
+    name: '&e新手牧场主'
+    displayItem: lead
+    resetInHours: 20
+    requires:
+      challenges:
+        - start
+        - cobblestonegenerator
+    challenges:
       fisherman:
-        name: '&5Fisherman'
-        description: Catch different types of fish.
+        name: '&1小鱼干'
+        description: 钓鱼走起.
         type: onPlayer
         requiredItems:
           - cod:5;+1
@@ -837,20 +757,20 @@ ranks:
           - pufferfish:3;+1
           - tropical_fish:1;+0
           - ink_sac:5;+2
+        repeatable: true
         displayItem: cod
-        lockedDisplayItem: purple_stained_glass_pane
+        takeItems: true
         reward:
-          text: 10 lapis blocks, 20 prismarine, kelp, deep-ocean
+          text: 一些海产 好好利用哦
           items:
             - lapis_block:10
             - prismarine:20
             - kelp:1
             - '{p=0.20}prismarine_crystals:5'
-          permission: usb.biome.deep_ocean
           currency: 50
           xp: 50
         repeatReward:
-          text: 2 lapis, 5 prismarine, kelp and a chance at prismarine crystals
+          text: 一些海产 好好利用哦
           items:
             - lapis_lazuli:2
             - prismarine:5
@@ -858,148 +778,414 @@ ranks:
             - '{p=0.20}prismarine_crystals:5'
           currency: 25
           xp: 25
-      woolcollector:
-        name: '&5Wool Collector'
-        description: Collect every color of wool.
-        type: onPlayer
-        displayItem: white_wool
-        lockedDisplayItem: purple_stained_glass_pane
-        requiredChallenges:
-          - monsterfarmer
-        requiredItems:
-          - white_wool:2;+4
-          - orange_wool:2;+4
-          - magenta_wool:2;+4
-          - light_blue_wool:2;+4
-          - yellow_wool:2;+4
-          - lime_wool:2;+4
-          - pink_wool:2;+4
-          - gray_wool:2;+4
-          - light_gray_wool:2;+4
-          - cyan_wool:2;+4
-          - purple_wool:2;+4
-          - blue_wool:2;+4
-          - brown_wool:2;+4
-          - green_wool:2;+4
-          - red_wool:2;+4
-          - black_wool:2;+4
-        reward:
-          text: 2 diamonds, sheep, emerald, flowers
-          items:
-            - diamond:2
-            - emerald:1
-            - sheep_spawn_egg:1
-            - rose_bush:1
-            - peony:1
-          permission: usb.biome.flower_forest
-          currency: 70
-          xp: 70
-        repeatReward:
-          text: emerald, sheep, flowers
-          items:
-            - emerald:1
-            - sheep_spawn_egg:1
-            - rose_bush:1
-            - peony:1
-          currency: 35
-          xp: 35
-      maestro:
-        name: '&5Maestro'
-        description: Make a jukebox and collect all music discs.
+      grasslover:
+        name: '&e穷到吃草'
+        description: 爱吃
         type: onPlayer
         requiredItems:
-          - music_disc_13:1
-          - music_disc_cat:1
-          - music_disc_blocks:1
-          - music_disc_chirp:1
-          - music_disc_far:1
-          - music_disc_mall:1
-          - music_disc_mellohi:1
-          - music_disc_stal:1
-          - music_disc_strad:1
-          - music_disc_ward:1
-          - music_disc_11:1
-          - music_disc_wait:1
-          - jukebox:1
-        displayItem: jukebox
-        lockedDisplayItem: purple_stained_glass_pane
+          - short_grass:32;+16
+          - grass_block:4;+1
+          - seagrass:32;+16
+        displayItem: grass_block
+        lockedDisplayItem: yellow_stained_glass_pane
         reward:
-          text: 3 diamonds, 1 gold block, 10 emeralds
+          text: 4红石矿，5粘土，2牛
           items:
-            - diamond:3
-            - emerald:10
-            - gold_block:1
-          currency: 70
-          xp: 70
+            - redstone_ore:4
+            - clay:5
+            - cow_spawn_egg:2
+          currency: 80
+          xp: 80
         repeatReward:
-          text: 2 gold ore, 1 diamond
+          text: 铁矿，黏土
           items:
-            - gold_ore:2
-            - diamond:1
-            - '{p=0.2}diamond:1'
-          currency: 35
-          xp: 35
-      ironfarm:
-        name: '&9Iron Farm'
-        description: Build an iron-farm.
-        type: onIsland
-        displayItem: iron_block
-        lockedDisplayItem: blue_stained_glass_pane
-        radius: 50
-        requiredChallenges:
-          - monsterfarm
-          - applecollector
-        requiredBlocks:
-          - oak_door:30
-        requiredEntities:
-          - Villager:10
-          - IRON_GOLEM:1
-        reward:
-          text: 2 gold blocks, 1 diamond block
-          items:
-            - gold_block:2
-            - diamond_block:1
-          currency: 500
-          xp: 400
-      netherfortress:
-        name: '&9Nether Fortress'
-        description: Build a netherfortress.
-        type: onIsland
-        radius: 50
-        requiredBlocks:
-          - nether_bricks:512
-          - nether_brick_slab:64
-          - nether_brick_fence:64
-          - nether_brick_stairs:64
-          - soul_sand:32
-        displayItem: nether_brick_fence
-        lockedDisplayItem: blue_stained_glass_pane
-        reward:
-          text: a wither-skull and a blaze rod and a chance of diamonds
-          items:
-            - wither_skeleton_skull:1
-            - blaze_rod:1
-            - '{p=0.05}diamond:3'
-            - '{p=0.10}diamond:2'
-            - '{p=0.15}diamond:1'
+            - iron_ore:1
+            - clay:5
+            - bucket:1
+            - '{p=0.4}clay:3'
+            - '{p=0.3}iron_ore:2'
           currency: 40
           xp: 40
-  # ===============================================
-  Tier4:
-    name: '&cMaster'
-    displayItem: orange_terracotta
+      killcow:
+        name: '&e大屠杀时刻'
+        description: 通过牧场养殖 获得一定量的皮革.
+        type: onPlayer
+        requiredItems:
+          - leather:96;+32
+        displayItem: leather
+        lockedDisplayItem: yellow_stained_glass_pane
+        reward:
+          text: 2只猪 1个鞍
+          items:
+            - saddle:1
+            - pig_spawn_egg:2
+          currency: 80
+          xp: 80
+        repeatReward:
+          text: 1个鞍
+          items:
+            - saddle:1
+            - '{p=0.3}iron_ore:2'
+          currency: 40
+          xp: 40
+      horsingaround:
+        name: '&1准备养马'
+        description: 给马准备点干草，栓绳，胡萝卜钓竿，剪刀.
+        type: onPlayer
+        requiredItems:
+          - wheat:32;+4
+          - lead:8;+2
+          - carrot_on_a_stick:1
+          - shears:1
+        repeatable: true
+        displayItem: wheat
+        takeItems: true
+        reward:
+          text: 1 匹小马驹, 1 个铁马铠, 5% 的机会获得一个钻石马铠
+          items:
+            - horse_spawn_egg:1
+            - iron_horse_armor:1
+            - '{p=0.05}diamond_horse_armor:1'
+          currency: 50
+          xp: 50
+        repeatReward:
+          text: 1 个红石矿, 1 绿宝石
+          items:
+            - redstone_ore:1
+            - emerald:1
+          currency: 25
+          xp: 25
+      fisherydevelopment:
+        name: '&1发展渔业'
+        description: 小池塘 大世界.
+        type: onPlayer
+        requiredItems:
+          - lily_pad:16;+8
+          - fishing_rod:1
+          - kelp:64;+16
+        repeatable: true
+        displayItem: fishing_rod
+        takeItems: true
+        reward:
+          text: 1 个青金石矿, 1 个萤石
+          items:
+            - lapis_ore:1
+            - glowstone:1
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 1 个青金石矿, 2 个萤石粉
+          items:
+            - lapis_ore:1
+            - glowstone_dust:2
+          currency: 20
+          xp: 20
+      tacticalfishing:
+        name: '&1战术性钓鱼'
+        description: 我该干什么.
+        type: onPlayer
+        requiredItems:
+          - cod_bucket:1
+          - salmon_bucket:1
+          - tropical_fish_bucket:1
+          - pufferfish_bucket:1
+        repeatable: true
+        displayItem: cod_bucket
+        takeItems: true
+        reward:
+          text: 1 个钻石矿, 1 个萤石
+          items:
+            - diamond_ore:1
+            - glowstone:1
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 1 个青金石块, 2 个萤石粉
+          items:
+            - lapis_block:1
+            - glowstone_dust:2
+          currency: 20
+          xp: 20
+      beautifulegg:
+        name: '&1鸡你太美'
+        description: 鸡蛋
+        type: onPlayer
+        requiredItems:
+          - egg:64;+32
+        repeatable: true
+        displayItem: egg
+        takeItems: true
+        reward:
+          text: 1 个金胡萝卜, 1 个CD, 4 个绿宝石
+          items:
+            - golden_carrot:1
+            - music_disc_cat:1
+            - emerald:4
+          currency: 60
+          xp: 60
+        repeatReward:
+          text: 20% 的机会获得一个CD, 1 个绿宝石
+          items:
+            - emerald:1
+            - '{p=0.2}music_disc_wait:1'
+          currency: 30
+          xp: 30
+      rancherfinished:
+        name: '&a完成新手牧场主任务'
+        description: 完成新手牧场主任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - fisherman
+          - grasslover
+          - killcow
+          - horsingaround
+          - fisherydevelopment
+          - tacticalfishing
+          - beautifulegg
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier5:
+    name: '&e新手建筑师'
+    displayItem: smooth_stone
     resetInHours: 20
     requires:
-
-      # disabled
-      rankLeeway: 99
       challenges:
-        - expertbuilder
+        - start
+        - cobblestonegenerator
     challenges:
-      glassmaker:
-        name: '&3Glassmaker'
-        description: Collect every color of stained glass.
+      builderstart:
+        name: '&7开始铺地'
+        description: 达到10级.
+        type: islandLevel
+        requiredLevel: 20
+        displayItem: coal_ore
+        reward:
+          text: 8个泥土 8个沙子 5个绿宝石 1个钻石
+          items:
+            - dirt:8
+            - sand:8
+            - emerald:5
+            - diamond:1
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+      builder1:
+        name: '&7铺地新手'
+        description: 达到20级.
+        type: islandLevel
+        requiredLevel: 20
+        displayItem: coal_ore
+        reward:
+          text: 8个泥土 8个沙子 5个绿宝石 1个钻石
+          items:
+            - dirt:8
+            - sand:8
+            - emerald:5
+            - diamond:1
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+      builder2:
+        name: '&a铺地菜鸡'
+        description: 达到50级.
+        type: islandLevel
+        requiredLevel: 50
+        displayItem: iron_ore
+        reward:
+          text: 2个钻石 5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+      builder3:
+        name: '&e入门铺地员'
+        description: 达到100级.
+        type: islandLevel
+        requiredLevel: 100
+        displayItem: gold_ore
+        reward:
+          text: 16个泥土 16个沙子 5个绿宝石 3个钻石
+          items:
+            - dirt:16
+            - sand:16
+            - emerald:5
+            - diamond:3
+          currency: 250
+          xp: 250
+      builder4:
+        name: '&e苦逼铺地员'
+        description: 达到150级.
+        type: islandLevel
+        requiredLevel: 100
+        displayItem: gold_ore
+        reward:
+          text: 16个泥土 16个沙子 5个绿宝石 3个钻石
+          items:
+            - dirt:16
+            - sand:16
+            - emerald:5
+            - diamond:3
+          currency: 250
+          xp: 250
+      builder5:
+        name: '&e200级!'
+        description: 达到200级.
+        type: islandLevel
+        requiredLevel: 100
+        displayItem: gold_ore
+        reward:
+          text: 16个泥土 16个沙子 5个绿宝石 3个钻石
+          items:
+            - dirt:16
+            - sand:16
+            - emerald:5
+            - diamond:3
+          currency: 250
+          xp: 250
+      builderfinished:
+        name: '&a完成新手建筑师任务'
+        description: 完成新手建筑师任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - builderstart
+          - builder1
+          - builder2
+          - builder3
+          - builder4
+          - builder5
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+      page1finished:
+        name: '&a完成新手任务'
+        description: 完成新手任务，解锁地狱，解锁trust功能，解锁新内容。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - workerfinished
+          - farmerfinished
+          - mhfinished
+          - rancherfinished
+          - builderfinished
+        displayItem: crafting_table
+        reward:
+          text: 30个钻石，50个绿宝石，前往下界
+          items:
+            - emerald:50
+            - diamond:30
+            - obsidian:10
+          currency: 100
+          xp: 100
+  Tier6:
+    name: '&e入门民工'
+    displayItem: iron_axe
+    resetInHours: 20
+    requires:
+      challenges:
+        - page1finished
+    challenges:
+      netherportal:
+        name: '&4想要更深入些'
+        description: 建造一座地狱门并点燃它.
+        type: onIsland
+        requiredItems:
+          - obsidian:10
+        repeatable: false
+        displayItem: obsidian
+        takeItems: false
+        reward:
+          text: 1 个铁镐, 1 铁锹
+          items:
+            - iron_pickaxe:1
+            - iron_shovel:1
+          currency: 40
+          xp: 40
+      mobfarm1:
+        name: '&5造一个主世界刷怪塔！'
+        description: 更快！更高！更大！
         type: onPlayer
+        requiredChallenges:
+          - netherportal
+        requiredItems:
+          - rotten_flesh:128;+64
+          - bone:128;+64
+          - gunpowder:128;+64
+          - spider_eye:128;+64
+        displayItem: rotten_flesh
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石块, 4个铁块, 4个金块
+          items:
+            - redstone_block:4
+            - iron_block:4
+            - gold_block:4
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石块, 1个铁块
+          items:
+            - redstone_block:1
+            - iron_block:1
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      mobfarm2:
+        name: '&5造一个地狱刷怪塔！'
+        description: 更快！更高！更大！
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        requiredItems:
+          - blaze_rod:128;+64
+          - gold_ingot:128;+64
+          - rotten_flesh:128;+64
+          - ghast_tear:8;+4
+        displayItem: blaze_powder
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石块, 4个铁块, 4个金块
+          items:
+            - redstone_block:4
+            - iron_block:4
+            - gold_block:4
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石块, 1个铁块
+          items:
+            - redstone_block:1
+            - iron_block:1
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      glassmaker:
+        name: '&3玻璃心'
+        description: 获得所有品种玻璃.
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
         displayItem: white_stained_glass
         lockedDisplayItem: cyan_stained_glass_pane
         requiredItems:
@@ -1020,7 +1206,7 @@ ranks:
           - red_stained_glass:8;+2
           - black_stained_glass:8;+2
         reward:
-          text: 2 diamonds, 2 disks, 1 emeralds
+          text: 2个钻石 2个唱片 1个绿宝石
           items:
             - diamond:2
             - music_disc_ward:1
@@ -1028,11 +1214,10 @@ ranks:
             - emerald:1
             - sunflower:1
             - lilac:1
-          permission: usb.biome.flower_forest
           currency: 70
           xp: 70
         repeatReward:
-          text: 30% chance on 1 or 2 disks, 1 emeralds
+          text: 1个绿宝石
           items:
             - '{p=0.3}music_disc_ward:1'
             - '{p=0.3}music_disc_11:1'
@@ -1041,63 +1226,925 @@ ranks:
             - lilac:1
           currency: 35
           xp: 35
-      carpenter:
-        name: '&3Carpenter'
-        description: Collect all types of wood items.
+      duplicarpet:
+        name: '&3我爱地毯'
+        description: 获得所有品种地毯。
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        displayItem: white_carpet
+        lockedDisplayItem: cyan_stained_glass_pane
+        requiredItems:
+          - white_carpet:8;+2
+          - orange_carpet:8;+2
+          - magenta_carpet:8;+2
+          - light_blue_carpet:8;+2
+          - yellow_carpet:8;+2
+          - lime_carpet:8;+2
+          - pink_carpet:8;+2
+          - gray_carpet:8;+2
+          - light_gray_carpet:8;+2
+          - cyan_carpet:8;+2
+          - purple_carpet:8;+2
+          - blue_carpet:8;+2
+          - brown_carpet:8;+2
+          - green_carpet:8;+2
+          - red_carpet:8;+2
+          - black_carpet:8;+2
+        reward:
+          text: 2个钻石 2个唱片 1个管珊瑚扇
+          items:
+            - diamond:2
+            - music_disc_creator:1
+            - music_disc_13:1
+            - tube_coral_fan:1
+            - sunflower:1
+            - lilac:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 1个绿宝石 1个管珊瑚扇
+          items:
+            - '{p=0.3}music_disc_creator:1'
+            - '{p=0.3}music_disc_13:1'
+            - emerald:1
+            - sunflower:1
+            - lilac:1
+            - tube_coral_fan:1
+          currency: 35
+          xp: 35
+      netherrack:
+        name: '&7地狱矿工'
+        description: 收集地狱岩 tips:挖地狱岩有概率产生新的
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        requiredItems:
+          - netherrack:64;+32
+          - soul_sand:64;+32
+          - glowstone:32;+32
+          - gravel:32;+16
+          - quartz:32;+16
+        displayItem: netherrack
+        resetInHours: 12
+        reward:
+          text: 1 把弓, 32 只箭，1 个可可豆
+          items:
+            - bow:1
+            - arrow:32
+            - cocoa_beans:1
+          currency: 40
+          xp: 40
+          commands:
+            - op:effect give {player} regeneration
+        repeatReward:
+          text: 64 只箭
+          items:
+            - arrow:64
+          currency: 20
+          xp: 20
+      hellfire:
+        name: '&4地狱火'
+        description: 火炎焱.
+        requiredChallenges:
+          - netherportal
         type: onPlayer
         requiredItems:
-          - jungle_stairs:16;+8
-          - spruce_door:1;+1
-          - dark_oak_fence_gate:2;+2
-          - acacia_fence:30;+15
-          - ladder:30;+15
-          - oak_trapdoor:4;+2
-          - oak_pressure_plate:2;+1
-        requiredChallenges:
-          - toolmaker
-          - lumberjack:2
-        displayItem: crafting_table
-        lockedDisplayItem: cyan_stained_glass_pane
+          - blaze_rod:16;+8
+          - water_bucket:32;+16
+        repeatable: true
+        displayItem: blaze_rod
+        takeItems: true
         reward:
-          text: a parrot and a jukebox with some redstone and iron
+          text: 1 个漏斗, 2 个雪块
           items:
-            - parrot_spawn_egg:1
-            - jukebox:1
+            - hopper:1
+            - snow_block:2
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 1 个雪块
+          items:
+            - snow_block:1
+          currency: 20
+          xp: 20
+      adeptworkerfinished:
+        name: '&a完成入门民工任务'
+        description: 完成入门民工任务。
+        requiredChallenges:
+          - mobfarm1
+          - mobfarm2
+          - glassmaker
+          - duplicarpet
+          - netherrack
+          - hellfire
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100# ======================================================================================================================
+#
+# 以下是挑战组和挑战设置的格式说明。单行注释(#)表示最常用的设置，双行注释(##)表示可选设置。
+#
+# 物品类型格式:
+# 物品类型按照Minecraft的/give命令格式定义，即使用Minecraft键名和方括号内的可选组件。
+# 例如: 'minecraft:diamond_sword[damage=42]'。参考Minecraft维基获取更多信息:
+# https://minecraft.wiki/w/Data_component_format。也可以使用命令'/usb iteminfo'获取物品信息。
+#
+# 根据使用场景不同，物品类型会补充额外信息:
+#
+# 展示物品(display-item): <类型>
+# 用于在GUI中显示的物品。仅定义物品类型，不包含额外信息。
+# 例如: 'cobblestone', 'minecraft:stone', 'diamond_sword[damage=42]'。
+#
+# 物品需求(item-requirement): <类型>:<数量>[;+<增量>]
+# 挑战所需的物品。数量是需要的物品数。可选的+<数量>表示每次重复挑战时需要增加的物品数。
+# 例如: 'cobblestone:64;+16'表示第一次完成需要64圆石，第二次需要80圆石。
+# 其他操作符包括-、*、/，分别表示减法、乘法和除法。
+# 例如: 'cobblestone:64;*2'表示第一次64，第二次128，第三次256。
+#
+# 物品奖励(item-reward): [{p=<概率>}]<类型>:<数量>
+# 挑战完成的物品奖励。数量是给予的物品数。可选的{p=<概率>}表示给予该物品的概率。
+# 例如: 'cobblestone:64'每次完成都会给予64圆石，而'{p=0.1}cobblestone:64'只有10%概率给予。
+#
+# ======================================================================================================================
+# 所有挑战都在ranks部分定义。每个rank代表玩家可以完成的一个挑战层级。
+#
+# ranks:
+#   # [文本] 挑战等级的名称
+#   TierX:
+#     # [文本] 执行/challenges时显示的挑战等级名称(支持大写和颜色代码)
+#     name: '&a自定义挑战等级名称'
+#     # [展示物品] 在挑战菜单中用于表示已完成挑战的物品
+#     displayItem: '青色陶瓦'
+#     # [整数] 物品需求重置为默认值的小时数(覆盖主重置时间)
+#     resetInHours: 20
+#     # 这些要求控制挑战组何时对玩家可用
+#     requires:
+#       # [整数] 允许未完成任务数的容差值。例如如果有4个挑战且rankLeeway为1，
+#       #        玩家只需完成3个即可进入下一等级。设为0则需要全部完成。
+#       rankLeeway: 8
+#       # [文本列表] 必须先完成这些挑战才能解锁本组挑战
+#       challenges:
+#       - 挑战名称
+# ======================================================================================================================
+#    challenges:
+#      # [文本] 挑战名称。所有挑战名称应为小写
+#      defaultchallenge:
+#      # [文本] 在/challenges中显示的挑战名称(支持大写和颜色代码)
+#        name: '&a默认挑战'
+#        # [文本] 玩家执行/challenges <挑战名称>时看到的描述
+#        description:
+#        # [onIsland/onPlayer/islandLevel] 定义所需方块/物品应在玩家物品栏中还是岛上。
+#        # 使用onIsland时，玩家必须距离岛上所需方块10格范围内。
+#        # 使用islandLevel时，'requiredItems'字段应为所需的岛屿等级。
+#        # 玩家必须先使用/island level更新等级。
+#        type: onPlayer
+#        ## type: islandLevel
+#        ## type: onIsland
+#        # [整数] 使用onIsland时覆盖默认的10格半径
+#        ## radius: 20
+#        # [物品需求列表] 完成挑战所需的物品
+#        requiredItems:
+#        - stone:64;+16
+#        - cobblestone:64;+16
+#        # [方块需求列表] 完成挑战所需的方块
+#        requiredBlocks:
+#        - stone:64
+#        - cobblestone:64
+#        # [true/false] 挑战是否可重复完成
+#        ## repeatable: true
+#        # [整数] 挑战可完成的最大次数(覆盖默认repeatLimit)。0表示无限次。
+#        ## repeatLimit: 5
+#        # [展示物品] 在挑战菜单中用于表示已完成挑战的物品
+#        displayItem: cobblestone
+#        # [整数] 物品需求重置为默认值的小时数(覆盖主设置和等级默认值)
+#        ## resetInHours: 4
+#        # [true/false] 完成挑战时是否收取所需物品
+#        ## takeItems: true
+#        # 玩家完成挑战获得的奖励
+#        reward:
+#          # [文本] 奖励描述
+#          text: '苔石和带有耐久1的铁镐'
+#          # [物品需求列表] 完成挑战给予玩家的物品
+#          items:
+#          - mossy_cobblestone:16
+#          - iron_pickaxe[enchantments={levels:{unbreaking:1}}]:1
+#          # [权限节点] 完成时授予的权限(多个权限用空格分隔)
+#          ## permission: 'test.permission'
+#          # [整数] 给予的货币数量(需要经济插件)
+#          ## currency: 0
+#          # [整数] 给予玩家的经验值
+#          ## xp: 0
+#          # [文本列表] 完成时执行的命令。添加"op"或"console"前缀表示以OP或控制台身份执行。
+#          # 可用参数:
+#          # {player}     - 玩家名称
+#          # {playerName} - 玩家显示名称
+#          # {challenge}  - 挑战名称
+#          # {position}   - 玩家位置
+#          # {party}      - 为队伍每个成员执行一次命令(替换名称)
+#          ## commands:
+#          ## - 'op: 我是万物的主宰'
+#          ## - 'console: give {party} 超棒物品 32'
+#        # 重复完成挑战时的奖励部分(第一次之后的任何完成)。结构与'reward'相同。
+#        repeatReward:
+#          text: '苔石'
+#          items:
+#          - mossy_cobblestone:16
+#
+# ======================================================================================================================
+allowChallenges: true
+challengeSharing: island
+broadcastCompletion: true
+broadcastText: '&6'
+requirePreviousRank: true
+rankLeeway: 12
+defaultResetInHours: 20
+radius: 10
+repeatLimit: 0
+challengeColor: '&e'
+finishedColor: '&2'
+repeatableColor: '&a'
+enableEconomyPlugin: true
+resetChallengesOnCreate: true
+lockedDisplayItem: gray_stained_glass_pane
+ISLAND:
+  lockedDisplayItem: blue_stained_glass_pane
+ISLAND_LEVEL:
+  lockedDisplayItem: black_stained_glass_pane
+showLockedChallengeName: true
+ranks:
+  Tier1:
+    name: '&7新手民工'
+    displayItem: iron_axe
+    resetInHours: 20
+    challenges:
+      start:
+        name: '&6开始咯'
+        description: 蒲公英x2。
+        type: onPlayer
+        requiredItems:
+          - 'dandelion:2'
+        displayItem: dandelion
+        resetInHours: 6
+        reward:
+          text: 水和岩浆
+          items:
+            - ice:2
+            - lava_bucket:1
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: ''
+      cobblestonegenerator:
+        name: '&7石头！'
+        description: 造个刷石机 这还要我教吗
+        requiredChallenges:
+          - start
+        type: onPlayer
+        requiredItems:
+          - cobblestone:64
+        displayItem: cobblestone
+        resetInHours: 12
+        reward:
+          text: 皮革x3
+          items:
+            - leather:3
+            - '{p=0.2}book:1'
+          currency: 10
+          xp: 10
+          commands:
+            - op:effect give {player} regeneration
+        repeatReward:
+          text: 皮革x1
+          items:
+            - leather:1
+            - '{p=0.1}book:1'
+          currency: 5
+          xp: 5
+      toolmaker:
+        name: '&3工欲善其事...'
+        description: 准备全套石头工具
+        requiredChallenges:
+          - start
+        type: onPlayer
+        requiredItems:
+          - stone_shovel:1;+0
+          - stone_pickaxe:1;+0
+          - stone_axe:1;+0
+          - stone_hoe:1;+0
+        displayItem: stone_axe
+        resetInHours: 12
+        reward:
+          text: 红石矿x4,铁矿x4,猪x1,各种树苗x1
+          items:
             - redstone_ore:4
             - iron_ore:4
+            - pig_spawn_egg:1
+            - oak_sapling:1
+            - spruce_sapling:1
+            - birch_sapling:1
+            - jungle_sapling:4
+            - acacia_sapling:1
+            - dark_oak_sapling:4
           currency: 30
           xp: 30
         repeatReward:
-          text: redstone, iron and a slim chance at a parrot
+          text: 红石矿x4
+          items:
+            - redstone_ore:4
+            - '{p=0.1}iron_ore:1'
+          currency: 5
+          xp: 5
+      woodpractice:
+        name: '&3木工实习'
+        description: 收集所有类型的原木。
+        type: onPlayer
+        requiredChallenges:
+          - start
+        requiredItems:
+          - oak_log:2;+2
+          - spruce_log:2;+2
+          - birch_log:2;+2
+          - jungle_log:2;+2
+          - acacia_log:2;+2
+          - dark_oak_log:2;+2
+          - stripped_oak_log:2;+2
+          - stripped_spruce_log:2;+2
+          - stripped_birch_log:2;+2
+          - stripped_jungle_log:2;+2
+          - stripped_acacia_log:2;+2
+          - stripped_dark_oak_log:2;+2
+        displayItem: oak_log
+        reward:
+          text: 4 redstone ore, 4 iron, cocoa and a mule
+          items:
+            - cocoa_beans:1
+            - redstone_ore:4
+            - iron_ore:4
+            - mule_spawn_egg:1
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1 redstone ore, 1 iron ore
           items:
             - redstone_ore:1
             - iron_ore:1
-            - '{p=0.25}jukebox:1'
-            - '{p=0.05}parrot_spawn_egg:1'
+            - '{p=0.05}gold_ore:1'
           currency: 15
           xp: 15
-      cookielover:
-        name: '&eCookie Lover'
-        description: Make cookies and a bucket of milk.
+      stonepractice:
+        name: '&3碳酸钙 吗'
+        description: 烧制石头。
         type: onPlayer
         requiredChallenges:
-          - expertfarmer
+          - start
         requiredItems:
-          - cookie:128;+4
-          - milk_bucket:1
-        displayItem: cookie
+          - stone:64
+        displayItem: stone
+        reward:
+          text: 平滑石头x64
+          items:
+            - smooth_stone:64
+            - '{p=0.2}redstone:4'
+          currency: 10
+          xp: 10
+          commands:
+            - op:effect give {player} regeneration
+        repeatReward:
+          text: 平滑石头x64
+          items:
+            - smooth_stone:64
+            - '{p=0.2}redstone:1'
+          currency: 5
+          xp: 5
+      stonebrickmaker:
+        name: '&a工业进阶'
+        description: 制作64个石砖。
+        type: onPlayer
+        requiredChallenges:
+          - start
+        requiredItems:
+          - stone_bricks:64;+8
+          - stone_brick_slab:30;+6
+          - chiseled_stone_bricks:30;+6
+          - stone_brick_stairs:16;+4
+        displayItem: stone_bricks
+        reward:
+          text: 4个红石矿石，4个铁矿石，1只鸡
+          items:
+            - redstone_ore:4
+            - iron_ore:4
+            - chicken_spawn_egg:1
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石矿石，1个铁矿石
+          items:
+            - redstone_ore:1
+            - iron_ore:1
+          currency: 15
+          xp: 15
+      coalboss:
+        name: '&7煤老板上班'
+        description: 木炭x64。
+        displayItem: coal_ore
+        requiredChallenges:
+          - start
+        requiredItems:
+          - charcoal:64;+0
+        reward:
+          text: 煤炭x64
+          items:
+            - coal:64
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+        repeatReward:
+          text: 煤炭x64
+          items:
+            - coal:64
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+      workerfinished:
+        name: '&a完成新手民工任务'
+        description: 完成新手民工任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - toolmaker
+          - woodpractice
+          - stonepractice
+          - stonebrickmaker
+          - coalboss
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier2:
+    name: '&a新手农民'
+    displayItem: wheat
+    resetInHours: 20
+    requires:
+      challenges:
+        - cobblestonegenerator
+    challenges:
+      farmerpack:
+        name: '&e农场主礼包'
+        description: 开始你的农场主生涯吧。
+        type: onPlayer
+        displayItem: wheat
+        reward:
+          text: 农场主礼包x1
+          items:
+            - cactus:1
+            - pumpkin:1
+            - sugar_cane:1
+            - melon_seeds:1
+            - beetroot_seeds:1
+            - brown_mushroom:1
+            - red_mushroom:1
+            - carrot:1
+            - potato:1
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: ''
+          items:
+          currency: 0
+          xp: 0
+      cactusfarmer:
+        name: '&6仙人掌君'
+        description: 开始生产仙人掌
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - cactus:64;+16
+        displayItem: cactus
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个沙子, 20%几率获得骨头
+          items:
+            - sand:8
+            - '{p=0.2}bone:1'
+            - '{p=0.1}wooden_hoe:1'
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个沙子
+          items:
+            - sand:4
+            - '{p=0.1}bone:1'
+          currency: 10
+          xp: 10
+      pumpkinfarmer:
+        name: '&6吓人的南瓜'
+        description: 种植南瓜
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - pumpkin:64;+4
+        displayItem: pumpkin
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+            - '{p=0.3}jack_o_lantern:1'
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.05}jack_o_lantern:1'
+          currency: 10
+          xp: 10
+      sugarfarmer:
+        name: '&6来点甘蔗'
+        description: 从农场收获甘蔗并做成糖和纸。
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - paper:32;+4
+          - sugar:32;+4
+        displayItem: carrot
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 1只猪
+          items:
+            - pig_spawn_egg:1
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 50
+          xp: 50
+        repeatReward:
+          text: 1个金胡萝卜
+          items:
+            - golden_carrot:1
+            - '{p=0.05}sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 25
+          xp: 25
+      shroompicker:
+        name: '&6发配云南'
+        description: 收集64个红蘑菇和棕蘑菇.
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - brown_mushroom:64;+4
+          - red_mushroom:64;+4
+        displayItem: red_mushroom
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8 菌丝, 4 灰化土
+          items:
+            - mycelium:8
+            - podzol:4
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 4 菌丝
+          items:
+            - mycelium:4
+            - '{p=0.02}mycelium:4'
+            - '{p=0.02}podzol:2'
+          currency: 15
+          xp: 15
+      melonfarmer:
+        name: '&6夏天来块西瓜吧'
+        description: 种植西瓜
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - melon_slice:128;+8
+        displayItem: melon
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+          currency: 10
+          xp: 10
+      beetrootfarmer:
+        name: '&6甜菜根'
+        description: 种植甜菜根
+        type: onPlayer
+        requiredChallenges:
+          - farmerpack
+        requiredItems:
+          - beetroot:64;+16
+        displayItem: beetroot
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.2}bone:1'
+          currency: 10
+          xp: 10
+      farmerfinished:
+        name: '&a完成新手农场主任务'
+        description: 完成新手农场主任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - farmerpack
+          - cactusfarmer
+          - pumpkinfarmer
+          - sugarfarmer
+          - shroompicker
+          - melonfarmer
+          - beetrootfarmer
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier3:
+    name: '&e新手怪物猎人'
+    displayItem: iron_sword
+    resetInHours: 20
+    requires:
+      challenges:
+        - start
+        - cobblestonegenerator
+    challenges:
+      monsterfarm:
+        name: '&5怪物猎人'
+        description: 开始猎杀怪物
+        type: onPlayer
+        requiredItems:
+          - rotten_flesh:32;+4
+          - bone:32;+2
+          - gunpowder:32;+1
+        displayItem: rotten_flesh
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石矿, 4个铁矿, 1个燧石
+          items:
+            - redstone_ore:4
+            - iron_ore:4
+            - flint:1
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石矿, 1个铁矿, 1个燧石
+          items:
+            - redstone_ore:1
+            - iron_ore:1
+            - flint:1
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      witchfarm:
+        name: '&5女巫猎人'
+        description: 猎杀女巫
+        type: onPlayer
+        requiredItems:
+          - glass_bottle:5;+5
+          - glowstone_dust:5;+5
+          - redstone:5;+5
+        displayItem: glowstone_dust
+        reward:
+          text: 4个沙子, 4个铁矿
+          items:
+            - sand:4
+            - iron_ore:4
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 2个沙子, 2个铁矿
+          items:
+            - sand:4
+            - iron_ore:2
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      slimefarm:
+        name: '&5史莱姆农场'
+        description: 收集史莱姆球
+        type: onPlayer
+        requiredItems:
+          - slime_ball:64;+4
+        displayItem: slime_ball
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石矿，1个绿宝石
+          items:
+            - redstone_ore:4
+            - emerald:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 8个红石
+          items:
+            - redstone:8
+          currency: 35
+          xp: 35
+      woolwhere:
+        name: '&5无中生有'
+        description: 收集羊毛
+        type: onPlayer
+        displayItem: white_wool
+        lockedDisplayItem: purple_stained_glass_pane
+        requiredItems:
+          - white_wool:5;+5
+        reward:
+          text: 2个钻石，2只羊
+          items:
+            - diamond:2
+            - sheep_spawn_egg:2
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 一个烤羊肉
+          items:
+            - cooked_mutton:1
+          currency: 10
+          xp: 10
+      goldwhere:
+        name: '&5土法炼金'
+        description: 想办法制作3个金锭
+        type: onPlayer
+        displayItem: gold_ingot
+        lockedDisplayItem: purple_stained_glass_pane
+        requiredItems:
+          - gold_ingot:3
+        reward:
+          text: 4个钻石
+          items:
+            - diamond:4
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 10 coin
+          currency: 10
+          xp: 10
+      itemfarm:
+        name: '&5神射手'
+        description: 获得一些箭
+        type: onPlayer
+        requiredItems:
+          - arrow:128;+32
+        displayItem: arrow
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石矿, 4个铁矿, 1个燧石
+          items:
+            - redstone_ore:4
+            - iron_ore:4
+            - flint:1
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 2个沙子
+          items:
+            - sand:2
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      killenderman1:
+        name: '&5杀点小黑 之一'
+        description: 收集末影珍珠.
+        type: onPlayer
+        requiredItems:
+          - ender_pearl:10;+4
+        displayItem: ender_pearl
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 5个金矿 1个绿宝石
+          items:
+            - gold_ore:5
+            - emerald:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 1个金矿
+          items:
+            - gold_ore:1
+          currency: 35
+          xp: 35
+      mhfinished:
+        name: '&a完成新手怪物猎人任务'
+        description: 完成新手怪物猎人任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - monsterfarm
+          - witchfarm
+          - slimefarm
+          - woolwhere
+          - goldwhere
+          - killenderman1
+          - itemfarm
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier4:
+    name: '&e新手牧场主'
+    displayItem: lead
+    resetInHours: 20
+    requires:
+      challenges:
+        - start
+        - cobblestonegenerator
+    challenges:
+      fisherman:
+        name: '&1小鱼干'
+        description: 钓鱼走起.
+        type: onPlayer
+        requiredItems:
+          - cod:5;+1
+          - salmon:5;+1
+          - pufferfish:3;+1
+          - tropical_fish:1;+0
+          - ink_sac:5;+2
+        repeatable: true
+        displayItem: cod
+        takeItems: true
+        reward:
+          text: 一些海产 好好利用哦
+          items:
+            - lapis_block:10
+            - prismarine:20
+            - kelp:1
+            - '{p=0.20}prismarine_crystals:5'
+          currency: 50
+          xp: 50
+        repeatReward:
+          text: 一些海产 好好利用哦
+          items:
+            - lapis_lazuli:2
+            - prismarine:5
+            - kelp:1
+            - '{p=0.20}prismarine_crystals:5'
+          currency: 25
+          xp: 25
+      grasslover:
+        name: '&e穷到吃草'
+        description: 爱吃
+        type: onPlayer
+        requiredItems:
+          - short_grass:32;+16
+          - grass_block:4;+1
+          - seagrass:32;+16
+        displayItem: grass_block
         lockedDisplayItem: yellow_stained_glass_pane
         reward:
-          text: 4 redstone ore, clay a bucket and a diamond
+          text: 4红石矿，5粘土，2牛
           items:
             - redstone_ore:4
             - clay:5
-            - diamond:1
-            - bucket:1
+            - cow_spawn_egg:2
           currency: 80
           xp: 80
         repeatReward:
-          text: iron ore and some clay
+          text: 铁矿，黏土
           items:
             - iron_ore:1
             - clay:5
@@ -1106,689 +2153,784 @@ ranks:
             - '{p=0.3}iron_ore:2'
           currency: 40
           xp: 40
-      deepseafisherman:
-        name: '&5Deep Sea Fishing'
-        description: Farm the deep sea
+      killcow:
+        name: '&e大屠杀时刻'
+        description: 通过牧场养殖 获得一定量的皮革.
         type: onPlayer
         requiredItems:
-          - cod:10;+5
-          - salmon:10;+5
-          - pufferfish:5;+3
-          - tropical_fish:3;+2
-          - prismarine_crystals:16;+8
-          - prismarine_shard:16;+8
-          - dried_kelp_block:64;+32
-          - nautilus_shell:1
-        displayItem: heart_of_the_sea
-        lockedDisplayItem: purple_stained_glass_pane
-        reward:
-          text: heart-of-the-sea, nautilus shell and a turtle
-          items:
-            - nautilus_shell:1
-            - heart_of_the_sea:1
-            - turtle_spawn_egg:1
-            - '{p=0.1}nautilus_shell:1'
-          permission: usb.biome.deep_ocean
-          currency: 50
-          xp: 50
-        repeatReward:
-          text: nautilus shell, turtle and a chance of a heart
-          items:
-            - nautilus_shell:1
-            - turtle_spawn_egg:1
-            - '{p=0.05}heart_of_the_sea:1'
-            - '{p=0.1}nautilus_shell:1'
-          currency: 25
-          xp: 25
-      horsingaround:
-        name: '&6Horsing Around'
-        description: Get hay bales for the horses.
-        type: onPlayer
-        requiredItems:
-          - hay_block:32;+4
-          - lead:8;+2
-          - carrot_on_a_stick:1
-          - shears:1
-        requirecChallenges:
-          - wheatfarmer
-        displayItem: hay_block
-        lockedDisplayItem: brown_stained_glass_pane
-        reward:
-          text: 1 horse, 1 iron horse armor, 5% chance on diamond horse armor
-          items:
-            - iron_horse_armor:1
-            - horse_spawn_egg:1
-            - '{p=0.05}diamond_horse_armor:1'
-          currency: 50
-          xp: 50
-        repeatReward:
-          text: 1 redstone ore, 1 emerald
-          items:
-            - redstone:1
-            - emerald:1
-          currency: 25
-          xp: 25
-      slimefarmer:
-        name: '&5Slime Farmer'
-        description: Collect slimeballs from slimes.
-        type: onPlayer
-        requiredItems:
-          - slime_ball:64;+4
-        displayItem: slime_ball
-        lockedDisplayItem: purple_stained_glass_pane
-        reward:
-          text: 1 diamond, 1 emeralds, swampland
-          items:
-            - diamond:1
-            - emerald:1
-          permission: usb.biome.swamp
-          currency: 70
-          xp: 70
-        repeatReward:
-          text: 1 redstone ore, 1 emeralds
-          items:
-            - redstone_ore:1
-            - emerald:1
-          currency: 35
-          xp: 35
-      animalfarm:
-        name: '&9Animal Farm'
-        description: Create an animal farm.
-        type: onIsland
-        displayItem: oak_fence
-        radius: 40
-        requiredChallenges:
-          - woolcollector
-          - potatofarmer
-          - carrotfarmer
-        requiredEntities:
-          - Cow:8
-          - Pig:8
-          - Chicken:16
-          - Sheep:{"Color":"WHITE"}
-          - Sheep:{"Color":"ORANGE"}
-          - Sheep:{"Color":"MAGENTA"}
-          - Sheep:{"Color":"LIGHT_BLUE"}
-          - Sheep:{"Color":"YELLOW"}
-          - Sheep:{"Color":"LIME"}
-          - Sheep:{"Color":"PINK"}
-          - Sheep:{"Color":"GRAY"}
-          - Sheep:{"Color":"LIGHT_GRAY"}
-          - Sheep:{"Color":"CYAN"}
-          - Sheep:{"Color":"PURPLE"}
-          - Sheep:{"Color":"BLUE"}
-          - Sheep:{"Color":"BROWN"}
-          - Sheep:{"Color":"GREEN"}
-          - Sheep:{"Color":"RED"}
-          - Sheep:{"Color":"BLACK"}
-        reward:
-          text: 1 horse, 1 iron horse armor, 5% chance horse armor
-          items:
-            - iron_horse_armor:1
-            - horse_spawn_egg:1
-            - '{p=0.05}iron_horse_armor:1'
-            - '{p=0.05}golden_horse_armor:1'
-            - '{p=0.05}diamond_horse_armor:1'
-          currency: 50
-          xp: 50
-        repeatReward:
-          text: 1 redstone ore, 1 emerald, 5% chance horse armor
-          items:
-            - redstone:1
-            - emerald:1
-            - '{p=0.05}iron_horse_armor:1'
-            - '{p=0.05}golden_horse_armor:1'
-            - '{p=0.05}diamond_horse_armor:1'
-          currency: 25
-          xp: 25
-      witherhunter:
-        name: '&5Wither Hunter'
-        description: Collect some Wither Skeleton skulls.
-        type: onPlayer
-        requiredChallenges:
-          - netherfortress
-        requiredItems:
-          - wither_skeleton_skull:10;+1
-        displayItem: wither_skeleton_skull
-        lockedDisplayItem: purple_stained_glass_pane
-        offset: -1
-        reward:
-          text: 5 diamonds, 5% chance of nether star
-          items:
-            - diamond:5
-            - '{p=0.05}nether_star:1'
-          currency: 400
-          xp: 400
-        repeatReward:
-          text: 2 gold ore, 5% chance of nether star
-          items:
-            - gold_ore:2
-            - '{p=0.05}nether_star:1'
-          currency: 20
-          xp: 20
-      pearlcollector:
-        name: '&5Pearl Collector'
-        description: Collect enderpearls from endermen.
-        type: onPlayer
-        requiredItems:
-          - ender_pearl:10;+4
-        displayItem: ender_pearl
-        lockedDisplayItem: purple_stained_glass_pane
-        reward:
-          text: 5 gold ore, 1 blaze rod, 1 emerald
-          items:
-            - gold_ore:5
-            - blaze_rod:1
-            - emerald:1
-          currency: 70
-          xp: 70
-        repeatReward:
-          text: 1 gold ore, 1 blaze rod
-          items:
-            - gold_ore:1
-            - blaze_rod:1
-          currency: 35
-          xp: 35
-
-  # ===============================================
-  Tier5:
-    name: '&4Sky Lord'
-    displayItem: red_terracotta
-    resetInHours: 48
-    requires:
-      challenges:
-        - masterbuilder
-    challenges:
-      technician:
-        name: '&3Technician'
-        description: Collect some of every type of redstone equipment.
-        type: onPlayer
-        requiredItems:
-          - redstone:64;+16
-          - redstone_torch:32;+4
-          - repeater:5;+1
-          - comparator:3;+1
-          - piston:2;+1
-          - sticky_piston:2;+1
-          - lever:1;+1
-          - stone_button:1;+1
-          - stone_pressure_plate:1;+1
-          - hopper:1;+1
-          - dispenser:1;+1
-          - dropper:1;+1
-          - daylight_detector:1;+1
-        displayItem: redstone
-        lockedDisplayItem: cyan_stained_glass_pane
-        reward:
-          text: some snow, ice and packed ice
-          items:
-            - snow_block:4
-            - ice:8
-            - packed_ice:8
-            - redstone_block:64
-          currency: 70
-          xp: 70
-        repeatReward:
-          text: a stack of redstone blocks and some ice
-          items:
-            - redstone_block:64
-            - ice:4
-            - packed_ice:1
-          currency: 35
-          xp: 35
-      emeraldcollector:
-        name: '&5Emerald Collector'
-        description: Collect emeralds.
-        type: onPlayer
-        requiredItems:
-          - emerald:60;+10
-        displayItem: emerald
-        lockedDisplayItem: purple_stained_glass_pane
-        reward:
-          text: a full set of diamond armor
-          items:
-            - diamond_helmet:1
-            - diamond_chestplate:1
-            - diamond_leggings:1
-            - diamond_boots:1
-          currency: 70
-          xp: 70
-        repeatReward:
-          text: full diamond armor
-          items:
-            - diamond_helmet:1
-            - diamond_chestplate:1
-            - diamond_leggings:1
-            - diamond_boots:1
-          currency: 35
-          xp: 35
-      topchef:
-        name: '&eTop Chef'
-        description: Collect every kind of edible food.
-        type: onPlayer
-        requiredItems:
-          - baked_potato:1
-          - bread:1
-          - cake:1
-          - cooked_chicken:1
-          - cooked_cod:1
-          - cooked_salmon:1
-          - tropical_fish:1
-          - cooked_porkchop:1
-          - cookie:1
-          - golden_apple:1
-          - golden_carrot:1
-          - mushroom_stew:1
-          - pumpkin_pie:1
-          - cooked_beef:1
-          - melon:1
-          - carrot:1
-        requiredChallenges:
-          - expertfarmer
-          - fisherman
-          - cookielover
-        displayItem: carrot
+          - leather:96;+32
+        displayItem: leather
         lockedDisplayItem: yellow_stained_glass_pane
         reward:
-          text: 2 diamond, 1 mooshroom
+          text: 2只猪 1个鞍
           items:
-            - diamond:2
-            - mooshroom_spawn_egg:1
+            - saddle:1
+            - pig_spawn_egg:2
           currency: 80
           xp: 80
         repeatReward:
-          text: 1 diamond, 1 mooshroom
+          text: 1个鞍
           items:
-            - diamond:1
-            - mooshroom_spawn_egg:1
+            - saddle:1
+            - '{p=0.3}iron_ore:2'
           currency: 40
           xp: 40
-      tajmahal:
-        name: '&9Taj Mahal'
-        description: Build a temple of quartz
-        type: onIsland
-        radius: 30
-        displayItem: quartz_block
-        lockedDisplayItem: blue_stained_glass_pane
-        requiredChallenges:
-          - nethermining
-        requiredBlocks:
-          - quartz_block:512
-          - chiseled_quartz_block:64
-          - quartz_pillar:128
-          - quartz_stairs:64
-          - quartz_slab:192
-        reward:
-          text: 3 end-portal frames, red sand
-          items:
-            - end_portal_frame:3
-            - red_sand:64
-          currency: 1000
-          xp: 500
-      greatpyramid:
-        name: '&9Great Pyramid'
-        description: Build a pyramid of sandstone
-        type: onIsland
-        radius: 30
-        displayItem: sandstone
-        lockedDisplayItem: blue_stained_glass_pane
-        requiredBlocks:
-          - sandstone:512
-          - chiseled_sandstone:64
-          - smooth_sandstone:128
-          - sandstone_stairs:64
-          - sandstone_slab:192
-          - red_sandstone:16
-        reward:
-          text: 3 end-portal frames, 3 diamonds, bow
-          items:
-            - end_portal_frame:3
-            - diamond:3
-            - 'bow[enchantments={levels:{infinity:1,power:5,unbreaking:3}}]:1'
-          currency: 1000
-          xp: 500
-      poseidonshalls:
-        name: '&9Poseidon''s Halls'
-        description: Build the halls of Poseidon
-        type: onIsland
-        radius: 50
-        displayItem: prismarine
-        lockedDisplayItem: blue_stained_glass_pane
-        requiredChallenges:
-          - deepseafisherman
-        requiredBlocks:
-          - prismarine:512
-          - prismarine_bricks:128
-          - dark_prismarine:64
-          - sea_lantern:32
-          - conduit:1
-          - flower_pot:16
-          - vine:128
-          - poppy:10
-          - blue_orchid:10
-          - allium:10
-          - azure_bluet:10
-          - red_tulip:10
-          - orange_tulip:10
-          - white_tulip:10
-          - pink_tulip:10
-          - oxeye_daisy:10
-          - sunflower:10
-          - lilac:10
-          - rose_bush:10
-          - peony:10
-        reward:
-          text: 3 end-portal frames, 5 diamonds
-          items:
-            - end_portal_frame:3
-            - diamond:5
-          currency: 1000
-          xp: 500
-      beaconator:
-        name: '&9Beaconator'
-        description: Build a very expensive beacon.
-        type: onIsland
-        radius: 15
-        displayItem: beacon
-        lockedDisplayItem: blue_stained_glass_pane
-        requiredChallenges:
-          - netherfortress
-          - ironfarm
-          - maestro
-          - witherhunter
-        requiredBlocks:
-          - beacon:1
-          - diamond_block:1
-          - emerald_block:8
-          - gold_block:25
-          - iron_block:49
-        reward:
-          items:
-            - end_portal_frame:3
-            - 'diamond_sword[enchantments={levels:{fire_aspect:1,sharpness:5,unbreaking:3}}]:1'
-          text: some end-portal-pieces and a magic diamond sword
-          currency: 4000
-          xp: 1000
-      endportal:
-        name: '&9End Portal'
-        description: Build and activate an end-portal.
-        type: onIsland
-        radius: 15
-        displayItem: end_portal_frame
-        lockedDisplayItem: blue_stained_glass_pane
-        requiredChallenges:
-          - beaconator
-          - tajmahal
-          - poseidonshalls
-          - greatpyramid
-        requiredBlocks:
-          - end_portal_frame:12
-          - end_portal:9
-        reward:
-          text: 5 diamonds and some nice boots
-          items:
-            - diamond:5
-            - 'diamond_boots[enchantments={levels:{blast_protection:4,feather_falling:4,protection:4}}]:1'
-          currency: 4000
-          xp: 1000
-
-  # ===============================================
-  Tier6:
-    name: '&aWorld Foods'
-    displayItem: light_gray_terracotta
-    resetInHours: 20
-    requires:
-      challenges:
-        - masterbuilder
-        - topchef
-    challenges:
-      fishandchips:
-        name: '&eFish & Chips'
-        description: Create the famous English Fish & Chips.
+      horsingaround:
+        name: '&1准备养马'
+        description: 给马准备点干草，栓绳，胡萝卜钓竿，剪刀.
         type: onPlayer
         requiredItems:
-          - cooked_cod:32;+8
-          - baked_potato:32;+8
-        displayItem: cooked_cod
-        lockedDisplayItem: yellow_stained_glass_pane
+          - wheat:32;+4
+          - lead:8;+2
+          - carrot_on_a_stick:1
+          - shears:1
+        repeatable: true
+        displayItem: wheat
+        takeItems: true
         reward:
-          text: 16 baked potatos, 1 disk, 4 emerald
+          text: 1 匹小马驹, 1 个铁马铠, 5% 的机会获得一个钻石马铠
           items:
-            - baked_potato:16
-            - music_disc_13:1
-            - emerald:4
-          currency: 60
-          xp: 60
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Fish_and_chips
-            &2Click the link for more info'
+            - horse_spawn_egg:1
+            - iron_horse_armor:1
+            - '{p=0.05}diamond_horse_armor:1'
+          currency: 50
+          xp: 50
         repeatReward:
-          text: 30% chance on 1 disk, 1 emerald
+          text: 1 个红石矿, 1 绿宝石
           items:
+            - redstone_ore:1
             - emerald:1
-            - '{p=0.3}music_disc_13:1'
-          currency: 30
-          xp: 30
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Fish_and_chips
-            &2Click the link for more info'
-      smorrebrod:
-        name: '&eSmørrebrød'
-        description: Create the famous Danish smørrebrød.
+          currency: 25
+          xp: 25
+      fisherydevelopment:
+        name: '&1发展渔业'
+        description: 小池塘 大世界.
         type: onPlayer
         requiredItems:
-          - bread:16;+4
-          - cooked_salmon:8;+4
-          - tropical_fish:2;+1
-          - cooked_porkchop:8;+4
-          - cooked_beef:8;+4
-        displayItem: cooked_cod
-        lockedDisplayItem: yellow_stained_glass_pane
+          - lily_pad:16;+8
+          - fishing_rod:1
+          - kelp:64;+16
+        repeatable: true
+        displayItem: fishing_rod
+        takeItems: true
         reward:
-          text: 1 rod, 2 name tags, 2 ocelots
+          text: 1 个青金石矿, 1 个萤石
           items:
-            - fishing_rod:1
-            - name_tag:2
-            - ocelot_spawn_egg:2
-          currency: 60
-          xp: 60
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Danish_cuisine
-            &2Click the link for more info'
+            - lapis_ore:1
+            - glowstone:1
+          currency: 20
+          xp: 20
         repeatReward:
-          text: 1 emerald
+          text: 1 个青金石矿, 2 个萤石粉
           items:
-            - emerald:1
-          currency: 30
-          xp: 30
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Danish_cuisine
-            &2Click the link for more info'
-      hutspot:
-        name: '&eHutspot'
-        description: Create the famous Dutch hutspot.
+            - lapis_ore:1
+            - glowstone_dust:2
+          currency: 20
+          xp: 20
+      tacticalfishing:
+        name: '&1战术性钓鱼'
+        description: 我该干什么.
         type: onPlayer
         requiredItems:
-          - potato:64;+8
-          - carrot:64;+8
-        lockedDisplayItem: yellow_stained_glass_pane
-        displayItem: golden_carrot
+          - cod_bucket:1
+          - salmon_bucket:1
+          - tropical_fish_bucket:1
+          - pufferfish_bucket:1
+        repeatable: true
+        displayItem: cod_bucket
+        takeItems: true
         reward:
-          text: 1 golden carrot, 1 disk, 4 emerald
+          text: 1 个钻石矿, 1 个萤石, 一只鸡, 两只海龟
+          items:
+            - turtle_spawn_egg:2
+            - chicken_spawn_egg:1
+            - diamond_ore:1
+            - glowstone:1
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 1 个青金石块, 2 个萤石粉
+          items:
+            - lapis_block:1
+            - glowstone_dust:2
+          currency: 20
+          xp: 20
+      beautifulegg:
+        name: '&1鸡你太美'
+        description: 鸡蛋
+        type: onPlayer
+        requiredItems:
+          - egg:64;+32
+        repeatable: true
+        displayItem: egg
+        takeItems: true
+        reward:
+          text: 1 个金胡萝卜, 1 个CD, 4 个绿宝石
           items:
             - golden_carrot:1
             - music_disc_cat:1
             - emerald:4
           currency: 60
           xp: 60
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Hutspot &2Click
-            the link for more info'
         repeatReward:
-          text: 30% chance on 1 disk, 1 emerald
+          text: 20% 的机会获得一个CD, 1 个绿宝石
           items:
             - emerald:1
-            - '{p=0.3}music_disc_cat:1'
+            - '{p=0.2}music_disc_wait:1'
           currency: 30
           xp: 30
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Hutspot &2Click
-            the link for more info'
-      apfelstrudel:
-        name: '&eApfelstrudele'
-        description: Create the famous German apfelstrudel.
-        type: onPlayer
-        requiredItems:
-          - apple:8;+5
-          - wheat:16;+5
-          - sugar:16;+5
-          - milk_bucket:1
-        displayItem: golden_apple
-        lockedDisplayItem: yellow_stained_glass_pane
+      rancherfinished:
+        name: '&a完成新手牧场主任务'
+        description: 完成新手牧场主任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - fisherman
+          - grasslover
+          - killcow
+          - horsingaround
+          - fisherydevelopment
+          - tacticalfishing
+          - beautifulegg
+        displayItem: crafting_table
         reward:
-          text: 1 bucket, 1 disk, 4 emerald
+          text: 2个钻石，5个绿宝石
           items:
-            - bucket:1
-            - emerald:4
-            - music_disc_blocks:1
-          currency: 60
-          xp: 60
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Apple_strudel &2Click
-            the link for more info'
-        repeatReward:
-          text: 1 bucket, 30% chance on 1 disk, 1 emerald
-          items:
-            - bucket:1
-            - emerald:1
-            - '{p=0.3}music_disc_blocks:1'
-          currency: 30
-          xp: 30
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Apple_strudel &2Click
-            the link for more info'
-      brownies:
-        name: '&eBrownies'
-        description: Create the famous American brownies.
-        type: onPlayer
-        requiredItems:
-          - wheat:16;+5
-          - sugar:16;+5
-          - egg:16;+5
-          - ink_sac:16;+5
-          - milk_bucket:1
-        displayItem: dark_oak_slab
-        lockedDisplayItem: yellow_stained_glass_pane
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier5:
+    name: '&e新手建筑师'
+    displayItem: smooth_stone
+    resetInHours: 20
+    requires:
+      challenges:
+        - start
+        - cobblestonegenerator
+    challenges:
+      builderstart:
+        name: '&7开始铺地'
+        description: 达到10级.
+        type: islandLevel
+        requiredLevel: 20
+        displayItem: coal_ore
         reward:
-          text: 1 bucket, 1 disk, 4 emerald
+          text: 8个泥土 8个沙子 5个绿宝石 1个钻石
           items:
-            - bucket:1
-            - emerald:4
-            - music_disc_far:1
-          currency: 60
-          xp: 60
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Chocolate_brownie
-            &2Click the link for more info'
-        repeatReward:
-          text: 1 bucket, 30% chance on 1 disk, 1 emerald
-          items:
-            - bucket:1
-            - emerald:1
-            - '{p=0.3}music_disc_far:1'
-          currency: 30
-          xp: 30
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Chocolate_brownie
-            &2Click the link for more info'
-      pastafunghi:
-        name: '&ePasta Funghi'
-        description: Create the famous Italian Pasta Funghi.
-        type: onPlayer
-        requiredItems:
-          - wheat:32;+8
-          - egg:32;+8
-          - brown_mushroom:16;+4
-          - red_mushroom:16;+4
-          - milk_bucket:1
-        displayItem: red_mushroom_block
-        lockedDisplayItem: yellow_stained_glass_pane
-        reward:
-          text: 2 rabbits, 1 bucket
-          items:
-            - bucket:1
-            - rabbit_spawn_egg:2
-          currency: 60
-          xp: 60
-          commands:
-            - console:msg {player} &9https://en.wikipedia.org/wiki/Pasta &2Click the
-              link for more info
-        repeatReward:
-          text: 30% chance on 1 disk, 1 emerald
-          items:
-            - emerald:1
-            - '{p=0.3}music_disc_13:1'
-          currency: 30
-          xp: 30
-          commands:
-            - console:msg {player} &9https://en.wikipedia.org/wiki/Pasta &2Click the
-              link for more info
-      chocolate:
-        name: '&eBelgian chocolate'
-        description: Create the famous belgian chocolate.
-        type: onPlayer
-        requiredItems:
-          - sugar:16;+5
-          - ink_sac:16;+5
-          - milk_bucket:1
-        displayItem: pig_spawn_egg
-        lockedDisplayItem: yellow_stained_glass_pane
-        reward:
-          text: 1 bucket, 1 disk, 4 emeralds
-          items:
-            - bucket:1
-            - emerald:4
-            - music_disc_mall:1
-          currency: 60
-          xp: 60
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Belgian_chocolate
-            &2Click the link for more info'
-        repeatReward:
-          text: 1 bucket, 30% chance on 1 disk, 1 emerald
-          items:
-            - bucket:1
-            - emerald:1
-            - '{p=0.3}music_disc_mall:1'
-          currency: 30
-          xp: 30
-          commands:
-            - 'console: msg {player} &9https://en.wikipedia.org/wiki/Belgian_chocolate
-            &2Click the link for more info'
-      baker:
-        name: '&ePâtisserie'
-        description: Bake cakes, pumpkin pies, and cookies.
-        type: onPlayer
-        requiredItems:
-          - cake:5;+1
-          - pumpkin_pie:5;+1
-          - cookie:128;+4
-        displayItem: cake
-        lockedDisplayItem: yellow_stained_glass_pane
-        reward:
-          text: 5 gold ore, 1 diamond
-          items:
-            - gold_ore:5
+            - dirt:8
+            - sand:8
+            - emerald:5
             - diamond:1
-          currency: 80
-          xp: 80
-        repeatReward:
-          text: 2 iron ore, 1 gold ore
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+      builder1:
+        name: '&7铺地新手'
+        description: 达到20级.
+        type: islandLevel
+        requiredLevel: 20
+        displayItem: coal_ore
+        reward:
+          text: 8个泥土 8个沙子 5个绿宝石 1个钻石
           items:
-            - iron_ore:2
-            - gold_ore:1
+            - dirt:8
+            - sand:8
+            - emerald:5
+            - diamond:1
+          currency: 20
+          xp: 20
+          commands:
+            - op:effect give {party} regeneration
+      builder2:
+        name: '&a铺地菜鸡'
+        description: 达到50级.
+        type: islandLevel
+        requiredLevel: 50
+        displayItem: iron_ore
+        reward:
+          text: 2个钻石 5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+      builder3:
+        name: '&e入门铺地员'
+        description: 达到100级.
+        type: islandLevel
+        requiredLevel: 100
+        displayItem: gold_ore
+        reward:
+          text: 16个泥土 16个沙子 5个绿宝石 3个钻石
+          items:
+            - dirt:16
+            - sand:16
+            - emerald:5
+            - diamond:3
+          currency: 250
+          xp: 250
+      builder4:
+        name: '&e苦逼铺地员'
+        description: 达到150级.
+        type: islandLevel
+        requiredLevel: 100
+        displayItem: gold_ore
+        reward:
+          text: 16个泥土 16个沙子 5个绿宝石 3个钻石
+          items:
+            - dirt:16
+            - sand:16
+            - emerald:5
+            - diamond:3
+          currency: 250
+          xp: 250
+      builder5:
+        name: '&e200级!'
+        description: 达到200级.
+        type: islandLevel
+        requiredLevel: 100
+        displayItem: gold_ore
+        reward:
+          text: 16个泥土 16个沙子 5个绿宝石 3个钻石
+          items:
+            - dirt:16
+            - sand:16
+            - emerald:5
+            - diamond:3
+          currency: 250
+          xp: 250
+      builderfinished:
+        name: '&a完成新手建筑师任务'
+        description: 完成新手建筑师任务。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - builderstart
+          - builder1
+          - builder2
+          - builder3
+          - builder4
+          - builder5
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+      page1finished:
+        name: '&a完成新手任务'
+        description: 完成新手任务，解锁地狱，解锁trust功能，解锁新内容。
+        requiredChallenges:
+          - start
+          - cobblestonegenerator
+          - workerfinished
+          - farmerfinished
+          - mhfinished
+          - rancherfinished
+          - builderfinished
+        displayItem: crafting_table
+        reward:
+          text: 30个钻石，50个绿宝石，前往下界
+          items:
+            - emerald:50
+            - diamond:30
+            - obsidian:10
+          currency: 100
+          xp: 100
+  Tier6:
+    name: '&e入门民工'
+    displayItem: iron_axe
+    resetInHours: 20
+    requires:
+      challenges:
+        - page1finished
+    challenges:
+      netherportal:
+        name: '&4想要更深入些'
+        description: 建造一座地狱门并点燃它.
+        type: onIsland
+        requiredItems:
+          - obsidian:10
+        repeatable: false
+        displayItem: obsidian
+        takeItems: false
+        reward:
+          text: 1 个铁镐, 1 铁锹
+          items:
+            - iron_pickaxe:1
+            - iron_shovel:1
           currency: 40
           xp: 40
-
-# DO NOT CHANGE THE VERSION! You will break the conversion and unexpected things will happen!
-version: 107
+      mobfarm1:
+        name: '&5造一个主世界刷怪塔！'
+        description: 更快！更高！更大！
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        requiredItems:
+          - rotten_flesh:128;+64
+          - bone:128;+64
+          - gunpowder:128;+64
+          - spider_eye:128;+64
+        displayItem: rotten_flesh
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石块, 4个铁块, 4个金块
+          items:
+            - redstone_block:4
+            - iron_block:4
+            - gold_block:4
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石块, 1个铁块
+          items:
+            - redstone_block:1
+            - iron_block:1
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      mobfarm2:
+        name: '&5造一个地狱刷怪塔！'
+        description: 更快！更高！更大！
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        requiredItems:
+          - blaze_rod:128;+64
+          - gold_ingot:128;+64
+          - rotten_flesh:128;+64
+          - ghast_tear:8;+4
+        displayItem: blaze_powder
+        lockedDisplayItem: purple_stained_glass_pane
+        reward:
+          text: 4个红石块, 4个铁块, 4个金块
+          items:
+            - redstone_block:4
+            - iron_block:4
+            - gold_block:4
+            - '{p=0.10}potato:1'
+            - '{p=0.10}carrot:1'
+          currency: 30
+          xp: 30
+        repeatReward:
+          text: 1个红石块, 1个铁块
+          items:
+            - redstone_block:1
+            - iron_block:1
+            - '{p=0.05}potato:1'
+            - '{p=0.05}carrot:1'
+          currency: 15
+          xp: 15
+      glassmaker:
+        name: '&3玻璃心'
+        description: 获得所有品种玻璃.
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        displayItem: white_stained_glass
+        lockedDisplayItem: cyan_stained_glass_pane
+        requiredItems:
+          - white_stained_glass:8;+2
+          - orange_stained_glass:8;+2
+          - magenta_stained_glass:8;+2
+          - light_blue_stained_glass:8;+2
+          - yellow_stained_glass:8;+2
+          - lime_stained_glass:8;+2
+          - pink_stained_glass:8;+2
+          - gray_stained_glass:8;+2
+          - light_gray_stained_glass:8;+2
+          - cyan_stained_glass:8;+2
+          - purple_stained_glass:8;+2
+          - blue_stained_glass:8;+2
+          - brown_stained_glass:8;+2
+          - green_stained_glass:8;+2
+          - red_stained_glass:8;+2
+          - black_stained_glass:8;+2
+        reward:
+          text: 2个钻石 2个唱片 1个绿宝石
+          items:
+            - diamond:2
+            - music_disc_ward:1
+            - music_disc_11:1
+            - emerald:1
+            - sunflower:1
+            - lilac:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 1个绿宝石
+          items:
+            - '{p=0.3}music_disc_ward:1'
+            - '{p=0.3}music_disc_11:1'
+            - emerald:1
+            - sunflower:1
+            - lilac:1
+          currency: 35
+          xp: 35
+      duplicarpet:
+        name: '&3我爱地毯'
+        description: 获得所有品种地毯。
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        displayItem: white_carpet
+        lockedDisplayItem: cyan_stained_glass_pane
+        requiredItems:
+          - white_carpet:8;+2
+          - orange_carpet:8;+2
+          - magenta_carpet:8;+2
+          - light_blue_carpet:8;+2
+          - yellow_carpet:8;+2
+          - lime_carpet:8;+2
+          - pink_carpet:8;+2
+          - gray_carpet:8;+2
+          - light_gray_carpet:8;+2
+          - cyan_carpet:8;+2
+          - purple_carpet:8;+2
+          - blue_carpet:8;+2
+          - brown_carpet:8;+2
+          - green_carpet:8;+2
+          - red_carpet:8;+2
+          - black_carpet:8;+2
+        reward:
+          text: 2个钻石 2个唱片 1个管珊瑚扇
+          items:
+            - diamond:2
+            - music_disc_creator:1
+            - music_disc_13:1
+            - tube_coral_fan:1
+            - sunflower:1
+            - lilac:1
+          currency: 70
+          xp: 70
+        repeatReward:
+          text: 1个绿宝石 1个管珊瑚扇
+          items:
+            - '{p=0.3}music_disc_creator:1'
+            - '{p=0.3}music_disc_13:1'
+            - emerald:1
+            - sunflower:1
+            - lilac:1
+            - tube_coral_fan:1
+          currency: 35
+          xp: 35
+      netherrack:
+        name: '&7地狱矿工'
+        description: 收集地狱岩 tips:挖地狱岩有概率产生新的
+        type: onPlayer
+        requiredChallenges:
+          - netherportal
+        requiredItems:
+          - netherrack:64;+32
+          - soul_sand:64;+32
+          - glowstone:32;+32
+          - gravel:32;+16
+          - quartz:32;+16
+        displayItem: netherrack
+        resetInHours: 12
+        reward:
+          text: 1 把弓, 32 只箭，1 个可可豆
+          items:
+            - bow:1
+            - arrow:32
+            - cocoa_beans:1
+          currency: 40
+          xp: 40
+          commands:
+            - op:effect give {player} regeneration
+        repeatReward:
+          text: 64 只箭
+          items:
+            - arrow:64
+          currency: 20
+          xp: 20
+      hellfire:
+        name: '&4地狱火'
+        description: 火炎焱.
+        requiredChallenges:
+          - netherportal
+        type: onPlayer
+        requiredItems:
+          - blaze_rod:16;+8
+          - water_bucket:32;+16
+        repeatable: true
+        displayItem: blaze_rod
+        takeItems: true
+        reward:
+          text: 1 个漏斗, 2 个雪块, 两个苔藓块
+          items:
+            - hopper:1
+            - snow_block:2
+            - moss_block:2
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 1 个雪块
+          items:
+            - snow_block:1
+          currency: 20
+          xp: 20
+      adeptworkerfinished:
+        name: '&a完成入门民工任务'
+        description: 完成入门民工任务。
+        requiredChallenges:
+          - mobfarm1
+          - mobfarm2
+          - glassmaker
+          - duplicarpet
+          - netherrack
+          - hellfire
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier7:
+    name: '&a入门农民'
+    displayItem: wheat
+    resetInHours: 20
+    requires:
+      challenges:
+        - netherportal
+    challenges:
+      hellfarm:
+        name: '&4地狱农场'
+        description: 勤劳致富 地狱也能发财.
+        type: onPlayer
+        requiredItems:
+          - coal:64;+16
+          - nether_wart:64;+16
+          - red_mushroom:64;+16
+        repeatable: true
+        displayItem: coal
+        takeItems: true
+        reward:
+          text: 64 个红砖, 3 个黏土
+          items:
+            - brick:64
+            - clay:3
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 32 个红砖, 2 个黏土
+          items:
+            - brick:32
+            - clay:2
+          currency: 20
+          xp: 20
+      wheatfarmer:
+        name: '&6该来点小麦了'
+        description: 种植小麦;
+        type: onPlayer
+        requiredItems:
+          - wheat:64;+16
+        displayItem: wheat
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 8个泥土
+          items:
+            - dirt:8
+          currency: 20
+          xp: 20
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.2}bone:1'
+          currency: 10
+          xp: 10
+      carrotfarmer:
+        name: '&6萝卜萝卜'
+        description: 种植萝卜
+        type: onPlayer
+        requiredItems:
+          - carrot:64;+16
+        displayItem: carrot
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 猪和鞍
+          items:
+            - saddle:1
+            - pig_spawn_egg:1
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 50
+          xp: 50
+        repeatReward:
+          text: 一个金胡萝卜
+          items:
+            - golden_carrot:1
+            - '{p=0.05}sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 25
+          xp: 25
+      potatofarmer:
+        name: '&6土豆服务器'
+        description: 收获土豆.
+        type: onPlayer
+        requiredItems:
+          - potato:64;+16
+        displayItem: potato
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.10}beetroot_seeds:1'
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 50
+          xp: 50
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.10}beetroot_seeds:1'
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 25
+          xp: 25
+      woolcollector:
+        name: '&6剪羊毛的时间到了'
+        description: 收获羊毛.
+        type: onPlayer
+        requiredItems:
+          - white_wool:64;+2
+        displayItem: white_wool
+        lockedDisplayItem: brown_stained_glass_pane
+        reward:
+          text: 4个泥土, 5只羊
+          items:
+            - dirt:4
+            - sheep_spawn_egg:5
+            - '{p=0.10}beetroot_seeds:1'
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 50
+          xp: 50
+        repeatReward:
+          text: 4个泥土
+          items:
+            - dirt:4
+            - '{p=0.10}beetroot_seeds:1'
+            - '{p=0.05}red_sand:1'
+            - '{p=0.01}diamond:1'
+          currency: 25
+          xp: 25
+      delicioussoup:
+        name: '&1美味的汤'
+        description: 用甜菜 蘑菇 兔子做出美味的汤.
+        type: onPlayer
+        requiredItems:
+          - beetroot:96;+16
+          - carrot:8;+5
+          - brown_mushroom:16;+16
+          - red_mushroom:8;+5
+          - rabbit_foot:8;+5
+        repeatable: true
+        displayItem: rabbit_foot
+        reward:
+          text: 1 个桶, 1 个CD机, 1 绿宝石矿
+          items:
+            - bucket:1
+            - jukebox:1
+            - emerald_ore:1
+          currency: 60
+          xp: 60
+        repeatReward:
+          text: 1 个桶, 40% 的机会获得一个CD机, 1 个绿宝石, 5% 的机会获得一个潜影壳
+          items:
+            - bucket:1
+            - emerald:1
+            - '{p=0.4}jukebox:1'
+            - '{p=0.05}shulker_shell:1'
+          currency: 30
+          xp: 30
+      turtle:
+        name: '&1绿帽子'
+        description: 养海龟.
+        type: onPlayer
+        requiredItems:
+          - turtle_helmet:1
+        repeatable: true
+        displayItem: turtle_helmet
+        reward:
+          text: 1 绿宝石矿
+          items:
+            - emerald_ore:1
+          currency: 60
+          xp: 60
+        repeatReward:
+          text: 1 个绿宝石, 10% 的机会获得一个潜影壳
+          items:
+            - bucket:1
+            - emerald:1
+            - '{p=0.4}jukebox:1'
+            - '{p=0.1}shulker_shell:1'
+          currency: 30
+          xp: 30
+      adeptfarmerfinished:
+        name: '&a完成入门农民任务'
+        description: 完成入门农民任务。
+        requiredChallenges:
+          - hellfarm
+          - wheatfarmer
+          - potatofarmer
+          - carrotfarmer
+          - woolcollector
+          - delicioussoup
+          - turtle
+        displayItem: crafting_table
+        reward:
+          text: 2个钻石，5个绿宝石
+          items:
+            - emerald:5
+            - diamond:2
+          currency: 100
+          xp: 100
+  Tier8:
+    name: '&a入门怪物猎人'
+    displayItem: golden_sword
+    resetInHours: 20
+    requires:
+      challenges:
+        - netherportal
+    challenges:
+      witherhunter:
+        name: '&4啊，来战吧！'
+        description: 宰杀地狱怪物.
+        type: onPlayer
+        requiredItems:
+          - blaze_rod:10;+2
+          - ender_pearl:1;+2
+          - ghast_tear:25;+10
+          - nether_wart:64;+64
+          - quartz:2;+2
+        repeatable: true
+        displayItem: ender_pearl
+        takeItems: true
+        reward:
+          text: 1 个钻石 1 个甜菜种子
+          items:
+            - diamond:1
+            - beetroot_seeds:1
+          currency: 40
+          xp: 40
+        repeatReward:
+          text: 2 个金矿
+          items:
+            - gold_ore:2
+          currency: 20
+          xp: 20
+version: 108
