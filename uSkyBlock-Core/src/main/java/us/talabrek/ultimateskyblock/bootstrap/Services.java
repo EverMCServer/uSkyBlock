@@ -15,6 +15,7 @@ import us.talabrek.ultimateskyblock.hook.HookManager;
 import us.talabrek.ultimateskyblock.island.IslandLogic;
 import us.talabrek.ultimateskyblock.island.level.AutoIslandLevelRefresh;
 import us.talabrek.ultimateskyblock.player.PlayerLogic;
+import us.talabrek.ultimateskyblock.toxic.ToxicLogic;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.uuid.PlayerDB;
 
@@ -26,6 +27,7 @@ public class Services {
     private final EventLogic eventLogic;
     private final PlayerLogic playerLogic;
     private final IslandLogic islandLogic;
+    private final ToxicLogic toxicLogic;
     private final PlayerDB playerDB;
     private final MetricsManager metricsManager;
     private final HookManager hookManager;
@@ -39,6 +41,7 @@ public class Services {
         @NotNull EventLogic eventLogic,
         @NotNull PlayerLogic playerLogic,
         @NotNull IslandLogic islandLogic,
+        @NotNull ToxicLogic toxicLogic,
         @NotNull PlayerDB playerDB,
         @NotNull MetricsManager metricsManager,
         @NotNull HookManager hookManager,
@@ -50,6 +53,7 @@ public class Services {
         this.eventLogic = eventLogic;
         this.playerLogic = playerLogic;
         this.islandLogic = islandLogic;
+        this.toxicLogic = toxicLogic;
         this.playerDB = playerDB;
         this.metricsManager = metricsManager;
         this.hookManager = hookManager;
@@ -81,6 +85,7 @@ public class Services {
         eventLogic.shutdown();
         playerLogic.shutdown();
         islandLogic.shutdown();
+        toxicLogic.shutdown();
         playerDB.shutdown();
         AsyncWorldEditHandler.onDisable(plugin);
         DebugCommand.disableLogging(null);

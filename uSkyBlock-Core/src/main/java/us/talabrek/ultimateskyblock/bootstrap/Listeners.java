@@ -23,6 +23,7 @@ import us.talabrek.ultimateskyblock.event.WorldGuardEvents;
 import us.talabrek.ultimateskyblock.gui.GuiListener;
 import us.talabrek.ultimateskyblock.signs.SignEvents;
 import us.talabrek.ultimateskyblock.command.InviteHandler;
+import us.talabrek.ultimateskyblock.toxic.ToxicListener;
 import us.talabrek.ultimateskyblock.uuid.PlayerDB;
 
 @Singleton
@@ -44,6 +45,9 @@ public class Listeners {
     private final ToolMenuEvents toolMenuEvents;
     private final SignEvents signEvents;
     private final ChatEvents chatEvents;
+
+    private final ToxicListener toxicListener;
+
     private final InviteHandler inviteHandler;
     private final PlayerDB playerDB;
 
@@ -64,6 +68,7 @@ public class Listeners {
         @NotNull ToolMenuEvents toolMenuEvents,
         @NotNull SignEvents signEvents,
         @NotNull ChatEvents chatEvents,
+        @NotNull ToxicListener toxicListener,
         @NotNull InviteHandler inviteHandler,
         @NotNull PlayerDB playerDB
     ) {
@@ -82,6 +87,7 @@ public class Listeners {
         this.toolMenuEvents = toolMenuEvents;
         this.signEvents = signEvents;
         this.chatEvents = chatEvents;
+        this.toxicListener = toxicListener;
         this.inviteHandler = inviteHandler;
         this.playerDB = playerDB;
     }
@@ -96,6 +102,7 @@ public class Listeners {
         manager.registerEvents(exploitEvents, plugin);
         manager.registerEvents(witherTagEvents, plugin);
         manager.registerEvents(chatEvents, plugin);
+        manager.registerEvents(toxicListener, plugin);
         manager.registerEvents(inviteHandler, plugin);
         manager.registerEvents(playerDB, plugin);
 
