@@ -3,10 +3,11 @@
 .classpath
 bin
 # Package Files #
-*.jar
 *.war
 *.ear
 **/target
+**/build
+/.gradle
 /lib
 /.classpath
 /.project
@@ -17,5 +18,6 @@ bin
 
 *.DS_Store
 
+gradle.properties
 dependency-reduced-pom.xml
 deploy_rsa
