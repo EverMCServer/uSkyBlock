@@ -26,7 +26,7 @@ options:
     maxSpam: 2000
 
     # [string] The name of the skyblock world, will be automatically generated if it doesn't exist.
-    worldName: skyworld
+    worldName: world_acidisland
 
     # [integer] Area around 0,0 where islands will not be created to protect spawn.
     spawnSize: 64

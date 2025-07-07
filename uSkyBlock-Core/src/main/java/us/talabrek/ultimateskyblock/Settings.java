@@ -138,7 +138,7 @@ public class Settings {
         extras_sendToSpawn = config.getBoolean("options.extras.sendToSpawn");
         extras_respawnAtIsland = config.getBoolean("options.extras.respawnAtIsland");
         island_useTopTen = config.getBoolean("options.island.useTopTen");
-        general_worldName = config.getString("options.general.worldName", "skyworld");
+        general_worldName = config.getString("options.general.worldName", "world_acidisland_nether");
         island_removeCreaturesByTeleport = config.getBoolean("options.island.removeCreaturesByTeleport");
         island_allowIslandLock = config.getBoolean("options.island.allowIslandLock");
         island_topTenTimeout = Duration.ofMinutes(config.getLong("options.island.topTenTimeout", 7));
