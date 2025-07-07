@@ -1,8 +1,10 @@
 package us.talabrek.ultimateskyblock.world;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
@@ -20,9 +22,9 @@ public class AcidIslandChunkGenerator extends ChunkGenerator {
     @Override
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
         if (old) {
-            chunkData.setRegion(0, 1, 0, 16, Settings.island_height - 1, 16, Material.WATER);
+            chunkData.setRegion(0, 1, 0, 16, Settings.island_height - 1, 16, Bukkit.createBlockData("acidwater:acid_block"));
         } else {
-            chunkData.setRegion(0, -63, 0, 16, Settings.island_height - 1, 16, Material.WATER);
+            chunkData.setRegion(0, -63, 0, 16, Settings.island_height - 1, 16, Bukkit.createBlockData("acidwater:acid_block"));
         }
     }
 
