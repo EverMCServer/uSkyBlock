@@ -326,7 +326,7 @@ public class PlayerEvents implements Listener {
         if (event.getEntityType() == EntityType.PLAYER) {
             Player player = (Player) event.getEntity();
             PlayerInfo playerInfo = plugin.getPlayerInfo(player);
-            boolean isFirstCompletion = playerInfo.checkChallenge("page1finished") == 0;
+            boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
             if (player.isOp()) return;
             if (isFirstCompletion){
                 event.setCancelled(true);
@@ -339,7 +339,7 @@ public class PlayerEvents implements Listener {
             IslandInfo islandInfo = plugin.getIslandInfo(event.getLocation());
             if (islandInfo != null) {
                 PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeader());
-                boolean isFirstCompletion = playerInfo.checkChallenge("page1finished") == 0;
+                boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
                 if (isFirstCompletion){
                     event.setCancelled(true);
                 }
