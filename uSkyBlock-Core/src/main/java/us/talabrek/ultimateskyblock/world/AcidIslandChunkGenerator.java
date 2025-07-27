@@ -17,7 +17,7 @@ import java.util.Random;
 
 public class AcidIslandChunkGenerator extends ChunkGenerator {
 
-    private final boolean old = true;
+    private final boolean old = false;
 
     @Override
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
