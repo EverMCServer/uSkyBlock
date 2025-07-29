@@ -318,7 +318,7 @@ public class PlayerEvents implements Listener {
     private RateLimiter rateLimiter = RateLimiter.create(1);
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPlayerPortal(EntityPortalEnterEvent event) {
+    public void onPlayerPortal(EntityPortalEvent event) {
         if (event.getEntityType() == EntityType.PLAYER) {
             Player player = (Player) event.getEntity();
             PlayerInfo playerInfo = plugin.getPlayerInfo(player);
@@ -332,7 +332,7 @@ public class PlayerEvents implements Listener {
             }
         }
         else {
-            IslandInfo islandInfo = plugin.getIslandInfo(event.getLocation());
+            IslandInfo islandInfo = plugin.getIslandInfo(event.getFrom());
             if (islandInfo != null) {
                 PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeader());
                 boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
@@ -542,12 +542,15 @@ public class PlayerEvents implements Listener {
                 for (int k = z - 1; k <= z + 1; k ++) {
                     if (j < 0 || j > 255) continue;
                     if (i >> 2 != ox || k >> 2 != oz) continue;
-                    Location lo = loc.clone().set(i, j, k);
-                    if (record.contains(lo)) continue;
-                    if (!Tag.CORAL_BLOCKS.getValues().contains(lo.getBlock().getType())) continue;
-                    record.add(lo);
+                    Location temp = loc.clone();
+                    temp.setX(i);
+                    temp.setY(j);
+                    temp.setZ(k);
+                    if (record.contains(temp)) continue;
+                    if (!Tag.CORAL_BLOCKS.getValues().contains(temp.getBlock().getType())) continue;
+                    record.add(temp);
                     if (record.size() >= stopvalue) return;
-                    doCheckCoral(lo, ox, oz, record, stopvalue);
+                    doCheckCoral(temp, ox, oz, record, stopvalue);
                     if (record.size() >= stopvalue) return;
                 }
             }
