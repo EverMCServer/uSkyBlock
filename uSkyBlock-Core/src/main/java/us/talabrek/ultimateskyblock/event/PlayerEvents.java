@@ -436,7 +436,7 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFrostIce(EntityBlockFormEvent event){
-        if (!uSkyBlock.getInstance().getWorldManager().isSkyWorld(event.getBlock().getWorld())) {
+        if (!plugin.getWorldManager().isSkyWorld(event.getBlock().getWorld())) {
             return;
         }
         Location loc = event.getBlock().getLocation();
@@ -482,19 +482,23 @@ public class PlayerEvents implements Listener {
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlaceCoral(BlockPlaceEvent event){
-        Material material = event.getBlock().getType();
-        Location location = event.getBlock().getLocation();
-        if (Tag.CORAL_BLOCKS.getValues().contains(material)) {
-            checkCoral(location, event.getPlayer());
+        if (plugin.getWorldManager().isSkyWorld(event.getPlayer().getWorld())) {
+            Material material = event.getBlock().getType();
+            Location location = event.getBlock().getLocation();
+            if (Tag.CORAL_BLOCKS.getValues().contains(material)) {
+                checkCoral(location, event.getPlayer());
+            }
         }
     }
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBreakCoral(BlockBreakEvent event){
-        Material material = event.getBlock().getType();
-        Location location = event.getBlock().getLocation();
-        if (Tag.CORAL_BLOCKS.getValues().contains(material)) {
-            checkCoral(location, event.getPlayer());
+        if (plugin.getWorldManager().isSkyWorld(event.getPlayer().getWorld())) {
+            Material material = event.getBlock().getType();
+            Location location = event.getBlock().getLocation();
+            if (Tag.CORAL_BLOCKS.getValues().contains(material)) {
+                checkCoral(location, event.getPlayer());
+            }
         }
     }
 
