@@ -1,14 +1,11 @@
 package us.talabrek.ultimateskyblock.event;
 
-import com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import dk.lockfuglsang.minecraft.util.ItemStackUtil;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
@@ -20,16 +17,13 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
-import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.async.Callback;
@@ -41,7 +35,7 @@ import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
-import us.talabrek.ultimateskyblock.util.LogUtil;
+import us.talabrek.ultimateskyblock.world.AcidBiomeProvider;
 import us.talabrek.ultimateskyblock.world.WorldManager;
 
 import java.time.Duration;
@@ -53,7 +47,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Level;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -436,6 +429,119 @@ public class PlayerEvents implements Listener {
             if (islandInfo != null) {
                 for (Block block : event.blockList()) {
                     plugin.getBlockLimitLogic().decBlockCount(islandInfo.getIslandLocation(), block.getType());
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFrostIce(EntityBlockFormEvent event){
+        if (!uSkyBlock.getInstance().getWorldManager().isSkyWorld(event.getBlock().getWorld())) {
+            return;
+        }
+        Location loc = event.getBlock().getLocation();
+        loc.setX(loc.getBlockX() & ~3);
+        loc.setY(62);
+        loc.setZ(loc.getBlockZ() & ~3);
+        if (frostIceRecord.containsKey(loc)) {
+            frostIceRecord.get(loc).cancel();
+        }
+        FrostIceRecord record = new FrostIceRecord(loc);
+        record.runTaskTimer(uSkyBlock.getInstance(), 24000, 24000);
+        frostIceRecord.put(loc, record);
+    }
+
+    HashMap<Location, FrostIceRecord> frostIceRecord = new HashMap<>();
+
+    public static class FrostIceRecord extends BukkitRunnable {
+
+        private final Location loc;
+        public FrostIceRecord(Location loc) {
+            this.loc = loc;
+        }
+
+        @Override
+        public void run() {
+            Biome biome = loc.getWorld().getBiome(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+            int i;
+            for (i = 0; i < 5; i++) {
+                if (biome.equals(AcidBiomeProvider.tempToBiome[i])) {
+                    break;
+                }
+            }
+            i--;
+            if (i <= 0) {
+                this.cancel();
+                i = 0;
+            }
+            for (int y = 0; y < 256; y += 4) {
+                loc.getWorld().setBiome(loc.getBlockX(), y, loc.getBlockZ(), AcidBiomeProvider.tempToBiome[i]);
+            }
+        }
+    }
+
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlaceCoral(BlockPlaceEvent event){
+        Material material = event.getBlock().getType();
+        Location location = event.getBlock().getLocation();
+        if (Tag.CORAL_BLOCKS.getValues().contains(material)) {
+            checkCoral(location, event.getPlayer());
+        }
+    }
+
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBreakCoral(BlockBreakEvent event){
+        Material material = event.getBlock().getType();
+        Location location = event.getBlock().getLocation();
+        if (Tag.CORAL_BLOCKS.getValues().contains(material)) {
+            checkCoral(location, event.getPlayer());
+        }
+    }
+
+    private static void checkCoral(Location loc, Player p) {
+        int ox = loc.getBlockX() >> 2;
+        int oz = loc.getBlockZ() >> 2;
+        HashSet<Location> record = new HashSet<>();
+        record.add(loc);
+        int temperature = AcidBiomeProvider.getTemperature(ox, oz);
+        int need;
+        if (temperature == 1) need = 32;
+        else if (temperature == 2) need = 16;
+        else if (temperature == 3) need = 8;
+        else return;
+
+        doCheckCoral(loc, ox, oz, record, need);
+        int ret = record.size();
+        int gain = 0;
+        if (ret >= 32) gain = 3;
+        else if (ret >= 16) gain = 2;
+        else if (ret >= 8) gain = 1;
+        temperature += gain;
+        if (temperature >= 4) temperature = 4;
+        if (loc.getWorld().getBiome(ox << 2, 62, oz << 2) != AcidBiomeProvider.tempToBiome[temperature]) {
+            for (int y = 0; y < 256; y += 4) {
+                loc.getWorld().setBiome(ox << 2, y, oz << 2, AcidBiomeProvider.tempToBiome[temperature]);
+            }
+            p.sendMessage("Temperature changed!");
+        }
+    }
+
+    private static void doCheckCoral(Location loc, int ox, int oz, HashSet<Location> record, int stopvalue) {
+        int x = loc.getBlockX();
+        int y = loc.getBlockY();
+        int z = loc.getBlockZ();
+        for (int i = x - 1; i <= x + 1; i ++) {
+            for (int j = y - 1; j <= y + 1; j ++) {
+                for (int k = z - 1; k <= z + 1; k ++) {
+                    if (j < 0 || j > 255) continue;
+                    if (i >> 2 != ox || k >> 2 != oz) continue;
+                    Location lo = loc.clone().set(i, j, k);
+                    if (record.contains(lo)) continue;
+                    if (!Tag.CORAL_BLOCKS.getValues().contains(lo.getBlock().getType())) continue;
+                    record.add(lo);
+                    if (record.size() >= stopvalue) return;
+                    doCheckCoral(lo, ox, oz, record, stopvalue);
+                    if (record.size() >= stopvalue) return;
                 }
             }
         }
