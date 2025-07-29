@@ -7,8 +7,10 @@ import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
+import org.bukkit.block.data.type.Leaves;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.EntityType;
@@ -624,6 +626,54 @@ public class PlayerEvents implements Listener {
             }
             Player player = event.getPlayer();
             player.sendMessage("changed biome to" + biome.name());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void on(EntityChangeBlockEvent event) {
+        if (!plugin.getWorldManager().isSkyWorld(event.getBlock().getWorld())) {
+            return;
+        }
+        Block block = event.getBlock();
+        Material toType = event.getTo();
+        Material fromType = block.getType();
+        Random random = new Random();
+        if (fromType == Material.AIR){
+            if (toType == Material.ANVIL || toType == Material.CHIPPED_ANVIL || toType == Material.DAMAGED_ANVIL){
+                // 铁砧下落砸方块更改
+                Block change = block.getRelative(BlockFace.DOWN);
+                Material changeType = change.getType();
+                BlockData changed = change.getBlockData();
+                if (changed instanceof Leaves){
+                    change.setType(Material.AIR);
+                    return;
+                }
+                if (changeType == Material.STONE_BRICKS){
+                    change.setType(Material.CRACKED_STONE_BRICKS);
+                    return;
+                }
+                if (changeType == Material.COBBLESTONE){
+                    if (random.nextInt(50) == 0) {
+                        change.setType(Material.GRAVEL);
+                    }
+                    return;
+                }
+                if (changeType == Material.STONE){
+                    if (random.nextInt(10) == 0) {
+                        change.setType(Material.DEEPSLATE);
+                    }
+                    return;
+                }
+                if (changeType == Material.MAGMA_BLOCK){
+                    if (random.nextInt(10) == 0) {
+                        change.setType(Material.AIR);
+                        if (random.nextInt(2) == 0) {
+                            change.getWorld().dropItemNaturally(change.getLocation(), new ItemStack(Material.BLAZE_POWDER));
+                        }
+                    }
+                    return;
+                }
+            }
         }
     }
 }
