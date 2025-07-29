@@ -550,4 +550,80 @@ public class PlayerEvents implements Listener {
             }
         }
     }
+
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlaceInNether(BlockPlaceEvent event){
+        if (plugin.getWorldManager().isSkyNether(event.getPlayer().getWorld())) {
+            Material material = event.getBlock().getType();
+            // 地狱放置4*2*4方块 改变群系 （绯红森林/诡异森林 上层菌岩 下层地狱岩）
+            // 玄武岩/黑石->玄武岩三角洲   绯红菌岩->绯红森林   诡异菌岩->诡异森林   灵魂土->灵魂沙峡谷   地狱岩->下界荒地
+            if (material != Material.BASALT && material != Material.CRIMSON_NYLIUM && material != Material.WARPED_NYLIUM && material != Material.SOUL_SOIL && material != Material.NETHERRACK && material != Material.BLACKSTONE) {
+                return;
+            }
+            Location location = event.getBlock().getLocation();
+            int x = location.getBlockX() & ~3;
+            int y = location.getBlockY();
+            if (y <= 2) {
+                return;
+            }
+            int z = location.getBlockZ() & ~3;
+            World world = event.getBlock().getWorld();
+
+            // 检查4x4内暴露在空气中的方块
+            Material record = null;
+            for (int i = x; i < x + 4; i ++) {
+                for (int j = z; j < z + 4; j ++) {
+                    int k = y;
+                    if (world.getBlockAt(i, k, j).getType() == Material.AIR) {
+                        do k--;
+                        while(world.getBlockAt(i, k, j).getType() == Material.AIR);
+                    } else {
+                        do k++;
+                        while(world.getBlockAt(i, k, j).getType() != Material.AIR);
+                        k--;
+                    }
+                    if (k <= 2) {
+                        return;
+                    }
+                    // 检查最上层
+                    if (record == null) {
+                        record = world.getBlockAt(i, k, j).getType();
+                        if (record == Material.BLACKSTONE) {
+                            record = Material.BASALT;
+                        }
+                    } else {
+                        Material current = world.getBlockAt(i, k, j).getType();
+                        if (current != record && (current != Material.BLACKSTONE || record != Material.BASALT)) {
+                            return;
+                        }
+                    }
+                    // 检查下一层
+                    Material current = world.getBlockAt(i, k - 1, j).getType();
+                    if (
+                        ((current == Material.BLACKSTONE || current == Material.BASALT) && record == Material.BASALT) ||
+                            (current == Material.NETHERRACK && record == Material.CRIMSON_NYLIUM) ||
+                            (current == Material.NETHERRACK && record == Material.WARPED_NYLIUM) ||
+                            (current == Material.NETHERRACK && record == Material.NETHERRACK) ||
+                            (current == Material.SOUL_SOIL && record == Material.SOUL_SOIL)
+                    ) continue;
+                    else {
+                        return;
+                    }
+                }
+            }
+            //检查完
+            Biome biome;
+            if (record == Material.BASALT) biome = Biome.BASALT_DELTAS;
+            else if (record == Material.CRIMSON_NYLIUM) biome = Biome.CRIMSON_FOREST;
+            else if (record == Material.WARPED_NYLIUM) biome = Biome.WARPED_FOREST;
+            else if (record == Material.SOUL_SOIL) biome = Biome.SOUL_SAND_VALLEY;
+            else biome = Biome.NETHER_WASTES;
+            for (int k = y - 4; k < y + 12; k += 4) {
+                if (k < 0 || k > 255) continue;
+                world.setBiome(x, k, z, biome);
+            }
+            Player player = event.getPlayer();
+            player.sendMessage("changed biome to" + biome.name());
+        }
+    }
 }
