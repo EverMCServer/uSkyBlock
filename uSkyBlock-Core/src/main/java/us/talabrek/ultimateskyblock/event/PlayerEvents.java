@@ -37,6 +37,7 @@ import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
+import us.talabrek.ultimateskyblock.util.TranslationUtil;
 import us.talabrek.ultimateskyblock.world.AcidBiomeProvider;
 import us.talabrek.ultimateskyblock.world.WorldManager;
 
@@ -378,7 +379,7 @@ public class PlayerEvents implements Listener {
             final String key = "usb.block-limits";
             if (!PatienceTester.isRunning(player, key)) {
                 PatienceTester.startRunning(player, key);
-                player.sendMessage(tr("\u00a74{0} is limited. \u00a7eScanning your island to see if you are allowed to place more, please be patient", ItemStackUtil.getItemName(new ItemStack(type))));
+                player.sendMessage(tr("\u00a74{0} is limited. \u00a7eScanning your island to see if you are allowed to place more, please be patient", TranslationUtil.INSTANCE.getItemLocalizedName(new ItemStack(type))));
                 plugin.fireAsyncEvent(new IslandInfoEvent(player, islandInfo.getIslandLocation(), new Callback<>() {
                     @Override
                     public void run() {
@@ -392,9 +393,9 @@ public class PlayerEvents implements Listener {
         if (canPlace == BlockLimitLogic.CanPlace.NO) {
             event.setCancelled(true);
             if (type == Material.HOPPER)
-                player.sendMessage(tr("\u00a74You''ve hit the {0} limit!\u00a7e You can''t have more of that type on your island!\u00a79 Max: {1,number}", ItemStackUtil.getItemName(new ItemStack(type)), (plugin.getBlockLimitLogic().getLimit(type)+islandInfo.getHopperLimit())));
+                player.sendMessage(tr("\u00a74You''ve hit the {0} limit!\u00a7e You can''t have more of that type on your island!\u00a79 Max: {1,number}", TranslationUtil.INSTANCE.getItemLocalizedName(new ItemStack(type)), (plugin.getBlockLimitLogic().getLimit(type)+islandInfo.getHopperLimit())));
             else
-                player.sendMessage(tr("\u00a74You''ve hit the {0} limit!\u00a7e You can''t have more of that type on your island!\u00a79 Max: {1,number}", ItemStackUtil.getItemName(new ItemStack(type)), plugin.getBlockLimitLogic().getLimit(type)));
+                player.sendMessage(tr("\u00a74You''ve hit the {0} limit!\u00a7e You can''t have more of that type on your island!\u00a79 Max: {1,number}", TranslationUtil.INSTANCE.getItemLocalizedName(new ItemStack(type)), plugin.getBlockLimitLogic().getLimit(type)));
             return;
         }
         plugin.getBlockLimitLogic().incBlockCount(islandInfo.getIslandLocation(), type);

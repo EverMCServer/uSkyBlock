@@ -9,6 +9,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
+import us.talabrek.ultimateskyblock.util.TranslationUtil;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -195,8 +196,8 @@ public class Challenge {
                 int requiredAmount = requiredItem.getValue();
                 ItemStack requiredType = requiredItem.getKey();
                 details.add(requiredAmount > 1
-                    ? tr("\u00a7f{0}x \u00a77{1}", requiredAmount, ItemStackUtil.getItemName(requiredType))
-                    : tr("\u00a77{0}", ItemStackUtil.getItemName(requiredType)));
+                    ? tr("\u00a7f{0}x \u00a77{1}", requiredAmount, TranslationUtil.INSTANCE.getItemLocalizedName(requiredType))
+                    : tr("\u00a77{0}", TranslationUtil.INSTANCE.getItemLocalizedName(requiredType)));
             }
         }
         if (!requiredBlocks.isEmpty() && wrappedDetails(details).size() < MAX_DETAILS) {

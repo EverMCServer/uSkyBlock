@@ -30,6 +30,7 @@ import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PerkLogic;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
+import us.talabrek.ultimateskyblock.util.TranslationUtil;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -329,7 +330,7 @@ public class ChallengeLogic implements Listener {
             for (Map.Entry<ItemStack, Integer> required : requiredItems.entrySet()) {
                 ItemStack requiredType = required.getKey();
                 int requiredAmount = required.getValue();
-                String name = ItemStackUtil.getItemName(requiredType);
+                String name = TranslationUtil.INSTANCE.getItemLocalizedName(requiredType);
                 if (!player.getInventory().containsAtLeast(requiredType, requiredAmount)) {
                     sb.append(tr(" \u00a74{0} \u00a7b{1}", (requiredAmount - getCountOf(player.getInventory(), requiredType)), name));
                     hasAll = false;

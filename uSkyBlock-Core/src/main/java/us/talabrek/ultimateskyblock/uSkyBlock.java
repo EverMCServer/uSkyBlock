@@ -68,6 +68,7 @@ import us.talabrek.ultimateskyblock.player.PlayerLogic;
 import us.talabrek.ultimateskyblock.player.PlayerNotifier;
 import us.talabrek.ultimateskyblock.player.PlayerPerk;
 import us.talabrek.ultimateskyblock.player.TeleportLogic;
+import us.talabrek.ultimateskyblock.util.*;
 import us.talabrek.ultimateskyblock.util.IslandUtil;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
 import us.talabrek.ultimateskyblock.util.Scheduler;
@@ -641,6 +642,8 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
 
         WorldManager.skyBlockWorld = null; // Force a re-import or what-ever...
         WorldManager.skyBlockNetherWorld = null;
+
+        TranslationUtil.INSTANCE.loadItemLang(this);
 
         Injector injector = Guice.createInjector(new SkyblockModule(this));
         this.skyBlock = injector.getInstance(SkyblockApp.class);
