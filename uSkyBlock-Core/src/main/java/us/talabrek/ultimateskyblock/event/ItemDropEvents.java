@@ -119,7 +119,10 @@ public class ItemDropEvents implements Listener {
             return;
         }
         Player player = (Player) event.getEntity();
-        if (event.isCancelled() || !plugin.getWorldManager().isSkyWorld(player.getWorld()) || !plugin.getWorldManager().isSkyNether(player.getWorld() )) {
+        if (
+            event.isCancelled() ||
+            (!plugin.getWorldManager().isSkyWorld(player.getWorld()) && !plugin.getWorldManager().isSkyNether(player.getWorld()))
+        ) {
             clearDropInfo(event.getItem());
             return;
         }
