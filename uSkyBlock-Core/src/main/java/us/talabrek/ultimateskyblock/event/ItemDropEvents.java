@@ -102,40 +102,7 @@ public class ItemDropEvents implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    @SuppressWarnings("unused")
-    public void onPickupInventoryEvent(InventoryPickupItemEvent event) {
-        if (!plugin.getWorldManager().isSkyWorld(event.getItem().getWorld())) {
-            return;
-        }
-        // I.e. hoppers...
-        clearDropInfo(event.getItem());
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    @SuppressWarnings("unused")
-    public void onPickupEvent(EntityPickupItemEvent event) {
-        if (!(event.getEntity() instanceof Player)) {
-            return;
-        }
-        Player player = (Player) event.getEntity();
-        if (
-            event.isCancelled() ||
-            (!plugin.getWorldManager().isSkyWorld(player.getWorld()) && !plugin.getWorldManager().isSkyNether(player.getWorld()))
-        ) {
-            clearDropInfo(event.getItem());
-            return;
-        }
-        if (wasDroppedBy(player, event) || player.hasPermission("usb.mod.bypassprotection") || plugin.playerIsOnIsland(player) || plugin.playerIsInSpawn(player)) {
-            clearDropInfo(event.getItem());
-            return; // Allowed
-        }
-        // You are on another's island, and the stuff dropped weren't yours.
-        event.setCancelled(true);
-        plugin.notifyPlayer(player, tr("You cannot pick up other players' loot when you are a visitor!"));
-    }
-
-    private boolean wasDroppedBy(Player player, EntityPickupItemEvent event) {
+    public static boolean wasDroppedBy(Player player, EntityPickupItemEvent event) {
         ItemStack itemStack = event.getItem().getItemStack();
         ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {

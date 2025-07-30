@@ -2,6 +2,7 @@ package us.talabrek.ultimateskyblock.event;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -16,10 +17,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerEggThrowEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -29,15 +33,52 @@ import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
-import java.util.Objects;
+import java.util.*;
+
+import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.clearDropInfo;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.wasDroppedBy;
 
 @Singleton
 public class IslandBorderEvent implements Listener {
     private final uSkyBlock plugin;
+    private Map<UUID, Location> origin;
 
     @Inject
     public IslandBorderEvent(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
+        this.origin = new HashMap<>();
+
+        // prevent mobs leave the island
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            List<Entity> entities = plugin.getWorldManager().getWorld().getEntities();
+            entities.addAll(plugin.getWorldManager().getNetherWorld().getEntities());
+            for (Entity e : entities) {
+                if (e instanceof Vehicle) {
+                    continue;
+                }
+                if (e instanceof Mob || e instanceof TNTPrimed || (e instanceof Firework fw && fw.getShooter() == null)) {
+                    Location cur = e.getLocation();
+                    Location ori = origin.get(e.getUniqueId());
+                    if (cur.equals(ori)) {
+                        continue;
+                    }
+                    IslandInfo ii = plugin.getIslandInfo(cur);
+                    IslandInfo ii2 = plugin.getIslandInfo(ori);
+                    if (isBothTrusted(ii, ii2)) {
+                        continue;
+                    }
+                    e.teleport(e.getLocation().add(e.getVelocity().multiply(-1)));
+                    e.setVelocity(new Vector(0, 0, 0).subtract(e.getVelocity()));
+                }
+            }
+        }, 10, 1);
+    }
+
+    @EventHandler
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        Entity entity = event.getEntity();
+        origin.put(entity.getUniqueId(), entity.getLocation());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -46,7 +87,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         IslandInfo target = plugin.getIslandInfo(event.getEgg().getLocation());
-        IslandInfo source = plugin.getIslandInfo(event.getPlayer());
+        IslandInfo source = plugin.getIslandInfo(origin.get(event.getEgg().getUniqueId()));
         if (!isBothTrusted(target, source)) {
             event.setHatching(false);
         }
@@ -86,7 +127,7 @@ public class IslandBorderEvent implements Listener {
             return;
         } else { //对面部诗人
             Location loc = event.getTargetEntity().getLocation();
-            Location ori = event.getBlock().getLocation();
+            Location ori = origin.get(event.getTargetEntity().getUniqueId());
             IslandInfo ii2 = plugin.getIslandInfo(loc);//对面
             if (!isBothTrusted(islandInfo, ii2)) {
                 event.setCancelled(true);
@@ -113,10 +154,10 @@ public class IslandBorderEvent implements Listener {
         event.setCancelled(!isBothTrusted(ii, ii2));
         if (!event.isCancelled()) {
             if (event.getDestination().getHolder() instanceof Entity entity) {
-                ii2 = plugin.getIslandInfo(entity.getLocation());
+                ii2 = plugin.getIslandInfo(origin.get(entity.getUniqueId()));
                 event.setCancelled(!isBothTrusted(ii, ii2));
             } else if (event.getSource().getHolder() instanceof Entity entity) {
-                ii = plugin.getIslandInfo(entity.getLocation());
+                ii = plugin.getIslandInfo(origin.get(entity.getUniqueId()));
                 event.setCancelled(!isBothTrusted(ii, ii2));
             }
         }
@@ -130,16 +171,16 @@ public class IslandBorderEvent implements Listener {
         }
         if (inv.getHolder() instanceof Entity entity) {
             IslandInfo ii = plugin.getIslandInfo(inv.getLocation());
-            IslandInfo ii2 = plugin.getIslandInfo(entity.getLocation());
+            IslandInfo ii2 = plugin.getIslandInfo(origin.get(entity.getUniqueId()));
             if (!isBothTrusted(ii, ii2)) {
                 event.setCancelled(true);
                 return;
             }
         }
         IslandInfo ii = plugin.getIslandInfo(inv.getLocation());
-        IslandInfo ii2 = plugin.getIslandInfo(event.getItem().getLocation());
+        IslandInfo ii2 = plugin.getIslandInfo(origin.get(event.getItem().getUniqueId()));
         if (isBothTrusted(ii, ii2)) {
-            ItemDropEvents.clearDropInfo(event.getItem());
+            clearDropInfo(event.getItem());
         } else {
             event.setCancelled(true);
         }
@@ -157,7 +198,8 @@ public class IslandBorderEvent implements Listener {
         IslandInfo ii2 = plugin.getIslandInfo(event.getTo());
         if (!isBothTrusted(ii, ii2)) {
             Vehicle v = event.getVehicle();
-            v.teleport(v.getVelocity().multiply(-1).toLocation(event.getVehicle().getWorld()));
+            Location location = v.getLocation();
+            v.teleport(location.add(v.getVelocity().multiply(-1)));
             v.setVelocity(new Vector(0, 0, 0).subtract(v.getVelocity()));
             return;
         }
@@ -203,7 +245,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         Block b = event.getIgnitingBlock();
-        IslandInfo ii = plugin.getIslandInfo(e.getLocation());
+        IslandInfo ii = plugin.getIslandInfo(origin.get(e.getUniqueId()));
         IslandInfo ii2;
         if (b == null) {
             ii2 = plugin.getIslandInfo(e.getLocation());
@@ -242,10 +284,47 @@ public class IslandBorderEvent implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onWitherChangeBlock(EntityChangeBlockEvent event) { //凋零破坏
         if (event.getEntity() instanceof Wither && event.getTo() == Material.AIR) {
-            if (!event.getEntity().getLocation().equals(event.getBlock().getLocation())) {
+            if (!origin.get(event.getEntity().getUniqueId()).equals(event.getBlock().getLocation())) {
                 event.setCancelled(true);
                 return;
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPickupEvent(EntityPickupItemEvent event) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld((event.getEntity().getWorld()))) {
+            return;
+        }
+        if (event.getEntity() instanceof Player player) { //对玩家
+            if(wasDroppedBy(player, event) ||
+                player.hasPermission("usb.mod.bypassprotection") ||
+                !IslandBorderEvent.isBothTrusted(plugin.getIslandInfo(player), plugin.getIslandInfo(origin.get(event.getItem().getUniqueId())))
+            ) {
+                event.setCancelled(true);
+                plugin.notifyPlayer(player, tr("You cannot pick up other players' loot when you are a visitor!"));
+            } else {
+                clearDropInfo(event.getItem());
+            }
+        } else { //对实体
+            IslandInfo ii = plugin.getIslandInfo(origin.get(event.getEntity().getUniqueId()));
+            IslandInfo ii2 = plugin.getIslandInfo(origin.get(event.getItem().getUniqueId()));
+            if(!IslandBorderEvent.isBothTrusted(ii, ii2)) {
+                event.setCancelled(true);
+            } else {
+                clearDropInfo(event.getItem());
+            }
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPlayerPickupArrow(PlayerPickupArrowEvent event) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getPlayer().getLocation().getWorld())) {
+            return;
+        }
+        if (isBothTrusted(plugin.getIslandInfo(event.getPlayer()), plugin.getIslandInfo(origin.get(event.getArrow().getUniqueId())))) {
+            event.setCancelled(false);
         }
     }
 
