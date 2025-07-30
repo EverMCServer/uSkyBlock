@@ -9,17 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import us.talabrek.ultimateskyblock.PluginConfig;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.chat.ChatEvents;
-import us.talabrek.ultimateskyblock.event.ExploitEvents;
-import us.talabrek.ultimateskyblock.event.GriefEvents;
-import us.talabrek.ultimateskyblock.event.InternalEvents;
-import us.talabrek.ultimateskyblock.event.ItemDropEvents;
-import us.talabrek.ultimateskyblock.event.MenuEvents;
-import us.talabrek.ultimateskyblock.event.NetherTerraFormEvents;
-import us.talabrek.ultimateskyblock.event.PlayerEvents;
-import us.talabrek.ultimateskyblock.event.SpawnEvents;
-import us.talabrek.ultimateskyblock.event.ToolMenuEvents;
-import us.talabrek.ultimateskyblock.event.WitherTagEvents;
-import us.talabrek.ultimateskyblock.event.WorldGuardEvents;
+import us.talabrek.ultimateskyblock.event.*;
 import us.talabrek.ultimateskyblock.gui.GuiListener;
 import us.talabrek.ultimateskyblock.signs.SignEvents;
 import us.talabrek.ultimateskyblock.command.InviteHandler;
@@ -38,6 +28,7 @@ public class Listeners {
     private final WitherTagEvents witherTagEvents;
     private final GriefEvents griefEvents;
     private final ItemDropEvents itemDropEvents;
+    private final IslandBorderEvent islandBorderEvent;
     private final SpawnEvents spawnEvents;
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
@@ -58,6 +49,7 @@ public class Listeners {
         @NotNull WitherTagEvents witherTagEvents,
         @NotNull GriefEvents griefEvents,
         @NotNull ItemDropEvents itemDropEvents,
+        @NotNull IslandBorderEvent islandBorderEvent,
         @NotNull SpawnEvents spawnEvents,
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
@@ -76,6 +68,7 @@ public class Listeners {
         this.witherTagEvents = witherTagEvents;
         this.griefEvents = griefEvents;
         this.itemDropEvents = itemDropEvents;
+        this.islandBorderEvent = islandBorderEvent;
         this.spawnEvents = spawnEvents;
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
@@ -98,6 +91,8 @@ public class Listeners {
         manager.registerEvents(chatEvents, plugin);
         manager.registerEvents(inviteHandler, plugin);
         manager.registerEvents(playerDB, plugin);
+
+        manager.registerEvents(islandBorderEvent, plugin);
 
         // TODO minoneer 06.02.2025: Move this logic. Either into the appropriate listener, or into submodules if we don't want all features active (e.g., the nether)
         if (config.getYamlConfig().getBoolean("options.protection.enabled", true)) {

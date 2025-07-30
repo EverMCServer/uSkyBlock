@@ -634,7 +634,7 @@ public class PlayerEvents implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(EntityChangeBlockEvent event) {
+    public void onEntityChangeBlock(EntityChangeBlockEvent event) {
         if (!plugin.getWorldManager().isSkyWorld(event.getBlock().getWorld())) {
             return;
         }

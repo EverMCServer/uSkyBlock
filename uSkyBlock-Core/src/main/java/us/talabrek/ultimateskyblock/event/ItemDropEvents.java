@@ -72,7 +72,7 @@ public class ItemDropEvents implements Listener {
         }
     }
 
-    private void addDropInfo(Player player, ItemStack stack) {
+    static void addDropInfo(Player player, ItemStack stack) {
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
             List<String> lore = meta.getLore();
@@ -88,7 +88,7 @@ public class ItemDropEvents implements Listener {
         }
     }
 
-    private void clearDropInfo(Item item) {
+    static void clearDropInfo(Item item) {
         ItemStack stack = item.getItemStack();
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
