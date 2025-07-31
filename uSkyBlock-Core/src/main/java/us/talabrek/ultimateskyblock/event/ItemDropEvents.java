@@ -109,7 +109,7 @@ public class ItemDropEvents implements Listener {
             List<String> lore = meta.getLore();
             if (lore != null && !lore.isEmpty()) {
                 String lastLine = lore.get(lore.size() - 1);
-                String islandName = lastLine.substring(7);
+                String islandName = lastLine.replaceFirst(tr("Owner: {0}", ""), "");
                 return islandName.equalsIgnoreCase(islandInfo.getName());
             }
         }
