@@ -26,7 +26,7 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
  */
 @Singleton
 public class ItemDropEvents implements Listener {
-    private final uSkyBlock plugin;
+    private static uSkyBlock plugin;
     private final boolean visitorsCanDrop;
 
     @Inject
@@ -79,7 +79,7 @@ public class ItemDropEvents implements Listener {
             if (lore == null) {
                 lore = new ArrayList<>();
             }
-            String ownerTag = tr("Owner: {0}", player.getName());
+            String ownerTag = tr("Owner: {0}", plugin.getIslandInfo(player).getName());
             if (!lore.contains(ownerTag)) {
                 lore.add(ownerTag);
             }
@@ -109,7 +109,8 @@ public class ItemDropEvents implements Listener {
             List<String> lore = meta.getLore();
             if (lore != null && !lore.isEmpty()) {
                 String lastLine = lore.get(lore.size() - 1);
-                return lastLine.equalsIgnoreCase(tr("Owner: {0}", player.getName()));
+                String islandName = lastLine.substring(7);
+                return islandName.equalsIgnoreCase(plugin.getIslandInfo(player).getName());
             }
         }
         return false;

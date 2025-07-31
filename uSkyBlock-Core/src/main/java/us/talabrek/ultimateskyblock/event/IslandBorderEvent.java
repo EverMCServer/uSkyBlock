@@ -41,7 +41,7 @@ import static us.talabrek.ultimateskyblock.event.ItemDropEvents.wasDroppedBy;
 
 @Singleton
 public class IslandBorderEvent implements Listener {
-    private final uSkyBlock plugin;
+    private static uSkyBlock plugin = null;
     private Cache<UUID, Location> origin;
 
     @Inject
@@ -107,7 +107,7 @@ public class IslandBorderEvent implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(block.getWorld())) {
             return;
         }
-        if (!(block.getBlockData() instanceof Dispenser dispenser)) {//发射器
+        if (!(block.getState() instanceof Dispenser dispenser)) {//发射器
             plugin.getLogger().severe("BlockDispenseEvent: block is not Dispenser! " + event.getBlock());
             return;
         }
@@ -131,20 +131,12 @@ public class IslandBorderEvent implements Listener {
             if (!isBothTrusted(islandInfo, islandInfo1)) {
                 event.setCancelled(true);
             }
-            return;
         } else { //对面部诗人
-            Location loc = event.getTargetEntity().getLocation();
             Location ori = origin.getIfPresent(event.getTargetEntity().getUniqueId());
-            IslandInfo ii2 = plugin.getIslandInfo(loc);//对面
-            if (!isBothTrusted(islandInfo, ii2)) {
-                event.setCancelled(true);
-                return;
-            }
-            ii2 = plugin.getIslandInfo(ori);
-            if (!isBothTrusted(islandInfo, ii2)) {
+            IslandInfo islandInfo1 = plugin.getIslandInfo(ori);
+            if (!isBothTrusted(islandInfo, islandInfo1)) {
                 event.setCancelled(true);
             }
-            return;
         }
     }
 
@@ -345,9 +337,15 @@ public class IslandBorderEvent implements Listener {
     }
 
     public static boolean isBothTrusted(IslandInfo islandInfo, IslandInfo islandInfo1) {
-        return islandInfo != null && islandInfo1 != null && !Objects.equals(islandInfo.getLeader(), "") && !Objects.equals(islandInfo1.getLeader(), "")
-            && (islandInfo.getIslandLocation() == islandInfo1.getIslandLocation() ||
-            (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())) && (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())));
+        plugin.getLogger().info("" + (islandInfo != null));
+        plugin.getLogger().info("" + (islandInfo1 != null));
+        plugin.getLogger().info("" + (Objects.equals(islandInfo.getName(), islandInfo1.getName())));
+        plugin.getLogger().info("" + (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())));
+        plugin.getLogger().info("" + (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())));
+        return islandInfo != null && islandInfo1 != null && (
+            Objects.equals(islandInfo.getName(), islandInfo1.getName()) || //同一个岛
+            (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())) && (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())) //完全互信
+        );
     }
 
     public Location getNearestlocationOn(IslandInfo island, Location target) {
