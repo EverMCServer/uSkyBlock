@@ -366,9 +366,9 @@ public class IslandBorderEvent implements Listener {
         double mz = (az + bz) / 2.0;
 
         if (islandlocation.getX() == island2location.getX()) {
-            return new Location(location.getWorld(), location.getX(), location.getY(), mz);
+            return new Location(location.getWorld(), location.getX(), location.getBlockY(), mz);
         } else if (islandlocation.getZ() == island2location.getZ()) {
-            return new Location(location.getWorld(), mx, location.getY(), location.getZ());
+            return new Location(location.getWorld(), mx, location.getBlockY(), location.getZ());
         } else return location;//???
     }
 }
