@@ -1,5 +1,7 @@
 package us.talabrek.ultimateskyblock.event;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.bukkit.Bukkit;
@@ -31,6 +33,7 @@ import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static us.talabrek.ultimateskyblock.event.ItemDropEvents.clearDropInfo;
@@ -39,12 +42,14 @@ import static us.talabrek.ultimateskyblock.event.ItemDropEvents.wasDroppedBy;
 @Singleton
 public class IslandBorderEvent implements Listener {
     private final uSkyBlock plugin;
-    private Map<UUID, Location> origin;
+    private Cache<UUID, Location> origin;
 
     @Inject
     public IslandBorderEvent(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
-        this.origin = new HashMap<>();
+        this.origin = CacheBuilder.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .build();
 
         // prevent mobs leave the island
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -55,17 +60,22 @@ public class IslandBorderEvent implements Listener {
                     continue;
                 }
                 if (e instanceof Mob || e instanceof TNTPrimed || (e instanceof Firework fw && fw.getShooter() == null)) {
-                    Location cur = e.getLocation();
-                    Location ori = origin.get(e.getUniqueId());
-                    if (cur.equals(ori)) {
+                    if (origin.getIfPresent(e.getUniqueId()) == null) {
+                        origin.put(e.getUniqueId(), e.getLocation());
                         continue;
                     }
-                    IslandInfo ii = plugin.getIslandInfo(cur);
-                    IslandInfo ii2 = plugin.getIslandInfo(ori);
-                    if (isBothTrusted(ii, ii2)) {
+                    IslandInfo cur = plugin.getIslandInfo(e.getLocation());
+                    IslandInfo ori = plugin.getIslandInfo(origin.getIfPresent(e.getUniqueId()));
+                    if (ori == null || cur == null) {
                         continue;
                     }
-                    e.teleport(getNearestPointOn(Point.at(origin.get(e.getUniqueId())), e.getLocation()));
+                    if (Objects.equals(cur.getName(), ori.getName())) {
+                        continue;
+                    }
+                    if (isBothTrusted(cur, ori)) {
+                        continue;
+                    }
+                    e.teleport(getNearestlocationOn(plugin.getIslandInfo(origin.getIfPresent(e.getUniqueId())), e.getLocation()));
                     e.setVelocity(new Vector(0, 0, 0).subtract(e.getVelocity()));
                 }
             }
@@ -84,7 +94,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         IslandInfo target = plugin.getIslandInfo(event.getEgg().getLocation());
-        IslandInfo source = plugin.getIslandInfo(origin.get(event.getEgg().getUniqueId()));
+        IslandInfo source = plugin.getIslandInfo(origin.getIfPresent(event.getEgg().getUniqueId()));
         if (!isBothTrusted(target, source)) {
             event.setHatching(false);
         }
@@ -124,7 +134,7 @@ public class IslandBorderEvent implements Listener {
             return;
         } else { //对面部诗人
             Location loc = event.getTargetEntity().getLocation();
-            Location ori = origin.get(event.getTargetEntity().getUniqueId());
+            Location ori = origin.getIfPresent(event.getTargetEntity().getUniqueId());
             IslandInfo ii2 = plugin.getIslandInfo(loc);//对面
             if (!isBothTrusted(islandInfo, ii2)) {
                 event.setCancelled(true);
@@ -151,10 +161,10 @@ public class IslandBorderEvent implements Listener {
         event.setCancelled(!isBothTrusted(ii, ii2));
         if (!event.isCancelled()) {
             if (event.getDestination().getHolder() instanceof Entity entity) {
-                ii2 = plugin.getIslandInfo(origin.get(entity.getUniqueId()));
+                ii2 = plugin.getIslandInfo(origin.getIfPresent(entity.getUniqueId()));
                 event.setCancelled(!isBothTrusted(ii, ii2));
             } else if (event.getSource().getHolder() instanceof Entity entity) {
-                ii = plugin.getIslandInfo(origin.get(entity.getUniqueId()));
+                ii = plugin.getIslandInfo(origin.getIfPresent(entity.getUniqueId()));
                 event.setCancelled(!isBothTrusted(ii, ii2));
             }
         }
@@ -168,14 +178,14 @@ public class IslandBorderEvent implements Listener {
         }
         if (inv.getHolder() instanceof Entity entity) {
             IslandInfo ii = plugin.getIslandInfo(inv.getLocation());
-            IslandInfo ii2 = plugin.getIslandInfo(origin.get(entity.getUniqueId()));
+            IslandInfo ii2 = plugin.getIslandInfo(origin.getIfPresent(entity.getUniqueId()));
             if (!isBothTrusted(ii, ii2)) {
                 event.setCancelled(true);
                 return;
             }
         }
         IslandInfo ii = plugin.getIslandInfo(inv.getLocation());
-        IslandInfo ii2 = plugin.getIslandInfo(origin.get(event.getItem().getUniqueId()));
+        IslandInfo ii2 = plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId()));
         if (isBothTrusted(ii, ii2)) {
             clearDropInfo(event.getItem());
         } else {
@@ -191,11 +201,15 @@ public class IslandBorderEvent implements Listener {
         if (!(event.getVehicle() instanceof Minecart)) {
             return;
         }
+        Vehicle v = event.getVehicle();
+        if (origin.getIfPresent(v.getUniqueId()) == null) {
+            origin.put(v.getUniqueId(), v.getLocation());
+            return;
+        }
         IslandInfo ii = plugin.getIslandInfo(event.getFrom());
         IslandInfo ii2 = plugin.getIslandInfo(event.getTo());
         if (!isBothTrusted(ii, ii2)) {
-            Vehicle v = event.getVehicle();
-            v.teleport(getNearestPointOn(Point.at(origin.get(v.getUniqueId())), event.getTo()));
+            v.teleport(getNearestlocationOn(plugin.getIslandInfo(origin.getIfPresent(v.getUniqueId())), event.getTo()));
             v.setVelocity(new Vector(0, 0, 0).subtract(v.getVelocity()));
             return;
         }
@@ -213,9 +227,13 @@ public class IslandBorderEvent implements Listener {
         BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
         for (BlockFace face : faces) {
             Block relative = block.getRelative(face);
-            if (relative.getType() == block.getType() && Point.at(relative.getLocation()) != Point.at(block.getLocation())) {
-                IslandInfo ii = plugin.getIslandInfo(relative.getLocation());
-                IslandInfo ii2 = plugin.getIslandInfo(block.getLocation());
+            IslandInfo ii = plugin.getIslandInfo(relative.getLocation());
+            IslandInfo ii2 = plugin.getIslandInfo(block.getLocation());
+            if (relative.getType() == block.getType()
+                && !Objects.equals(
+                ii == null ? null : ii.getName(),
+                ii2 == null ? null : ii2.getName())
+            ) {
                 if (!isBothTrusted(ii, ii2)) {
                     event.setCancelled(true);
                     event.getPlayer().sendMessage("cannot build");
@@ -241,7 +259,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         Block b = event.getIgnitingBlock();
-        IslandInfo ii = plugin.getIslandInfo(origin.get(e.getUniqueId()));
+        IslandInfo ii = plugin.getIslandInfo(origin.getIfPresent(e.getUniqueId()));
         IslandInfo ii2;
         if (b == null) {
             ii2 = plugin.getIslandInfo(e.getLocation());
@@ -280,8 +298,8 @@ public class IslandBorderEvent implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onWitherChangeBlock(EntityChangeBlockEvent event) { //凋零破坏
         if (event.getEntity() instanceof Wither && event.getTo() == Material.AIR) {
-            Point a = Point.at(origin.get(event.getEntity().getUniqueId()));
-            Point b = Point.at(event.getBlock().getLocation());
+            IslandInfo a = plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId()));
+            IslandInfo b = plugin.getIslandInfo(event.getBlock().getLocation());
             if (!a.equals(b)) {
                 event.setCancelled(true);
                 return;
@@ -297,7 +315,7 @@ public class IslandBorderEvent implements Listener {
         if (event.getEntity() instanceof Player player) { //对玩家
             if (wasDroppedBy(player, event) ||
                 player.hasPermission("usb.mod.bypassprotection") ||
-                IslandBorderEvent.isBothTrusted(plugin.getIslandInfo(player), plugin.getIslandInfo(origin.get(event.getItem().getUniqueId())))
+                IslandBorderEvent.isBothTrusted(plugin.getIslandInfo(player), plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId())))
             ) {
                 clearDropInfo(event.getItem());
             } else {
@@ -305,8 +323,8 @@ public class IslandBorderEvent implements Listener {
                 plugin.notifyPlayer(player, tr("You cannot pick up other players' loot when you are a visitor!"));
             }
         } else { //对实体
-            IslandInfo ii = plugin.getIslandInfo(origin.get(event.getEntity().getUniqueId()));
-            IslandInfo ii2 = plugin.getIslandInfo(origin.get(event.getItem().getUniqueId()));
+            IslandInfo ii = plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId()));
+            IslandInfo ii2 = plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId()));
             if(!IslandBorderEvent.isBothTrusted(ii, ii2)) {
                 event.setCancelled(true);
             } else {
@@ -321,7 +339,7 @@ public class IslandBorderEvent implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getPlayer().getLocation().getWorld())) {
             return;
         }
-        if (isBothTrusted(plugin.getIslandInfo(event.getPlayer()), plugin.getIslandInfo(origin.get(event.getArrow().getUniqueId())))) {
+        if (isBothTrusted(plugin.getIslandInfo(event.getPlayer()), plugin.getIslandInfo(origin.getIfPresent(event.getArrow().getUniqueId())))) {
             event.setCancelled(false);
         }
     }
@@ -332,85 +350,27 @@ public class IslandBorderEvent implements Listener {
             (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())) && (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())));
     }
 
-    public Location getNearestPointOn(Point island, Location target) {
-        if (Point.at(target).equals(island)) {
+    public Location getNearestlocationOn(IslandInfo island, Location target) {
+        if (plugin.getIslandInfo(target).equals(island)) {
             return target;
         }
-        Location ret = target.clone();
-        double x = island.x * 160;
-        double z = island.z * 160;
-        x += (x >= 0)? -80: 80;
-        z += (z >= 0)? -80: 80;
-        double vx = target.getX() - x;
-        double vz = target.getZ() - z;
-        if (Math.abs(vx) >= Math.abs(vz)) {
-            vz *= 79.9f / Math.abs(vx);
-            vx = Math.copySign(79.9f, vx);
-        } else {
-            vx *= 79.9f / Math.abs(vz);
-            vz = Math.copySign(79.9f, vz);
-        }
-        ret.setX(x + vx);
-        ret.setZ(z + vz);
-        if (!Point.at(ret).equals(island)) {
-            plugin.getLogger().severe("getNearestPointOn: wrong answer! island=" + island + ", target=" + target + ", ret=" + ret);
-        }
-        if (ret.distance(target) > 20.0) {
-            plugin.getLogger().severe("getNearestPointOn: too far! island=" + island + ", target=" + target + ", ret=" + ret);
-        }
-        return ret;
-    }
+        Location location = target.clone(); //所在位置
+        IslandInfo island2 = plugin.getIslandInfo(target); //对面岛
+        Location islandlocation = island.getIslandLocation(); //这边岛位置
+        Location island2location = island2.getIslandLocation(); //对面岛位置
 
-    private static class Point { // tool class to calculate the island position
-        public int x;
-        public int z;
-        public Point(int x, int z){
-            this.x = x;
-            this.z = z;
-        }
+        // 只用 X 和 Z，忽略 Y
+        double ax = islandlocation.getX(), az = islandlocation.getZ();
+        double bx = island2location.getX(), bz = island2location.getZ();
 
-        @Override
-        public boolean equals(Object _p) {
-            if (!(_p instanceof Point)) {
-                return false;
-            }
-            Point p = (Point)_p;
-            return this.x == p.x && this.z == p.z;
-        }
+        // 中点 M
+        double mx = (ax + bx) / 2.0;
+        double mz = (az + bz) / 2.0;
 
-        @Override
-        public String toString() {
-            return "[" + this.x + "," + this.z + "]";
-        }
-
-        @Override
-        public int hashCode() {
-            return this.x << 16 | this.z;
-        }
-
-        public static Point at(Location loc) {
-
-            int x = loc.getBlockX();
-            int z = loc.getBlockZ();
-
-            return at(x, z);
-        }
-
-        /**
-         * 0,0 -> 1,1
-         * 127,127 -> 1,1
-         * -1,-1 -> -1,-1
-         * -128,-128 -> -1,-1
-         */
-        public static Point at(int x, int z) {
-
-            x += (x >= 0)? 160 : -159;
-            z += (z >= 0)? 160 : -159;
-
-            x /= 160;
-            z /= 160;
-
-            return new Point(x,z);
-        }
+        if (islandlocation.getX() == island2location.getX()) {
+            return new Location(location.getWorld(), location.getX(), location.getY(), mz);
+        } else if (islandlocation.getZ() == island2location.getZ()) {
+            return new Location(location.getWorld(), mx, location.getY(), location.getZ());
+        } else return location;//???
     }
 }
