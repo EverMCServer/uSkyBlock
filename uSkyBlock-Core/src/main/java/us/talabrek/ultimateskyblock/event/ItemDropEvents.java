@@ -9,11 +9,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.ArrayList;
@@ -102,7 +102,7 @@ public class ItemDropEvents implements Listener {
         }
     }
 
-    public static boolean wasDroppedBy(Player player, EntityPickupItemEvent event) {
+    public static boolean isForIsland(IslandInfo islandInfo, EntityPickupItemEvent event) {
         ItemStack itemStack = event.getItem().getItemStack();
         ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {
@@ -110,7 +110,7 @@ public class ItemDropEvents implements Listener {
             if (lore != null && !lore.isEmpty()) {
                 String lastLine = lore.get(lore.size() - 1);
                 String islandName = lastLine.substring(7);
-                return islandName.equalsIgnoreCase(plugin.getIslandInfo(player).getName());
+                return islandName.equalsIgnoreCase(islandInfo.getName());
             }
         }
         return false;

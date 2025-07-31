@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static us.talabrek.ultimateskyblock.event.ItemDropEvents.clearDropInfo;
-import static us.talabrek.ultimateskyblock.event.ItemDropEvents.wasDroppedBy;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.isForIsland;
 
 @Singleton
 public class IslandBorderEvent implements Listener {
@@ -305,7 +305,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         if (event.getEntity() instanceof Player player) { //对玩家
-            if (wasDroppedBy(player, event) ||
+            if (isForIsland(plugin.getIslandInfo(player), event) ||
                 player.hasPermission("usb.mod.bypassprotection") ||
                 IslandBorderEvent.isBothTrusted(plugin.getIslandInfo(player), plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId())))
             ) {
@@ -315,12 +315,15 @@ public class IslandBorderEvent implements Listener {
                 plugin.notifyPlayer(player, tr("You cannot pick up other players' loot when you are a visitor!"));
             }
         } else { //对实体
-            IslandInfo ii = plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId()));
-            IslandInfo ii2 = plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId()));
-            if(!IslandBorderEvent.isBothTrusted(ii, ii2)) {
-                event.setCancelled(true);
-            } else {
+            if (isForIsland(plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId())), event) ||
+                IslandBorderEvent.isBothTrusted(
+                    plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId())),
+                    plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId()))
+                )
+            ) {
                 clearDropInfo(event.getItem());
+            } else {
+                event.setCancelled(true);
             }
         }
     }
