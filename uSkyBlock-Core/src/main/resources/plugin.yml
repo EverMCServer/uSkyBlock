@@ -17,6 +17,8 @@ softdepend:
  - FastAsyncWorldEdit
  # placeholders
  - MVdWPlaceholderAPI
+ # signshop
+ - SignShop
 api-version: 1.21.1
 libraries:
   - com.google.code.gson:gson:2.10.1

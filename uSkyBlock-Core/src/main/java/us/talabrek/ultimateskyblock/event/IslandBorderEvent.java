@@ -28,9 +28,15 @@ import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.wargamer2010.signshop.operations.SignShopArgumentsType;
+import org.wargamer2010.signshop.operations.SignShopOperation;
+import org.wargamer2010.signshop.player.SignShopPlayer;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
+
+import org.wargamer2010.signshop.events.SSCreatedEvent;
+import org.wargamer2010.signshop.events.SSPreTransactionEvent;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -340,11 +346,6 @@ public class IslandBorderEvent implements Listener {
     }
 
     public static boolean isBothTrusted(IslandInfo islandInfo, IslandInfo islandInfo1) {
-        plugin.getLogger().info("" + (islandInfo != null));
-        plugin.getLogger().info("" + (islandInfo1 != null));
-        plugin.getLogger().info("" + (Objects.equals(islandInfo.getName(), islandInfo1.getName())));
-        plugin.getLogger().info("" + (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())));
-        plugin.getLogger().info("" + (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())));
         return islandInfo != null && islandInfo1 != null && (
             Objects.equals(islandInfo.getName(), islandInfo1.getName()) || //同一个岛
             (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())) && (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())) //完全互信
@@ -373,5 +374,49 @@ public class IslandBorderEvent implements Listener {
         } else if (islandlocation.getZ() == island2location.getZ()) {
             return new Location(location.getWorld(), mx, location.getBlockY(), location.getZ());
         } else return location;//???
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSSPreTransactionEvent(SSPreTransactionEvent event) {
+        if(event.isCancelled() || !event.canBeCancelled())
+            return;
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getPlayer().getWorld())) {
+            return;
+        }
+        SignShopPlayer ssPlayer = event.getPlayer();
+        PlayerInfo playerInfo = plugin.getPlayerInfo(ssPlayer.getPlayer());
+        IslandInfo islandInfo = plugin.getIslandInfo(playerInfo);
+        Location location = event.getSign().getLocation();
+        IslandInfo shopIslandInfo = plugin.getIslandInfo(location);
+
+        if (islandInfo == null) return;
+        if (shopIslandInfo == null) return;
+
+        if(!Objects.equals(shopIslandInfo.getName(), islandInfo.getName())) {
+            ssPlayer.sendMessage(tr("You don't have permission to access this shop"));
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onSSBuildEvent(SSCreatedEvent event) {
+        if(event.isCancelled() || !event.canBeCancelled())
+            return;
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getPlayer().getWorld())) {
+            return;
+        }
+        SignShopPlayer ssPlayer = event.getPlayer();
+        PlayerInfo playerInfo = plugin.getPlayerInfo(ssPlayer.getPlayer());
+        IslandInfo islandInfo = plugin.getIslandInfo(playerInfo);
+        Location location = event.getSign().getLocation();
+        IslandInfo shopIslandInfo = plugin.getIslandInfo(location);
+
+        if (islandInfo == null) return;
+        if (shopIslandInfo == null) return;
+
+        if(!Objects.equals(shopIslandInfo.getName(), islandInfo.getName())) {
+            ssPlayer.sendMessage(tr("You don't have permission to build this shop"));
+            event.setCancelled(true);
+        }
     }
 }
