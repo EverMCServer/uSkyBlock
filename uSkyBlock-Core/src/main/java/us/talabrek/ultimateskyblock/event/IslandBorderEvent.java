@@ -346,7 +346,9 @@ public class IslandBorderEvent implements Listener {
     }
 
     public static boolean isBothTrusted(IslandInfo islandInfo, IslandInfo islandInfo1) {
-        return islandInfo != null && islandInfo1 != null && (
+        if (islandInfo == null) return false;
+        if (islandInfo1 == null) return false;
+        return (
             Objects.equals(islandInfo.getName(), islandInfo1.getName()) || //同一个岛
             (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())) && (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())) //完全互信
         );

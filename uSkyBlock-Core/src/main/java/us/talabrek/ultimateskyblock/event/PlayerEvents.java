@@ -318,27 +318,27 @@ public class PlayerEvents implements Listener {
     private RateLimiter rateLimiter = RateLimiter.create(1);
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPlayerPortal(EntityPortalEvent event) {
-        if (event.getEntityType() == EntityType.PLAYER) {
-            Player player = (Player) event.getEntity();
-            PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+    public void onEntityPortal(EntityPortalEvent event) {
+        IslandInfo islandInfo = plugin.getIslandInfo(event.getFrom());
+        if (islandInfo != null) {
+            PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeader());
             boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
-            if (player.isOp()) return;
             if (isFirstCompletion){
                 event.setCancelled(true);
-                if (rateLimiter.tryAcquire()) {
-                    player.sendMessage("\u00a7c地狱门已被禁用");
-                }
             }
         }
-        else {
-            IslandInfo islandInfo = plugin.getIslandInfo(event.getFrom());
-            if (islandInfo != null) {
-                PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeader());
-                boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
-                if (isFirstCompletion){
-                    event.setCancelled(true);
-                }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerPortal(PlayerPortalEvent event) {
+        Player player = event.getPlayer();
+        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+        boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
+        if (player.isOp()) return;
+        if (isFirstCompletion){
+            event.setCancelled(true);
+            if (rateLimiter.tryAcquire()) {
+                player.sendMessage("\u00a7c地狱门已被禁用");
             }
         }
     }
