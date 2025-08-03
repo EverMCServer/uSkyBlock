@@ -3,7 +3,6 @@ package us.talabrek.ultimateskyblock.event;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
@@ -13,7 +12,6 @@ import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Leaves;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -340,6 +338,19 @@ public class PlayerEvents implements Listener {
             if (rateLimiter.tryAcquire()) {
                 player.sendMessage("\u00a7c地狱门已被禁用");
             }
+        } else {
+            plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_nether");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+        IslandInfo ii = plugin.getIslandInfo(event.getTo());
+        if (ii != null && !ii.getMemberUUIDs().contains(player.getUniqueId())) { // player is visitor
+            plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "visit_1");
+            plugin.getChallengeLogic().completeLocationChallengeIfNotDone(event.getTo(), "visited_1");
         }
     }
 
@@ -449,7 +460,7 @@ public class PlayerEvents implements Listener {
         if (frostIceRecord.containsKey(loc)) {
             frostIceRecord.get(loc).cancel();
         }
-        FrostIceRecord record = new FrostIceRecord(loc);
+        FrostIceRecord record = new FrostIceRecord(plugin, loc);
         record.runTaskTimer(uSkyBlock.getInstance(), 24000, 24000);
         frostIceRecord.put(loc, record);
     }
@@ -459,8 +470,9 @@ public class PlayerEvents implements Listener {
     public static class FrostIceRecord extends BukkitRunnable {
 
         private final Location loc;
-        public FrostIceRecord(Location loc) {
-            this.loc = loc;
+        private final uSkyBlock plugin;
+        public FrostIceRecord(uSkyBlock plugin, Location loc) {
+            this.loc = loc; this.plugin = plugin;
         }
 
         @Override
@@ -477,8 +489,11 @@ public class PlayerEvents implements Listener {
                 this.cancel();
                 i = 0;
             }
-            for (int y = 0; y < 256; y += 4) {
+            for (int y = -64; y < 319; y += 4) {
                 loc.getWorld().setBiome(loc.getBlockX(), y, loc.getBlockZ(), AcidBiomeProvider.tempToBiome[i]);
+            }
+            if (i == 0) {
+                plugin.getChallengeLogic().completeLocationChallengeIfNotDone(loc, "biome_nether");
             }
         }
     }
@@ -505,7 +520,7 @@ public class PlayerEvents implements Listener {
         }
     }
 
-    private static void checkCoral(Location loc, Player p) {
+    private void checkCoral(Location loc, Player p) {
         int ox = loc.getBlockX() >> 2;
         int oz = loc.getBlockZ() >> 2;
         HashSet<Location> record = new HashSet<>();
@@ -531,6 +546,9 @@ public class PlayerEvents implements Listener {
             }
             p.sendMessage("Temperature changed!");
         }
+        if (temperature == 4) {
+            plugin.getChallengeLogic().completeLocationChallengeIfNotDone(loc, "biome_warm");
+        }
     }
 
     private static void doCheckCoral(Location loc, int ox, int oz, HashSet<Location> record, int stopvalue) {
@@ -540,7 +558,7 @@ public class PlayerEvents implements Listener {
         for (int i = x - 1; i <= x + 1; i ++) {
             for (int j = y - 1; j <= y + 1; j ++) {
                 for (int k = z - 1; k <= z + 1; k ++) {
-                    if (j < 0 || j > 255) continue;
+                    if (j < -64 || j > 319) continue;
                     if (i >> 2 != ox || k >> 2 != oz) continue;
                     Location temp = loc.clone();
                     temp.setX(i);
@@ -624,6 +642,7 @@ public class PlayerEvents implements Listener {
             else if (record == Material.WARPED_NYLIUM) biome = Biome.WARPED_FOREST;
             else if (record == Material.SOUL_SOIL) biome = Biome.SOUL_SAND_VALLEY;
             else biome = Biome.NETHER_WASTES;
+            plugin.getChallengeLogic().completeLocationChallengeIfNotDone(location, "biome_nether");
             for (int k = y - 4; k < y + 12; k += 4) {
                 if (k < 0 || k > 255) continue;
                 world.setBiome(x, k, z, biome);
@@ -650,6 +669,7 @@ public class PlayerEvents implements Listener {
                 BlockData changed = change.getBlockData();
                 if (changed instanceof Leaves){
                     change.setType(Material.AIR);
+                    plugin.getChallengeLogic().completeLocationChallengeIfNotDone(block.getLocation(), "anvilleaves");
                     return;
                 }
                 if (changeType == Material.STONE_BRICKS){

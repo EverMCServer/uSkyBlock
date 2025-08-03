@@ -600,6 +600,23 @@ public class ChallengeLogic implements Listener {
         return completionLogic.getChallenges(playerInfo).values();
     }
 
+    public void completeLocationChallengeIfNotDone(Location loc, String challengeName) {
+        IslandInfo islandInfo = plugin.getIslandInfo(loc);
+        if (islandInfo == null) {
+            return;
+        }
+        PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeaderUniqueId());
+        if (completionLogic.checkChallenge(playerInfo, challengeName) == 0) {
+            completionLogic.completeChallenge(playerInfo, challengeName);
+        }
+    }
+
+    public void completeChallengeIfNotDone(PlayerInfo playerInfo, String challengeName) {
+        if (completionLogic.checkChallenge(playerInfo, challengeName) == 0) {
+            completionLogic.completeChallenge(playerInfo, challengeName);
+        }
+    }
+
     public void completeChallenge(PlayerInfo playerInfo, String challengeName) {
         completionLogic.completeChallenge(playerInfo, challengeName);
     }
