@@ -28,8 +28,6 @@ import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
-import org.wargamer2010.signshop.operations.SignShopArgumentsType;
-import org.wargamer2010.signshop.operations.SignShopOperation;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
@@ -62,27 +60,18 @@ public class IslandBorderEvent implements Listener {
             List<Entity> entities = plugin.getWorldManager().getWorld().getEntities();
             entities.addAll(plugin.getWorldManager().getNetherWorld().getEntities());
             for (Entity e : entities) {
-                if (e instanceof Vehicle) {
-                    continue;
-                }
                 if (e instanceof Mob || e instanceof TNTPrimed || (e instanceof Firework fw && fw.getShooter() == null)) {
-                    if (origin.getIfPresent(e.getUniqueId()) == null) {
+                    Location last_loc = origin.getIfPresent(e.getUniqueId());
+                    Location now_loc = e.getLocation();
+                    if (last_loc == null || isBothTrusted(plugin.getIslandInfo(last_loc), plugin.getIslandInfo(now_loc))) {
                         origin.put(e.getUniqueId(), e.getLocation());
                         continue;
                     }
-                    IslandInfo cur = plugin.getIslandInfo(e.getLocation());
-                    IslandInfo ori = plugin.getIslandInfo(origin.getIfPresent(e.getUniqueId()));
-                    if (ori == null || cur == null) {
-                        continue;
-                    }
-                    if (Objects.equals(cur.getName(), ori.getName())) {
-                        continue;
-                    }
-                    if (isBothTrusted(cur, ori)) {
-                        continue;
-                    }
-                    e.teleport(getNearestlocationOn(plugin.getIslandInfo(origin.getIfPresent(e.getUniqueId())), e.getLocation()));
-                    e.setVelocity(new Vector(0, 0, 0).subtract(e.getVelocity()));
+                    e.teleport(last_loc);
+                    origin.put(e.getUniqueId(), last_loc);
+                    Vector vel = e.getVelocity();
+                    vel.setX(-vel.getX()).setZ(-vel.getZ());
+                    e.setVelocity(vel);
                 }
             }
         }, 10, 1);
@@ -346,8 +335,8 @@ public class IslandBorderEvent implements Listener {
     }
 
     public static boolean isBothTrusted(IslandInfo islandInfo, IslandInfo islandInfo1) {
-        if (islandInfo == null) return false;
-        if (islandInfo1 == null) return false;
+        if (islandInfo == null && islandInfo1 == null) return true; //都没有岛
+        if (islandInfo == null || islandInfo1 == null) return false; //只有一个岛
         return (
             Objects.equals(islandInfo.getName(), islandInfo1.getName()) || //同一个岛
             (islandInfo.getTrusteeUUIDs().contains(islandInfo1.getLeaderUniqueId())) && (islandInfo1.getTrusteeUUIDs().contains(islandInfo.getLeaderUniqueId())) //完全互信
