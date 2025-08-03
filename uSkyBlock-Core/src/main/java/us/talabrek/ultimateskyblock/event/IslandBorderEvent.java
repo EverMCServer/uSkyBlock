@@ -20,6 +20,7 @@ import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerEggThrowEvent;
@@ -99,6 +100,20 @@ public class IslandBorderEvent implements Listener {
                 // plugin.getLogger().info("Item spawned at " + loc + " with UUID " + entity.getUniqueId());
             }
 
+        }
+    }
+
+
+    @EventHandler (priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void on(EntityTargetEvent event) {
+        if (event.getTarget() instanceof Player player) {
+            IslandInfo iip = plugin.getIslandInfo(player);
+            IslandInfo iip_pos = plugin.getIslandInfo(player.getLocation());
+            IslandInfo iie = plugin.getIslandInfo(event.getEntity().getLocation());
+            if (!isBothTrusted(iie, iip) || !isBothTrusted(iie, iip_pos)) {
+                event.setCancelled(true);
+                event.setTarget(null);
+            }
         }
     }
 
