@@ -51,6 +51,7 @@ public class Challenge {
     private final List<EntityMatch> requiredEntities;
     private final List<String> requiredChallenges;
     private final double requiredLevel;
+    private List<ProgressRequirement> requiredProgress;
     private final Rank rank;
     private final Duration resetDuration;
     private final ItemStack displayItem;
@@ -65,7 +66,7 @@ public class Challenge {
 
     public Challenge(String name, String displayName, String description, Type type, List<ItemRequirement> requiredItems,
                      @NotNull List<BlockRequirement> requiredBlocks, List<EntityMatch> requiredEntities,
-                     List<String> requiredChallenges, double requiredLevel, Rank rank,
+                     List<String> requiredChallenges, double requiredLevel, List<ProgressRequirement> requiredProgress, Rank rank,
                      Duration resetDuration, ItemStack displayItem, String tool, ItemStack lockedItem, int offset,
                      boolean takeItems, int radius, Reward reward, Reward repeatReward, int repeatLimit) {
         this.name = name;
@@ -76,6 +77,7 @@ public class Challenge {
         this.requiredEntities = requiredEntities;
         this.requiredChallenges = requiredChallenges;
         this.requiredLevel = requiredLevel;
+        this.requiredProgress = requiredProgress;
         this.rank = rank;
         this.resetDuration = resetDuration;
         this.displayItem = displayItem;
@@ -139,6 +141,10 @@ public class Challenge {
         return requiredChallenges;
     }
 
+    public List<ProgressRequirement> getRequiredProgress() {
+        return requiredProgress != null ? requiredProgress : Collections.emptyList();
+    }
+
     public Rank getRank() {
         return rank;
     }
@@ -183,10 +189,24 @@ public class Challenge {
         }
         Map<ItemStack, Integer> requiredItemsForChallenge = getRequiredItems(timesCompleted);
         if (!requiredItemsForChallenge.isEmpty() || !requiredBlocks.isEmpty()
-            || (requiredEntities != null && !requiredEntities.isEmpty())) {
+            || (requiredEntities != null && !requiredEntities.isEmpty()) || !getRequiredProgress().isEmpty()) {
             lores.add(tr("\u00a7eThis challenge requires:"));
         }
         List<String> details = new ArrayList<>();
+
+        // Add progress requirements to details
+        List<ProgressRequirement> progressRequirements = getRequiredProgress();
+        if (!progressRequirements.isEmpty()) {
+            for (ProgressRequirement progressReq : progressRequirements) {
+                if (wrappedDetails(details).size() >= MAX_DETAILS) {
+                    details.add(tr("\u00a77and more..."));
+                    break;
+                }
+                double requiredAmount = progressReq.amountForRepetitions(timesCompleted);
+                details.add(tr("\u00a7f{0}: {1}", progressReq.key(), requiredAmount));
+            }
+        }
+
         if (!requiredItemsForChallenge.isEmpty()) {
             for (Map.Entry<ItemStack, Integer> requiredItem : requiredItemsForChallenge.entrySet()) {
                 if (wrappedDetails(details).size() >= MAX_DETAILS) {

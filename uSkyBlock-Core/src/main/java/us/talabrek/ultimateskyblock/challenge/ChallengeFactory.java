@@ -75,11 +75,12 @@ public class ChallengeFactory {
             repeatReward = reward;
         }
         List<String> requiredChallenges = section.getStringList("requiredChallenges");
+        List<ProgressRequirement> requiredProgress = createProgressRequirements(section.getStringList("requiredProgress"));
         int offset = section.getInt("offset", 0);
         int repeatLimit = section.getInt("repeatLimit", 0);
         return new Challenge(name, displayName, description, type,
             requiredItems, requiredBlocks, requiredEntities, requiredChallenges, section.getDouble("requiredLevel", 0d),
-            rank, resetDuration, displayItem, section.getString("tool", null), lockedItem, offset, takeItems,
+            requiredProgress, rank, resetDuration, displayItem, section.getString("tool", null), lockedItem, offset, takeItems,
             radius, reward, repeatReward, repeatLimit);
     }
 
@@ -105,6 +106,59 @@ public class ChallengeFactory {
             }
         }
         return entities;
+    }
+
+    private static List<ProgressRequirement> createProgressRequirements(List<String> progressRequirements) {
+        List<ProgressRequirement> requirements = new ArrayList<>();
+        for (String progressString : progressRequirements) {
+            requirements.add(createProgressRequirement(progressString));
+        }
+        return requirements;
+    }
+
+    private static ProgressRequirement createProgressRequirement(String progressString) {
+        // Format: "key:amount" or "key:amount:operator:increment"
+        // Examples: "kills:10", "blocks_mined:100:+:5", "trees_planted:50:*:1.5"
+        String[] parts = progressString.split(":");
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("Invalid progress requirement format: " + progressString +
+                ". Expected format: 'key:amount' or 'key:amount:operator:increment'");
+        }
+
+        String key = parts[0];
+        double amount;
+        try {
+            amount = Double.parseDouble(parts[1]);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid amount in progress requirement: " + progressString, e);
+        }
+
+        if (parts.length == 2) {
+            // Simple format: just key and amount
+            return ProgressRequirement.of(key, amount);
+        } else if (parts.length == 4) {
+            // Extended format with operator and increment
+            String operatorStr = parts[2];
+            double increment;
+            try {
+                increment = Double.parseDouble(parts[3]);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid increment in progress requirement: " + progressString, e);
+            }
+
+            ItemRequirement.Operator operator = switch (operatorStr) {
+                case "+" -> ItemRequirement.Operator.ADD;
+                case "-" -> ItemRequirement.Operator.SUBTRACT;
+                case "*" -> ItemRequirement.Operator.MULTIPLY;
+                default -> throw new IllegalArgumentException("Invalid operator in progress requirement: " + operatorStr +
+                    ". Supported operators: +, -, *");
+            };
+
+            return ProgressRequirement.of(key, amount, operator, increment);
+        } else {
+            throw new IllegalArgumentException("Invalid progress requirement format: " + progressString +
+                ". Expected format: 'key:amount' or 'key:amount:operator:increment'");
+        }
     }
 
     private static Reward createReward(ConfigurationSection section) {
