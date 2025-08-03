@@ -72,6 +72,22 @@ public class ItemDropEvents implements Listener {
         }
     }
 
+    static void addDropInfo(IslandInfo islandInfo, ItemStack stack) {
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            List<String> lore = meta.getLore();
+            if (lore == null) {
+                lore = new ArrayList<>();
+            }
+            String ownerTag = tr("Owner: {0}", islandInfo.getName());
+            if (!lore.contains(ownerTag)) {
+                lore.add(ownerTag);
+            }
+            meta.setLore(lore);
+            stack.setItemMeta(meta);
+        }
+    }
+
     static void addDropInfo(Player player, ItemStack stack) {
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {

@@ -40,14 +40,20 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
-import static us.talabrek.ultimateskyblock.event.ItemDropEvents.clearDropInfo;
-import static us.talabrek.ultimateskyblock.event.ItemDropEvents.isForIsland;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.*;
 
 @Singleton
 public class IslandBorderEvent implements Listener {
     private static uSkyBlock plugin = null;
     private Cache<UUID, Location> origin;
 
+    public static boolean denyCrossBorder(Entity e) {
+        return e instanceof Item
+            || e instanceof FallingBlock
+            || e instanceof Mob
+            || e instanceof TNTPrimed
+            || (e instanceof Firework fw && fw.getShooter() == null);
+    }
     @Inject
     public IslandBorderEvent(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
@@ -60,7 +66,7 @@ public class IslandBorderEvent implements Listener {
             List<Entity> entities = plugin.getWorldManager().getWorld().getEntities();
             entities.addAll(plugin.getWorldManager().getNetherWorld().getEntities());
             for (Entity e : entities) {
-                if (e instanceof Mob || e instanceof TNTPrimed || (e instanceof Firework fw && fw.getShooter() == null)) {
+                if (denyCrossBorder(e)) {
                     Location last_loc = origin.getIfPresent(e.getUniqueId());
                     Location now_loc = e.getLocation();
                     if (last_loc == null || isBothTrusted(plugin.getIslandInfo(last_loc), plugin.getIslandInfo(now_loc))) {
@@ -80,7 +86,20 @@ public class IslandBorderEvent implements Listener {
     @EventHandler
     public void onEntitySpawn(EntitySpawnEvent event) {
         Entity entity = event.getEntity();
-        origin.put(entity.getUniqueId(), entity.getLocation());
+        Location loc = entity.getLocation();
+        origin.put(entity.getUniqueId(), loc);
+        if (entity.getType() == EntityType.ITEM) {
+            IslandInfo ii = plugin.getIslandInfo(loc);
+            if (ii == null) {
+                // plugin.getLogger().info("Item spawned (cancelled) at wild with UUID " + entity.getUniqueId());
+                event.setCancelled(true);
+            } else {
+                Item item = (Item) entity;
+                addDropInfo(ii, item.getItemStack());
+                // plugin.getLogger().info("Item spawned at " + loc + " with UUID " + entity.getUniqueId());
+            }
+
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -193,39 +212,55 @@ public class IslandBorderEvent implements Listener {
             origin.put(v.getUniqueId(), v.getLocation());
             return;
         }
-        IslandInfo ii = plugin.getIslandInfo(event.getFrom());
-        IslandInfo ii2 = plugin.getIslandInfo(event.getTo());
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        IslandInfo ii = plugin.getIslandInfo(from);
+        IslandInfo ii2 = plugin.getIslandInfo(to);
         if (!isBothTrusted(ii, ii2)) {
-            v.teleport(getNearestlocationOn(plugin.getIslandInfo(origin.getIfPresent(v.getUniqueId())), event.getTo()));
-            v.setVelocity(new Vector(0, 0, 0).subtract(v.getVelocity()));
-            return;
+            v.teleport(from);
+            Vector vel = v.getVelocity();
+            vel.setX(-vel.getX()).setZ(-vel.getZ());
+            v.setVelocity(vel);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onChestPlace(BlockPlaceEvent event) { //防止跨岛连箱子
+    public void onChestPlace(BlockPlaceEvent event) {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getBlock().getWorld())) {
             return;
         }
         Block block = event.getBlock();
-        if (block.getType() != Material.TRAPPED_CHEST && block.getType() != Material.CHEST) {
-            return;
-        }
         BlockFace[] faces = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
-        for (BlockFace face : faces) {
+
+        //防止跨岛连箱子
+        if (block.getType() == Material.TRAPPED_CHEST || block.getType() == Material.CHEST) {
+            for (BlockFace face : faces) {
+                Block relative = block.getRelative(face);
+                IslandInfo ii = plugin.getIslandInfo(relative.getLocation());
+                IslandInfo ii2 = plugin.getIslandInfo(block.getLocation());
+                if (relative.getType() == block.getType()
+                    && !Objects.equals(
+                    ii == null ? null : ii.getName(),
+                    ii2 == null ? null : ii2.getName())
+                ) {
+                    if (!isBothTrusted(ii, ii2)) {
+                        event.setCancelled(true);
+                        event.getPlayer().sendMessage("cannot build");
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 防止跨岛传输物品
+        if (block.getType() == Material.DISPENSER || block.getType() == Material.DROPPER || block.getType() == Material.HOPPER) {
+            BlockFace face = ((Directional) block.getBlockData()).getFacing();
             Block relative = block.getRelative(face);
             IslandInfo ii = plugin.getIslandInfo(relative.getLocation());
             IslandInfo ii2 = plugin.getIslandInfo(block.getLocation());
-            if (relative.getType() == block.getType()
-                && !Objects.equals(
-                ii == null ? null : ii.getName(),
-                ii2 == null ? null : ii2.getName())
-            ) {
-                if (!isBothTrusted(ii, ii2)) {
-                    event.setCancelled(true);
-                    event.getPlayer().sendMessage("cannot build");
-                    return;
-                }
+            if (!isBothTrusted(ii, ii2)) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("cannot build");
             }
         }
     }
