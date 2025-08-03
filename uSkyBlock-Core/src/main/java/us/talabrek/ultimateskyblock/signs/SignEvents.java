@@ -56,6 +56,7 @@ public class SignEvents implements Listener {
             logic.updateSign(e.getClickedBlock().getLocation());
         } else {
             logic.signClicked(e.getPlayer(), e.getClickedBlock().getLocation());
+            e.setCancelled(true); // TODO: cancel only if the sign is a SkyBlock sign
         }
     }
 
