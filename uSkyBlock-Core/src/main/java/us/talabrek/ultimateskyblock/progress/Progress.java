@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import us.talabrek.ultimateskyblock.event.ProgressEvents;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
@@ -42,6 +43,7 @@ public class Progress {
                 logger.severe("Failed to create progress directory: " + progressDir.getAbsolutePath());
             }
         }
+        plugin.getServer().getPluginManager().registerEvents(new ProgressEvents(), plugin);
     }
 
     /**
