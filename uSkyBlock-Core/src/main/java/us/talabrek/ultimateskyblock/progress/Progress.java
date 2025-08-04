@@ -2,20 +2,20 @@ package us.talabrek.ultimateskyblock.progress;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
- * An abstraction of Spigot PersistentDataContainer to store player progress.
+ * An abstraction for storing player progress in YAML files.
  * This provides a way to track game progress and support content creation.
  * <p><b>This mechanism is currently not thread-safe.</b>
  */
@@ -24,6 +24,7 @@ public class Progress {
     private static final Log log = LogFactory.getLog(Progress.class);
     private static uSkyBlock plugin;
     private static Logger logger;
+    private static File progressDir;
     // Global cache for player progress
     private static final Map<Player, Progress> cache = new HashMap<>();
 
@@ -35,6 +36,12 @@ public class Progress {
     public static void init(uSkyBlock plugin) {
         Progress.plugin = plugin;
         Progress.logger = plugin.getLogger();
+        Progress.progressDir = new File(plugin.getDataFolder(), "progress");
+        if (!progressDir.exists()) {
+            if (!progressDir.mkdirs()) {
+                logger.severe("Failed to create progress directory: " + progressDir.getAbsolutePath());
+            }
+        }
     }
 
     /**
@@ -71,18 +78,18 @@ public class Progress {
         }
     }
 
-/**
- * Migrates the player's progress to their island leader's progress.
- * <p>
- * This method retrieves the player's island leader and migrates each progress entry
- * from the player's progress to the leader's progress. The leader's progress for each key
- * is incremented by the player's current progress for that key.
- * <p>
- * This is useful in scenarios where a player joins an island led by another player, and
- * they assume leadership of the island, migrating island progress to their PDC.
- *
- * @param player The player whose progress will be migrated to the leader's progress.
- */
+    /**
+     * Migrates the player's progress to their island leader's progress.
+     * <p>
+     * This method retrieves the player's island leader and migrates each progress entry
+     * from the player's progress to the leader's progress. The leader's progress for each key
+     * is incremented by the player's current progress for that key.
+     * <p>
+     * This is useful in scenarios where a player joins an island led by another player, and
+     * they assume leadership of the island, migrating island progress to their progress file.
+     *
+     * @param player The player whose progress will be migrated to the leader's progress.
+     */
     public static void migrateProgress(Player player) {
         IslandInfo island = plugin.getIslandInfo(player);
         Progress leaderProgress = forceGetProgressPlayer(plugin.getServer().getPlayer(island.getLeader()));
@@ -98,7 +105,8 @@ public class Progress {
 
     public final Player player;
     private final Map<String, Double> progress = new TreeMap<>();
-    private final PersistentDataContainer pdc;
+    private final File progressFile;
+    private YamlConfiguration progressConfig;
 
     /**
      * It is generally not advised to create a new Progress object directly.
@@ -106,22 +114,25 @@ public class Progress {
      */
     public Progress(Player player) {
         this.player = player;
-        this.pdc = player.getPersistentDataContainer();
+        this.progressFile = new File(progressDir, player.getUniqueId() + ".yml");
+        this.progressConfig = YamlConfiguration.loadConfiguration(progressFile);
         fetchCache();
     }
 
     /**
-     * Loads the player's progress from the PersistentDataContainer into the progress cache.
+     * Loads the player's progress from the YAML file into the progress cache.
      * <p>
      * <b>IMPORTANT: If inconsistency may happen,
      * this method and flushCache() should be called to ensure the cache is up-to-date.</b>
      */
     public void fetchCache() {
-        for(NamespacedKey key: pdc.getKeys()) {
-            if(key.getNamespace().equals("usb") && key.getKey().startsWith("progress_")) {
-                String progressKey = key.getKey().substring(9); // Remove "progress_" prefix
-                Double value = pdc.get(key, PersistentDataType.DOUBLE);
-                if(value != null) {
+        progress.clear();
+        if (progressFile.exists()) {
+            progressConfig = YamlConfiguration.loadConfiguration(progressFile);
+            for (String key : progressConfig.getKeys(false)) {
+                if (key.startsWith("progress_")) {
+                    String progressKey = key.substring(9); // Remove "progress_" prefix
+                    double value = progressConfig.getDouble(key, 0.0);
                     progress.put(progressKey, value);
                 }
             }
@@ -129,17 +140,39 @@ public class Progress {
     }
 
     /**
-     * Saves the progress cache to the player's persistent data container, then
+     * Saves the progress cache to the player's YAML file, then
      * fetch any possible external modifications.
      * <p>
      * <b>IMPORTANT: This should be called whenever inconsistency may happen.</b>
      */
     public void flushCache() {
-        for(Map.Entry<String, Double> entry: progress.entrySet()) {
-            NamespacedKey key = NamespacedKey.fromString("usb:progress_" + entry.getKey());
-            if(key != null) {
-                pdc.set(key, PersistentDataType.DOUBLE, entry.getValue());
+        try {
+            // Ensure the progress directory exists
+            if (!progressDir.exists()) {
+                if (!progressDir.mkdirs()) {
+                    logger.severe("Failed to create progress directory: " + progressDir.getAbsolutePath());
+                    return;
+                }
             }
+
+            // Clear existing progress entries
+            for (String key : progressConfig.getKeys(false)) {
+                if (key.startsWith("progress_")) {
+                    progressConfig.set(key, null);
+                }
+            }
+
+            // Save current progress
+            for (Map.Entry<String, Double> entry : progress.entrySet()) {
+                progressConfig.set("progress_" + entry.getKey(), entry.getValue());
+            }
+
+            progressConfig.save(progressFile);
+
+            // Re-fetch to ensure consistency
+            fetchCache();
+        } catch (IOException e) {
+            logger.severe("Failed to save progress for player " + player.getName() + ": " + e.getMessage());
         }
     }
 
@@ -149,15 +182,17 @@ public class Progress {
      * The key should be a unique identifier for the progress being tracked (e.g. "Challenge_1" or "Islands_Visited").
      * The value should be a double indicating the player's progress.
      * <p>
-     * This will update the player's persistent data container as well as the cache.
+     * This will update the player's YAML file as well as the cache.
      * @param key The key for the progress to track.
      * @param value The value of the progress.
      */
     public void setProgress(String key, double value) {
         progress.put(key, value);
-        NamespacedKey namespacedKey = NamespacedKey.fromString("usb:progress_" + key);
-        if(namespacedKey != null) {
-            pdc.set(namespacedKey, PersistentDataType.DOUBLE, value);
+        try {
+            progressConfig.set("progress_" + key, value);
+            progressConfig.save(progressFile);
+        } catch (IOException e) {
+            logger.severe("Failed to save progress for player " + player.getName() + ", key " + key + ": " + e.getMessage());
         }
     }
 
@@ -192,16 +227,21 @@ public class Progress {
      * Resets all progress for the player.
      * <p>
      * This method clears the progress cache and removes all progress-related entries
-     * from the player's persistent data container. It effectively resets the player's
+     * from the player's YAML file. It effectively resets the player's
      * tracked progress to an initial state.
      */
     public void resetProgress() {
         progress.clear();
-        for(NamespacedKey key: pdc.getKeys()) {
-            if(key.getNamespace().equals("usb") && key.getKey().startsWith("progress_")) {
-                pdc.remove(key);
+        try {
+            // Clear all progress entries from the config
+            for (String key : progressConfig.getKeys(false)) {
+                if (key.startsWith("progress_")) {
+                    progressConfig.set(key, null);
+                }
             }
+            progressConfig.save(progressFile);
+        } catch (IOException e) {
+            logger.severe("Failed to reset progress for player " + player.getName() + ": " + e.getMessage());
         }
     }
-
 }
