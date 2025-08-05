@@ -5,12 +5,10 @@ import com.google.inject.Singleton;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.*;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
+import org.bukkit.event.*;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SpawnEggMeta;
@@ -44,6 +42,21 @@ public class SpawnEvents implements Listener {
         this.plugin = plugin;
         phantomsInOverworld = plugin.getConfig().getBoolean("options.spawning.phantoms.overworld", true);
         phantomsInNether = plugin.getConfig().getBoolean("options.spawning.phantoms.nether", false);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPiglinConvert(EntityPickupItemEvent event) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld((event.getEntity().getWorld()))) {
+            return;
+        }
+        if (event.getEntity() instanceof Piglin piglin && piglin.isAdult()) { //对玩家
+            if (event.getItem().getItemStack().getType() == Material.GOLDEN_AXE) {
+                // Spawn a Piglin Brute instead of a Piglin
+                Location location = piglin.getLocation();
+                piglin.remove();
+                location.getWorld().spawnEntity(location, EntityType.PIGLIN_BRUTE);
+            }
+        }
     }
 
     @EventHandler
