@@ -697,6 +697,12 @@ public class PlayerEvents implements Listener {
                     }
                     return;
                 }
+                if (changeType == Material.SOUL_SOIL){
+                    if (random.nextInt(200) == 0) {
+                        change.getWorld().dropItemNaturally(change.getLocation(), new ItemStack(Material.NETHER_WART));
+                    }
+                    return;
+                }
             }
         }
     }
