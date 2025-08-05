@@ -1,11 +1,10 @@
 package us.talabrek.ultimateskyblock.progress;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import us.talabrek.ultimateskyblock.event.ProgressEvents;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
+import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.io.File;
@@ -13,6 +12,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
@@ -22,12 +22,13 @@ import java.util.logging.Logger;
  */
 public class Progress {
 
-    private static final Log log = LogFactory.getLog(Progress.class);
     private static uSkyBlock plugin;
     private static Logger logger;
     private static File progressDir;
-    // Global cache for player progress
-    private static final Map<Player, Progress> cache = new HashMap<>();
+    // Global cache for player progress (UUID-based for internal consistency)
+    private static final Map<UUID, Progress> uuidCache = new HashMap<>();
+    // Legacy cache for backwards compatibility
+    private static final Map<Player, Progress> playerCache = new HashMap<>();
 
     /**
      * Initialize the Progress tracking mechanism.
@@ -47,6 +48,23 @@ public class Progress {
     }
 
     /**
+     * Retrieves the progress for a player by UUID. If the player's progress is not already
+     * cached, it will be created and stored in the cache. Note that if the player is
+     * not the leader of their party, the leader's progress will be returned instead.
+     * @param playerUUID The UUID of the player to retrieve progress for.
+     * @return The cached progress for the player.
+     */
+    public static Progress getProgress(UUID playerUUID) {
+        PlayerInfo playerInfo = plugin.getPlayerInfo(playerUUID);
+        IslandInfo islandInfo = plugin.getIslandInfo(playerInfo);
+        UUID leaderUUID = islandInfo.getLeaderUniqueId(); // Use getLeaderUniqueId() directly
+        if (!playerUUID.equals(leaderUUID)) {
+            playerUUID = leaderUUID;
+        }
+        return forceGetProgressUUID(playerUUID);
+    }
+
+    /**
      * Retrieves the progress for a player. If the player's progress is not already
      * cached, it will be created and stored in the cache. Note that if the player is
      * not the leader of their party, the leader's progress will be returned instead.
@@ -54,11 +72,26 @@ public class Progress {
      * @return The cached progress for the player.
      */
     public static Progress getProgress(Player player) {
-        String leaderName = plugin.getIslandInfo(player).getLeader();
-        if(!player.getName().equals(leaderName)) {
-            player = plugin.getServer().getPlayer(leaderName);
+        return getProgress(player.getUniqueId());
+    }
+
+    /**
+     * Retrieves the progress for a player by UUID. If the player's progress is not already
+     * cached, it will be created and stored in the cache. Note that this method
+     * will return a new progress object even if the player is not the leader of
+     * their party. If you want to get the progress for the leader of the player's
+     * party, use {@link #getProgress(UUID)}.
+     * @param playerUUID The UUID of the player to retrieve progress for.
+     * @return The cached progress for the player.
+     */
+    public static Progress forceGetProgressUUID(UUID playerUUID) {
+        if (uuidCache.containsKey(playerUUID)) {
+            return uuidCache.get(playerUUID);
+        } else {
+            Progress progress = new Progress(playerUUID);
+            uuidCache.put(playerUUID, progress);
+            return progress;
         }
-        return forceGetProgressPlayer(player);
     }
 
     /**
@@ -71,13 +104,40 @@ public class Progress {
      * @return The cached progress for the player.
      */
     public static Progress forceGetProgressPlayer(Player player) {
-        if(cache.containsKey(player)) {
-            return cache.get(player);
-        } else {
-            Progress progress = new Progress(player);
-            cache.put(player, progress);
-            return progress;
+        UUID playerUUID = player.getUniqueId();
+        Progress progress = forceGetProgressUUID(playerUUID);
+
+        // Update legacy cache for backwards compatibility
+        playerCache.put(player, progress);
+
+        return progress;
+    }
+
+    /**
+     * Migrates the player's progress to their island leader's progress by UUID.
+     * <p>
+     * This method retrieves the player's island leader and migrates each progress entry
+     * from the player's progress to the leader's progress. The leader's progress for each key
+     * is incremented by the player's current progress for that key.
+     * <p>
+     * This is useful in scenarios where a player joins an island led by another player, and
+     * they assume leadership of the island, migrating island progress to their progress file.
+     *
+     * @param playerUUID The UUID of the player whose progress will be migrated to the leader's progress.
+     */
+    public static void migrateProgress(UUID playerUUID) {
+        PlayerInfo playerInfo = plugin.getPlayerInfo(playerUUID);
+        IslandInfo island = plugin.getIslandInfo(playerInfo);
+        UUID leaderUUID = island.getLeaderUniqueId(); // Use getLeaderUniqueId() directly
+        Progress leaderProgress = forceGetProgressUUID(leaderUUID);
+        Progress progress = forceGetProgressUUID(playerUUID);
+        if (leaderProgress.equals(progress)) {
+            logger.warning("Tried to migrate progress for player " + playerUUID + " but they are already the leader.");
+            return;
         }
+        progress.progress.forEach(leaderProgress::setProgress);
+        progress.resetProgress(); // Clear the original player's progress after migration
+        logger.info("Migrated progress for player " + playerUUID);
     }
 
     /**
@@ -93,32 +153,67 @@ public class Progress {
      * @param player The player whose progress will be migrated to the leader's progress.
      */
     public static void migrateProgress(Player player) {
-        IslandInfo island = plugin.getIslandInfo(player);
-        Progress leaderProgress = forceGetProgressPlayer(plugin.getServer().getPlayer(island.getLeader()));
-        Progress progress = forceGetProgressPlayer(player);
-        if(leaderProgress.equals(progress)) {
-            logger.warning("Tried to migrate progress for player " + player.getName() + " but they are already the leader.");
-            return;
-        }
-        progress.progress.forEach(leaderProgress::setProgress);
-        progress.resetProgress(); // Clear the original leader's progress after migration
-        logger.info(player.getName() + " migrated progress for player " + player.getName());
+        migrateProgress(player.getUniqueId());
     }
 
+    /**
+     * Clears a player from both caches. This should be called when a player logs out
+     * to prevent memory leaks.
+     * @param player The player to remove from cache.
+     */
+    public static void clearCache(Player player) {
+        UUID playerUUID = player.getUniqueId();
+        Progress progress = uuidCache.get(playerUUID);
+        if (progress != null) {
+            progress.flushCache(); // Ensure data is saved before removing from cache
+        }
+        uuidCache.remove(playerUUID);
+        playerCache.remove(player);
+    }
+
+    /**
+     * Clears a player from cache by UUID. This should be called when a player logs out
+     * to prevent memory leaks.
+     * @param playerUUID The UUID of the player to remove from cache.
+     */
+    public static void clearCache(UUID playerUUID) {
+        Progress progress = uuidCache.get(playerUUID);
+        if (progress != null) {
+            progress.flushCache(); // Ensure data is saved before removing from cache
+        }
+        uuidCache.remove(playerUUID);
+        // Also remove from legacy cache if present
+        playerCache.entrySet().removeIf(entry -> entry.getKey().getUniqueId().equals(playerUUID));
+    }
+
+    public final UUID playerUUID;
+    @Deprecated // Use playerUUID instead
     public final Player player;
     private final Map<String, Double> progress = new TreeMap<>();
     private final File progressFile;
     private YamlConfiguration progressConfig;
 
     /**
+     * Creates a new Progress object for the given player UUID.
      * It is generally not advised to create a new Progress object directly.
-     * Use Progress.getProgress(Player) instead to ensure proper caching and retrieval.
+     * Use Progress.getProgress(UUID) instead to ensure proper caching and retrieval.
      */
-    public Progress(Player player) {
-        this.player = player;
-        this.progressFile = new File(progressDir, player.getUniqueId() + ".yml");
+    public Progress(UUID playerUUID) {
+        this.playerUUID = playerUUID;
+        this.player = plugin.getServer().getPlayer(playerUUID); // May be null if offline
+        this.progressFile = new File(progressDir, playerUUID + ".yml");
         this.progressConfig = YamlConfiguration.loadConfiguration(progressFile);
         fetchCache();
+    }
+
+    /**
+     * It is generally not advised to create a new Progress object directly.
+     * Use Progress.getProgress(Player) instead to ensure proper caching and retrieval.
+     * @deprecated Use Progress(UUID) constructor instead for better offline player support.
+     */
+    @Deprecated
+    public Progress(Player player) {
+        this(player.getUniqueId());
     }
 
     /**
@@ -174,7 +269,8 @@ public class Progress {
             // Re-fetch to ensure consistency
             fetchCache();
         } catch (IOException e) {
-            logger.severe("Failed to save progress for player " + player.getName() + ": " + e.getMessage());
+            String playerName = player != null ? player.getName() : playerUUID.toString();
+            logger.severe("Failed to save progress for player " + playerName + ": " + e.getMessage());
         }
     }
 
@@ -194,7 +290,8 @@ public class Progress {
             progressConfig.set("progress_" + key, value);
             progressConfig.save(progressFile);
         } catch (IOException e) {
-            logger.severe("Failed to save progress for player " + player.getName() + ", key " + key + ": " + e.getMessage());
+            String playerName = player != null ? player.getName() : playerUUID.toString();
+            logger.severe("Failed to save progress for player " + playerName + ", key " + key + ": " + e.getMessage());
         }
     }
 
@@ -243,7 +340,8 @@ public class Progress {
             }
             progressConfig.save(progressFile);
         } catch (IOException e) {
-            logger.severe("Failed to reset progress for player " + player.getName() + ": " + e.getMessage());
+            String playerName = player != null ? player.getName() : playerUUID.toString();
+            logger.severe("Failed to reset progress for player " + playerName + ": " + e.getMessage());
         }
     }
 }
