@@ -11,9 +11,8 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Leaves;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.EnderPearl;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -86,6 +85,44 @@ public class PlayerEvents implements Listener {
         protectLava = config.getBoolean("options.protection.protect-lava", true);
         blockLimitsEnabled = config.getBoolean("options.island.block-limits.enabled", false);
     }
+
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLootEvent(EntityDeathEvent event) {
+        if (!plugin.getWorldManager().isSkyWorld(event.getEntity().getWorld())) {
+            return;
+        }
+        LivingEntity mob = event.getEntity();
+
+        // warden drop an extra ward template
+        if (mob.getType() == org.bukkit.entity.EntityType.WARDEN) {
+            mob.getWorld().dropItemNaturally(mob.getLocation(), new ItemStack(Material.WARD_ARMOR_TRIM_SMITHING_TEMPLATE));
+            return;
+        }
+
+        // piglin brute:
+        // base: drop 1 gold ingot + 0.2% upgrade template
+        // +1 gold ingots and 0.2% chance if killed by a player
+        // extra +1 and 0.2% chance for each level of looting
+        if (mob.getType() == org.bukkit.entity.EntityType.PIGLIN_BRUTE) {
+            ItemStack goldIngot = new ItemStack(Material.GOLD_INGOT);
+            int lootingLevel = 0;
+            var killer = event.getEntity().getKiller();
+            if (killer != null && killer.getType() == EntityType.PLAYER) {
+                // If killed by a player, increase the drop count and chance
+                lootingLevel = 1 + killer.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.LOOTING);
+            }
+            goldIngot.setAmount(1 + lootingLevel);
+            mob.getWorld().dropItemNaturally(mob.getLocation(), goldIngot);
+
+            double chance = 0.001 + (0.002 * lootingLevel);
+            if (Math.random() < chance) {
+                mob.getWorld().dropItemNaturally(mob.getLocation(), new ItemStack(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
+            }
+            return;
+        }
+    }
+
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerFoodChange(final FoodLevelChangeEvent event) {
