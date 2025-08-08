@@ -740,6 +740,14 @@ public class PlayerEvents implements Listener {
                     }
                     return;
                 }
+                if (changeType == Material.WARPED_NYLIUM){
+                    change.setType(Material.CRIMSON_NYLIUM);
+                    return;
+                }
+                if (changeType == Material.CRIMSON_NYLIUM){
+                    change.setType(Material.WARPED_NYLIUM);
+                    return;
+                }
             }
         }
     }
