@@ -3,12 +3,14 @@ package us.talabrek.ultimateskyblock.event;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import net.kyori.adventure.text.BlockNBTComponent;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Leaves;
 import org.bukkit.block.data.type.Vault;
+import org.bukkit.command.Command;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
@@ -20,6 +22,7 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.BlockDataMeta;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -39,15 +42,154 @@ import us.talabrek.ultimateskyblock.world.WorldManager;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static org.bukkit.Bukkit.getServer;
+
+class SuspiciousConversion implements Runnable {
+    private final uSkyBlock plugin;
+    private final Location location;
+    private static final Random random = new Random();
+    public static final Set<Location> toConvert = new HashSet<Location>();
+
+    public static final List<List<Material>> RUINS_LOOT = List.of(
+        // 心碎/危机/麦捆/爱心/挚友/狼嚎/烈焰纹样陶片
+        // 向导/牧民/雇主/塑造盔甲纹饰
+        // Relic唱片
+        List.of(Material.HEARTBREAK_POTTERY_SHERD, Material.DANGER_POTTERY_SHERD, Material.SHEAF_POTTERY_SHERD,
+            Material.HEART_POTTERY_SHERD, Material.FRIEND_POTTERY_SHERD, Material.HOWL_POTTERY_SHERD,
+            Material.BURN_POTTERY_SHERD, Material.WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.RAISER_ARMOR_TRIM_SMITHING_TEMPLATE, Material.HOST_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE, Material.MUSIC_DISC_RELIC),
+        // 绿宝石, 红砖, 煤炭
+        List.of(Material.EMERALD, Material.BRICK, Material.COAL),
+        // 枯萎的灌木, 小麦, 甜菜种子, 小麦种子
+        List.of(Material.DEAD_BUSH, Material.WHEAT, Material.BEETROOT_SEEDS, Material.WHEAT_SEEDS)
+    );
+
+    public static final List<List<Material>> MOSS_LOOT = List.of(
+        // 荒野盔甲纹饰/钻石马铠/钻石
+        List.of(Material.WILD_ARMOR_TRIM_SMITHING_TEMPLATE, Material.DIAMOND_HORSE_ARMOR, Material.DIAMOND),
+        // 绿宝石, 金锭, 铁锭
+        List.of(Material.EMERALD, Material.GOLD_INGOT, Material.IRON_INGOT),
+        // 皮革, 骨头, 腐肉, 竹子
+        List.of(Material.LEATHER, Material.BONE, Material.ROTTEN_FLESH, Material.BAMBOO)
+    );
+
+    public static final List<List<Material>> SAND_LOOT = List.of(
+        //弓箭/采矿/珍宝/头颅/举臂/佳酿纹样陶片
+        //钻石
+        //沙丘盔甲纹饰
+        List.of(Material.ARCHER_POTTERY_SHERD, Material.MINER_POTTERY_SHERD, Material.PRIZE_POTTERY_SHERD,
+            Material.SKULL_POTTERY_SHERD, Material.ARMS_UP_POTTERY_SHERD, Material.BREWER_POTTERY_SHERD,
+            Material.DIAMOND, Material.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE),
+        //绿宝石,金锭,金苹果
+        List.of(Material.EMERALD, Material.GOLD_INGOT, Material.GOLDEN_APPLE),
+        //沙子,骨头,腐肉,蜘蛛眼
+        List.of(Material.SAND, Material.BONE, Material.ROTTEN_FLESH, Material.SPIDER_EYE)
+    );
+
+    public static final List<List<Material>> OCEAN_SAND_LOOT = List.of(
+        //海草+沙子掉落表
+        //垂钓/树荫/嗅探纹样陶片
+        //嗅探兽蛋
+        //海岸盔甲纹饰
+        //钻石
+        List.of(Material.ANGLER_POTTERY_SHERD, Material.SHELTER_POTTERY_SHERD, Material.SNORT_POTTERY_SHERD,
+            Material.SNIFFER_EGG, Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE, Material.DIAMOND),
+        //绿宝石,青金石,金苹果
+        List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.LAPIS_LAZULI),
+        //南瓜,胡萝卜,马铃薯,羽毛
+        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.FEATHER)
+    );
+
+    public static final List<List<Material>> OCEAN_GRAVEL_LOOT = List.of(
+        //海草+沙砾掉落表
+        //利刃/探险/悲恸/富饶纹样陶片
+        //海岸盔甲纹饰
+        //钻石
+        List.of(Material.BLADE_POTTERY_SHERD,Material.EXPLORER_POTTERY_SHERD,Material.MOURNER_POTTERY_SHERD,
+            Material.PLENTY_POTTERY_SHERD, Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE, Material.DIAMOND),
+        //绿宝石,青金石,金苹果
+        List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.LAPIS_LAZULI),
+        //南瓜,胡萝卜,马铃薯,羽毛
+        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.FEATHER)
+    );
+
+    public static final List<List<Material>> TRIAL_LOOT = List.of(
+        //涂蜡的铜块掉落表
+        //涡流/旋风/刮削纹样陶片
+        //试炼钥匙
+        //Creator（八音盒）唱片
+        //绿宝石块
+        List.of(Material.FLOW_POTTERY_SHERD, Material.GUSTER_POTTERY_SHERD, Material.SCRAPE_POTTERY_SHERD,
+            Material.EMERALD_BLOCK, Material.TRIAL_KEY, Material.MUSIC_DISC_CREATOR_MUSIC_BOX),
+        //绿宝石,金胡萝卜,金苹果
+        List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.GOLDEN_CARROT),
+        //铁锭,箭,面包,木棍
+        List.of(Material.IRON_INGOT, Material.ARROW, Material.BREAD, Material.STICK)
+    );
+
+    static public boolean isArchaeologyFeature(Material material) {
+        return switch (material) {
+            case MUD_BRICKS, MOSSY_COBBLESTONE, SANDSTONE, SEAGRASS, WAXED_COPPER_BLOCK -> true;
+            default -> false;
+        };
+    }
+
+    static private Material pickLoot(List<List<Material>> lootList) {
+        // 12% first, 24% second, 64% third
+        Double chance = random.nextDouble();
+        int index = chance < 0.12 ? 0 : (chance < 0.36 ? 1 : 2);
+        List<Material> list = lootList.get(index);
+        return list.get(random.nextInt(list.size()));
+    }
+
+    public SuspiciousConversion(uSkyBlock plugin, Location location) {
+        this.plugin = plugin;
+        this.location = location;
+    }
+
+    @Override
+    public void run() {
+        toConvert.remove(location);
+        if (!location.isWorldLoaded()) {
+            return;
+        }
+        Block block = location.getBlock();
+        Material self_type = block.getType();
+        Block up = block.getRelative(BlockFace.UP);
+        Material up_type = up.getType();
+
+        if (self_type != Material.SAND && self_type != Material.GRAVEL) {
+            return;
+        }
+        if (!isArchaeologyFeature(up_type)) {
+            return;
+        }
+
+        String blocktype = self_type == Material.SAND ? "suspicious_sand" : "suspicious_gravel";
+        String loottype = pickLoot(switch (up_type) {
+            case MUD_BRICKS -> RUINS_LOOT;
+            case MOSSY_COBBLESTONE -> MOSS_LOOT;
+            case SANDSTONE -> SAND_LOOT;
+            case SEAGRASS -> self_type == Material.SAND ? OCEAN_SAND_LOOT : OCEAN_GRAVEL_LOOT;
+            case WAXED_COPPER_BLOCK -> TRIAL_LOOT;
+            default -> RUINS_LOOT;
+        }).toString().toLowerCase();
+
+        String data_str = String.format("minecraft:%s{item:{id:\"minecraft:%s\",count:1}}",
+            blocktype,loottype);
+
+        String command_str = String.format("execute in %s run setblock %d %d %d %s replace",
+            block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), data_str);
+
+        block.getWorld().playEffect(block.getLocation(), Effect.OXIDISED_COPPER_SCRAPE, 0);
+        plugin.getLogger().info("Converting suspicious block: " + data_str);
+        getServer().dispatchCommand(getServer().getConsoleSender(), command_str);
+    }
+}
 
 @Singleton
 public class PlayerEvents implements Listener {
@@ -183,6 +325,41 @@ public class PlayerEvents implements Listener {
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onBuryBrick(final PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = event.getItem();
+        Block block = event.getClickedBlock();
+        if (item != null && event.getAction() == Action.RIGHT_CLICK_BLOCK
+            && item.getType() == Material.BRICK
+            && block != null
+            && (block.getType() == Material.SAND || block.getType()==Material.GRAVEL)) {
+            Block up = block.getRelative(BlockFace.UP);
+            if (!SuspiciousConversion.isArchaeologyFeature(up.getType())) {
+                return;
+            }
+            Location loc = block.getLocation();
+            if (SuspiciousConversion.toConvert.contains(block.getLocation())) {
+                // Hint the player: failed
+                block.getWorld().playEffect(block.getLocation(), Effect.SMOKE, event.getBlockFace());
+            } else {
+                // Hint the player: success
+                block.getWorld().playEffect(block.getLocation(), Effect.COPPER_WAX_ON, 0);
+                if (player.getGameMode() != GameMode.CREATIVE) {
+                    // Remove the brick from the player's inventory
+                    item.setAmount(item.getAmount() - 1);
+                    if (item.getAmount() <= 0) {
+                        // If the item is depleted, remove it from the player's inventory
+                        PlayerInventory inventory = player.getInventory();
+                        inventory.remove(item);
+                    }
+                }
+                SuspiciousConversion.toConvert.add(loc);
+                Bukkit.getScheduler().runTaskLater(plugin, new SuspiciousConversion(plugin, loc), 6000L); // 5 minutes later
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onRefreshVaults(final PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
@@ -199,12 +376,13 @@ public class PlayerEvents implements Listener {
                         BlockData BD = block.getBlockData().clone();
                         block.breakNaturally();
                         player.getWorld().setBlockData(loc, BD);
-
-                        item.setAmount(item.getAmount() - 1);
-                        if (item.getAmount() <= 0) {
-                            // If the item is depleted, remove it from the player's inventory
-                            PlayerInventory inventory = player.getInventory();
-                            inventory.remove(item);
+                        if (player.getGameMode() != GameMode.CREATIVE) {
+                            item.setAmount(item.getAmount() - 1);
+                            if (item.getAmount() <= 0) {
+                                // If the item is depleted, remove it from the player's inventory
+                                PlayerInventory inventory = player.getInventory();
+                                inventory.remove(item);
+                            }
                         }
                         player.sendMessage(tr("\u00a7eVault refreshed!"));
                     }
