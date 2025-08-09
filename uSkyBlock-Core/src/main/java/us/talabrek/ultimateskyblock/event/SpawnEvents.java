@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.*;
 import org.bukkit.event.block.Action;
@@ -82,12 +83,34 @@ public class SpawnEvents implements Listener {
                 event.setUseItemInHand(Event.Result.DENY);
                 event.setUseInteractedBlock(Event.Result.DENY);
             }
+
+            Block block = event.getClickedBlock();
+            // If used on a trial spawner, only allow certain entities to be spawned
+            if (block != null && block.getType() == Material.TRIAL_SPAWNER) {
+                EntityType entityType = getSpawnEggType(item);
+                if (!allowTrialSpawner(entityType)) {
+                    plugin.notifyPlayer(player, tr("\u00a7cYou cannot spawn this with a trial spawner."));
+                    event.setUseItemInHand(Event.Result.DENY);
+                    event.setUseInteractedBlock(Event.Result.DENY);
+                }
+            }
         }
+    }
+
+    private boolean allowTrialSpawner(EntityType entityType) {
+        if (entityType == null) {
+            return false;
+        }
+        return switch (entityType) {
+            case ZOMBIE, HUSK, SLIME, SPIDER, CAVE_SPIDER, SKELETON, STRAY, BOGGED, BREEZE -> true;
+            default -> false;
+        };
     }
 
     private static @Nullable EntityType getSpawnEggType(@NotNull ItemStack itemStack) {
         if (itemStack.getItemMeta() instanceof SpawnEggMeta spawnEggMeta) {
-            EntitySnapshot spawnedEntity = spawnEggMeta.getSpawnedEntity();
+            // getSpawnedEntity is broken
+            EntitySnapshot spawnedEntity = null; // spawnEggMeta.getSpawnedEntity();
             if (spawnedEntity != null) {
                 return spawnedEntity.getEntityType();
             } else {
