@@ -92,6 +92,15 @@ public class PlayerEvents implements Listener {
             return;
         }
         LivingEntity mob = event.getEntity();
+        // Piglins drop an extra Pigstep CD if killed by a skeleton
+        if (mob.getType() == org.bukkit.entity.EntityType.PIGLIN) {
+            Entity killer = mob.getKiller();
+            if (killer instanceof Skeleton) {
+                mob.getWorld().dropItemNaturally(mob.getLocation(), new ItemStack(Material.MUSIC_DISC_PIGSTEP));
+            }
+            return;
+        }
+
 
         // warden drop an extra ward template
         if (mob.getType() == org.bukkit.entity.EntityType.WARDEN) {
