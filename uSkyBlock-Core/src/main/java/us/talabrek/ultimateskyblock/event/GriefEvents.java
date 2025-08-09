@@ -58,7 +58,7 @@ public class GriefEvents implements Listener {
 
     @EventHandler
     public void onCreeperExplode(ExplosionPrimeEvent event) {
-        if (!creeperEnabled || !plugin.getWorldManager().isSkyWorld(event.getEntity().getWorld())) {
+        if (!creeperEnabled || !plugin.getWorldManager().isSkyAssociatedWorld(event.getEntity().getWorld())) {
             return;
         }
         if (event.getEntity() instanceof Creeper

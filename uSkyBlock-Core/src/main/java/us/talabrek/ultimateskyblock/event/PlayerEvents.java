@@ -230,7 +230,7 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onLootEvent(EntityDeathEvent event) {
-        if (!plugin.getWorldManager().isSkyWorld(event.getEntity().getWorld())) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getEntity().getWorld())) {
             return;
         }
         LivingEntity mob = event.getEntity();
@@ -548,7 +548,7 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
-        if (event.getTo() == null || !plugin.getWorldManager().isSkyWorld(event.getTo().getWorld())) {
+        if (event.getTo() == null || !plugin.getWorldManager().isSkyAssociatedWorld(event.getTo().getWorld())) {
             return;
         }
         final Player player = event.getPlayer();
