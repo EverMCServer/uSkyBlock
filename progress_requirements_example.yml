@@ -1,0 +1,73 @@
+# Progress Requirements 配置示例
+# 这个文件展示了如何在challenges.yml中配置Progress Requirements
+
+ranks:
+  novice:
+    displayName: "新手"
+    challenges:
+      mining_challenge:
+        name: "挖矿达人"
+        description: "成为一名挖矿专家"
+        type: "onPlayer"
+        requiredItems:
+          - "DIAMOND_PICKAXE:1"
+        requiredProgress:
+          - "blocks_mined:100"  # 简单格式：需要挖掘100个方块
+          - "stone_mined:50"    # 需要挖掘50个石头
+        reward:
+          items:
+            - "DIAMOND:5"
+          currency: 1000
+          xp: 500
+        repeatable: true
+
+      farming_expert:
+        name: "农业专家"
+        description: "种植大量作物"
+        type: "onPlayer"
+        requiredProgress:
+          - "crops_harvested:200:+:25"  # 扩展格式：基础200，每次重复增加25
+          - "seeds_planted:100:*:1.2"   # 基础100，每次重复乘以1.2
+        reward:
+          items:
+            - "GOLDEN_HOE:1"
+          currency: 2000
+          xp: 800
+        repeatable: true
+        repeatLimit: 10
+
+  expert:
+    displayName: "专家"
+    requiredChallenges:
+      - "mining_challenge"
+    challenges:
+      monster_slayer:
+        name: "怪物猎人"
+        description: "击败大量怪物"
+        type: "onPlayer"
+        requiredProgress:
+          - "monsters_killed:500"
+          - "boss_kills:5"
+          - "damage_dealt:10000"
+        reward:
+          items:
+            - "DIAMOND_SWORD:1"
+          currency: 5000
+          xp: 2000
+
+# Progress Keys 说明：
+# - blocks_mined: 挖掘的方块总数
+# - stone_mined: 挖掘的石头数量
+# - crops_harvested: 收获的作物数量
+# - seeds_planted: 种植的种子数量
+# - monsters_killed: 击杀的怪物数量
+# - boss_kills: 击杀的Boss数量
+# - damage_dealt: 造成的总伤害
+# - distance_traveled: 行走的总距离
+# - items_crafted: 制作的物品数量
+# - fish_caught: 钓到的鱼数量
+
+# 操作符说明：
+# + : 每次重复增加固定值
+# - : 每次重复减少固定值
+# * : 每次重复乘以倍数

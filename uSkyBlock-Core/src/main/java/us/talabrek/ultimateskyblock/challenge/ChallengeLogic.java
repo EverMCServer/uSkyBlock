@@ -326,6 +326,21 @@ public class ChallengeLogic implements Listener {
         if (challenge != null && completion != null) {
             StringBuilder sb = new StringBuilder();
             boolean hasAll = true;
+
+            // Check progress requirements
+            List<ProgressRequirement> requiredProgress = challenge.getRequiredProgress();
+            if (!requiredProgress.isEmpty()) {
+                us.talabrek.ultimateskyblock.progress.Progress progress = us.talabrek.ultimateskyblock.progress.Progress.getProgress(player);
+                for (ProgressRequirement progressRequirement : requiredProgress) {
+                    double requiredAmount = progressRequirement.amountForRepetitions(completion.getTimesCompletedInCooldown());
+                    double currentProgress = progress.getProgress(progressRequirement.key());
+                    if (currentProgress < requiredAmount) {
+                        sb.append(tr(" \u00a74{0}: {1}/{2}", progressRequirement.key(), currentProgress, requiredAmount));
+                        hasAll = false;
+                    }
+                }
+            }
+
             Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
             for (Map.Entry<ItemStack, Integer> required : requiredItems.entrySet()) {
                 ItemStack requiredType = required.getKey();
