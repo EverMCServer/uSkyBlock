@@ -4,12 +4,11 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.bukkit.*;
-import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
+import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Leaves;
+import org.bukkit.block.data.type.Vault;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
@@ -174,6 +173,38 @@ public class PlayerEvents implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onRefreshVaults(final PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack item = event.getItem();
+        Block block = event.getClickedBlock();
+        if (item != null && event.getAction() == Action.RIGHT_CLICK_BLOCK
+            && item.getType() == Material.GOLD_INGOT
+            && block != null
+            && block.getType() == Material.VAULT) {
+            if (block.getBlockData() instanceof Vault vault) {
+                if (!vault.isOminous()) {
+                    if (vault.getTrialSpawnerState() == Vault.State.INACTIVE) {
+                        // Reset this vault's blockdata to the default state
+                        Location loc = block.getLocation();
+                        BlockData BD = block.getBlockData().clone();
+                        block.breakNaturally();
+                        player.getWorld().setBlockData(loc, BD);
+
+                        item.setAmount(item.getAmount() - 1);
+                        if (item.getAmount() <= 0) {
+                            // If the item is depleted, remove it from the player's inventory
+                            PlayerInventory inventory = player.getInventory();
+                            inventory.remove(item);
+                        }
+                        player.sendMessage(tr("\u00a7eVault refreshed!"));
+                    }
+                } else {
+                    player.sendMessage(tr("\u00a74You cannot refresh an ominous vault!"));
+                }
+            }
+        }
+    }
     /**
      * Tests for more than one obsidian close by.
      */
