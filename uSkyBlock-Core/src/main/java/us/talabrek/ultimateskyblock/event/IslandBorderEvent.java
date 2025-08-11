@@ -12,6 +12,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.*;
+import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -27,6 +28,7 @@ import org.bukkit.event.player.PlayerEggThrowEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.wargamer2010.signshop.player.SignShopPlayer;
@@ -49,11 +51,13 @@ public class IslandBorderEvent implements Listener {
     private Cache<UUID, Location> origin;
 
     public static boolean denyCrossBorder(Entity e) {
-        return e instanceof Item
+        return !(e instanceof Player) &&
+            (e instanceof Item
+            || e instanceof InventoryHolder
             || e instanceof FallingBlock
             || e instanceof Mob
             || e instanceof TNTPrimed
-            || (e instanceof Firework fw && fw.getShooter() == null);
+            || (e instanceof Firework fw && fw.getShooter() == null));
     }
     @Inject
     public IslandBorderEvent(@NotNull uSkyBlock plugin) {
