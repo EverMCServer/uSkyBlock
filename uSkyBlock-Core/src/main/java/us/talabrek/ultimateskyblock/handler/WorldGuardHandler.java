@@ -126,8 +126,8 @@ public class WorldGuardHandler {
         BlockVector3 minPoint = getProtectionVectorRight(islandLocation);
         BlockVector3 maxPoint = getProtectionVectorLeft(islandLocation);
         if (regionName != null && regionName.endsWith("nether")) {
-            minPoint = minPoint.withY(6);
-            maxPoint = maxPoint.withY(120);
+            minPoint = minPoint.withY(0);
+            maxPoint = maxPoint.withY(255);
         }
         ProtectedCuboidRegion region = new ProtectedCuboidRegion(regionName, minPoint, maxPoint);
         final DefaultDomain owners = new DefaultDomain();
