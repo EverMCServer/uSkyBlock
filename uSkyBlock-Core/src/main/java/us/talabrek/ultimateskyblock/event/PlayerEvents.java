@@ -65,7 +65,7 @@ class SuspiciousConversion implements Runnable {
         // 绿宝石, 红砖, 煤炭
         List.of(Material.EMERALD, Material.BRICK, Material.COAL),
         // 枯萎的灌木, 小麦, 甜菜种子, 小麦种子
-        List.of(Material.DEAD_BUSH, Material.WHEAT, Material.BEETROOT_SEEDS, Material.WHEAT_SEEDS)
+        List.of(Material.DEAD_BUSH, Material.BEETROOT_SEEDS, Material.SWEET_BERRIES, Material.SWEET_BERRIES)
     );
 
     public static final List<List<Material>> MOSS_LOOT = List.of(
@@ -74,7 +74,7 @@ class SuspiciousConversion implements Runnable {
         // 绿宝石, 金锭, 铁锭
         List.of(Material.EMERALD, Material.GOLD_INGOT, Material.IRON_INGOT),
         // 皮革, 骨头, 腐肉, 竹子
-        List.of(Material.LEATHER, Material.BONE, Material.ROTTEN_FLESH, Material.BAMBOO)
+        List.of(Material.LEATHER, Material.BAMBOO, Material.COCOA_BEANS, Material.COCOA_BEANS)
     );
 
     public static final List<List<Material>> SAND_LOOT = List.of(
@@ -101,7 +101,7 @@ class SuspiciousConversion implements Runnable {
         //绿宝石,青金石,金苹果
         List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.LAPIS_LAZULI),
         //南瓜,胡萝卜,马铃薯,羽毛
-        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.FEATHER)
+        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.MELON_SLICE)
     );
 
     public static final List<List<Material>> OCEAN_GRAVEL_LOOT = List.of(
@@ -114,7 +114,7 @@ class SuspiciousConversion implements Runnable {
         //绿宝石,青金石,金苹果
         List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.LAPIS_LAZULI),
         //南瓜,胡萝卜,马铃薯,羽毛
-        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.FEATHER)
+        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.MELON_SLICE)
     );
 
     public static final List<List<Material>> TRIAL_LOOT = List.of(
