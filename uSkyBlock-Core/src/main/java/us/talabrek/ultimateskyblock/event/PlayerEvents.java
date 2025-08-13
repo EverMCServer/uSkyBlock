@@ -73,7 +73,7 @@ class SuspiciousConversion implements Runnable {
         List.of(Material.WILD_ARMOR_TRIM_SMITHING_TEMPLATE, Material.DIAMOND_HORSE_ARMOR, Material.DIAMOND),
         // 绿宝石, 金锭, 铁锭
         List.of(Material.EMERALD, Material.GOLD_INGOT, Material.IRON_INGOT),
-        // 皮革, 骨头, 腐肉, 竹子
+        // 皮革,竹子,可可豆x2
         List.of(Material.LEATHER, Material.BAMBOO, Material.COCOA_BEANS, Material.COCOA_BEANS)
     );
 
@@ -86,8 +86,8 @@ class SuspiciousConversion implements Runnable {
             Material.DIAMOND, Material.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE),
         //绿宝石,金锭,金苹果
         List.of(Material.EMERALD, Material.GOLD_INGOT, Material.GOLDEN_APPLE),
-        //沙子,骨头,腐肉,蜘蛛眼
-        List.of(Material.SAND, Material.BONE, Material.ROTTEN_FLESH, Material.SPIDER_EYE)
+        //沙子,蜘蛛眼,西瓜x2
+        List.of(Material.SAND, Material.SPIDER_EYE, Material.MELON_SLICE, Material.MELON_SLICE)
     );
 
     public static final List<List<Material>> OCEAN_SAND_LOOT = List.of(
@@ -100,8 +100,8 @@ class SuspiciousConversion implements Runnable {
             Material.SNIFFER_EGG, Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE, Material.DIAMOND),
         //绿宝石,青金石,金苹果
         List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.LAPIS_LAZULI),
-        //南瓜,胡萝卜,马铃薯,羽毛
-        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.MELON_SLICE)
+        //南瓜,海泡菜,海带
+        List.of(Material.PUMPKIN, Material.PUMPKIN, Material.SEA_PICKLE, Material.KELP)
     );
 
     public static final List<List<Material>> OCEAN_GRAVEL_LOOT = List.of(
@@ -113,8 +113,8 @@ class SuspiciousConversion implements Runnable {
             Material.PLENTY_POTTERY_SHERD, Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE, Material.DIAMOND),
         //绿宝石,青金石,金苹果
         List.of(Material.EMERALD, Material.GOLDEN_APPLE, Material.LAPIS_LAZULI),
-        //南瓜,胡萝卜,马铃薯,羽毛
-        List.of(Material.PUMPKIN, Material.CARROT, Material.POTATO, Material.MELON_SLICE)
+        //南瓜,海泡菜,海带
+        List.of(Material.PUMPKIN, Material.PUMPKIN, Material.SEA_PICKLE, Material.KELP)
     );
 
     public static final List<List<Material>> TRIAL_LOOT = List.of(
@@ -282,6 +282,29 @@ public class PlayerEvents implements Listener {
                     event.setCancelled(true);
                 }
             }
+        }
+    }
+
+    /*
+    * Check if the material is an acid water bucket
+    * WARNING: this method assume m is a bucket type
+    * */
+    private static final boolean IsAcidBucket(Material m) {
+        return switch (m) {
+            case WATER_BUCKET, LAVA_BUCKET, AXOLOTL_BUCKET, COD_BUCKET, MILK_BUCKET, PUFFERFISH_BUCKET, SALMON_BUCKET,
+                 TADPOLE_BUCKET, POWDER_SNOW_BUCKET, TROPICAL_FISH_BUCKET, BUCKET-> false;
+            default -> true;
+        };
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onNetherBucket(final PlayerBucketEmptyEvent event) {
+        Player player = event.getPlayer();
+        Material m = event.getBucket();
+        // if the player is in nether and trying to empty an acid water bucket, cancel it and notify them
+        if (IsAcidBucket(m)
+            && player.getWorld().getEnvironment() == World.Environment.NETHER) {
+            event.setCancelled(true);
         }
     }
 
