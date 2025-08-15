@@ -201,7 +201,6 @@ public class PlayerEvents implements Listener {
         EntityDamageEvent.DamageCause.HOT_FLOOR));
     private static final Random RANDOM = new Random();
     private static final Duration OBSIDIAN_SPAM = Duration.ofSeconds(10);
-
     private final uSkyBlock plugin;
     private final boolean visitorFallProtected;
     private final boolean visitorFireProtected;
@@ -209,6 +208,7 @@ public class PlayerEvents implements Listener {
     private final boolean protectLava;
     private final Map<UUID, Instant> obsidianClick = new HashMap<>();
     private final boolean blockLimitsEnabled;
+
     private final Map<Material, Material> leafSaplings = Map.of(
         Material.OAK_LEAVES, Material.OAK_SAPLING,
         Material.SPRUCE_LEAVES, Material.SPRUCE_SAPLING,
@@ -283,7 +283,39 @@ public class PlayerEvents implements Listener {
         }
     }
 
+    public static boolean featureCanBreak(Material m) {
+        return switch (m) {
+            case END_PORTAL_FRAME, TRIAL_SPAWNER, VAULT -> true;
+            default -> false;
+        };
+    }
 
+    public static boolean featureCanCollect(Material m) {
+        return switch (m) {
+            case END_PORTAL_FRAME, TRIAL_SPAWNER -> true;
+            default -> false;
+        };
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onBreakUnbreakables(final PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        Material toBreak = event.getClickedBlock().getType();
+        // 挖掘末地门框架特性
+        if (event.getAction() == Action.LEFT_CLICK_BLOCK
+            && player.getInventory().getItemInMainHand().getType() == Material.GOLDEN_PICKAXE
+            && featureCanBreak(toBreak)
+            && player.getGameMode() == GameMode.SURVIVAL) {
+
+            Block b = event.getClickedBlock();
+            if (featureCanCollect(toBreak)) {
+                b.getWorld().dropItemNaturally(b.getLocation(), new ItemStack(toBreak));
+            }
+            b.breakNaturally();
+            event.setCancelled(true);
+            return;
+        }
+    }
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerFoodChange(final FoodLevelChangeEvent event) {
         if (event.getEntity() instanceof Player player) {
