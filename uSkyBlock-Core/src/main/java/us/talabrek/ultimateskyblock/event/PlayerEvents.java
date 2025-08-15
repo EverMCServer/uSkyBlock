@@ -20,6 +20,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
+import org.bukkit.util.Vector;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.BlockDataMeta;
@@ -234,6 +235,17 @@ public class PlayerEvents implements Listener {
             return;
         }
         LivingEntity mob = event.getEntity();
+        // Withers summon 3-4 wither skeletons on death
+        if (mob.getType() == org.bukkit.entity.EntityType.WITHER) {
+            int count = 3 + RANDOM.nextInt(2);
+            var vec = List.of(new Vector(1, 0, 0), new Vector(-1, 0, 0), new Vector(0, 0, 1), new Vector(0, 0, -1));
+            Collections.shuffle(vec);
+            for (int i = 0; i < count; i++) {
+                mob.getWorld().spawnEntity(mob.getLocation().add(vec.get(i)), EntityType.WITHER_SKELETON);
+            }
+            return;
+        }
+
         // Piglins drop an extra Pigstep CD if killed by a skeleton
         if (mob.getType() == org.bukkit.entity.EntityType.PIGLIN) {
             Entity killer = event.getDamageSource().getCausingEntity();
@@ -242,7 +254,6 @@ public class PlayerEvents implements Listener {
             }
             return;
         }
-
 
         // warden drop an extra ward template
         if (mob.getType() == org.bukkit.entity.EntityType.WARDEN) {
