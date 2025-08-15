@@ -239,7 +239,6 @@ public class PlayerEvents implements Listener {
         if (mob.getType() == org.bukkit.entity.EntityType.WITHER) {
             int count = 3 + RANDOM.nextInt(2);
             var vec = List.of(new Vector(1, 0, 0), new Vector(-1, 0, 0), new Vector(0, 0, 1), new Vector(0, 0, -1));
-            Collections.shuffle(vec);
             for (int i = 0; i < count; i++) {
                 mob.getWorld().spawnEntity(mob.getLocation().clone().add(vec.get(i)), EntityType.WITHER_SKELETON);
             }
