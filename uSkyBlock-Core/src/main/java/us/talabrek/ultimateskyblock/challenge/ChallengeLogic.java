@@ -8,6 +8,7 @@ import dk.lockfuglsang.minecraft.util.FormatUtil;
 import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -344,20 +346,48 @@ public class ChallengeLogic implements Listener {
             Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
             for (Map.Entry<ItemStack, Integer> required : requiredItems.entrySet()) {
                 ItemStack requiredType = required.getKey();
+                Material requiredMaterial = requiredType.getType();
                 int requiredAmount = required.getValue();
-                String name = TranslationUtil.INSTANCE.getItemLocalizedName(requiredType);
-                if (!player.getInventory().containsAtLeast(requiredType, requiredAmount)) {
-                    sb.append(tr(" \u00a74{0} \u00a7b{1}", (requiredAmount - getCountOf(player.getInventory(), requiredType)), name));
+                int inventoryAmount = Arrays.stream(player.getInventory().getContents())
+                    .filter(itemStack ->
+                        itemStack != null &&
+                        itemStack.getType() == requiredMaterial
+                    )
+                    .mapToInt(ItemStack::getAmount).sum();
+                if (inventoryAmount < requiredAmount) {
+                    String name = TranslationUtil.INSTANCE.getItemLocalizedName(requiredType);
+                    sb.append(tr(" \u00a74{0} \u00a7b{1}", (requiredAmount - inventoryAmount), name));
                     hasAll = false;
                 }
             }
             if (hasAll) {
                 if (challenge.isTakeItems()) {
-                    ItemStack[] itemsToRemove = ItemStackUtil.asValidItemStacksWithAmount(requiredItems);
-                    var leftovers = player.getInventory().removeItem(itemsToRemove);
-                    if (!leftovers.isEmpty()) {
-                        throw new IllegalStateException("Player " + player.getName() + " had items left over after completing challenge " + challengeName + ": " + leftovers);
-                    }
+                    // Search and remove all required items from player inventory
+                    requiredItems.forEach((key, value) -> {
+                        Material requiredMaterial = key.getType();
+                        AtomicInteger remainedAmount = new AtomicInteger(value);
+                        // Search player's items to remove
+                        Arrays.stream(player.getInventory().getContents()).forEach(itemStack -> {
+                            if (remainedAmount.get() <= 0 || itemStack == null) {
+                                return;
+                            }
+                            if (itemStack.getType().equals(requiredMaterial)) {
+                                ItemStack itemsToRemove = itemStack.clone();
+                                // Ensure amount
+                                if (itemsToRemove.getAmount() > remainedAmount.get()) {
+                                    itemsToRemove.setAmount(remainedAmount.get());
+                                    remainedAmount.set(0);
+                                } else {
+                                    remainedAmount.addAndGet(-itemsToRemove.getAmount());
+                                }
+                                // Remove the items
+                                var leftovers = player.getInventory().removeItem(itemsToRemove);
+                                if (!leftovers.isEmpty()) {
+                                    throw new IllegalStateException("Player " + player.getName() + " had items left over after completing challenge " + challengeName + ": " + leftovers);
+                                }
+                            }
+                        });
+                    });
                 }
                 giveReward(player, challenge);
                 return true;
@@ -371,6 +401,12 @@ public class ChallengeLogic implements Listener {
     public int getCountOf(Inventory inventory, ItemStack required) {
         return Arrays.stream(inventory.getContents())
             .filter(item -> item != null && item.isSimilar(required))
+            .mapToInt(ItemStack::getAmount).sum();
+    }
+
+    public int getCountOf(Inventory inventory, Material required) {
+        return Arrays.stream(inventory.getContents())
+            .filter(item -> item != null && item.getType().equals(required))
             .mapToInt(ItemStack::getAmount).sum();
     }
 
@@ -396,7 +432,7 @@ public class ChallengeLogic implements Listener {
         if (defaults.enableEconomyPlugin) {
             double rewBonus = 1;
             Perk perk = perkLogic.getPerk(player);
-            rewBonus +=perk.getRewBonus();
+            rewBonus += perk.getRewBonus();
             double currencyReward = reward.getCurrencyReward() * rewBonus;
             double percentage = (rewBonus - 1.0) * 100.0;
 
