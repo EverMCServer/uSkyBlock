@@ -1,5 +1,6 @@
 package us.talabrek.ultimateskyblock.challenge;
 
+import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import dk.lockfuglsang.minecraft.file.FileUtil;
@@ -33,20 +34,9 @@ import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.TranslationUtil;
 
+import javax.json.Json;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -345,33 +335,29 @@ public class ChallengeLogic implements Listener {
 
             Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
             for (Map.Entry<ItemStack, Integer> required : requiredItems.entrySet()) {
-                ItemStack requiredType = required.getKey();
-                Material requiredMaterial = requiredType.getType();
+                ItemStack requiredItem = required.getKey();
                 int requiredAmount = required.getValue();
                 int inventoryAmount = Arrays.stream(player.getInventory().getContents())
-                    .filter(itemStack ->
-                        itemStack != null &&
-                        itemStack.getType() == requiredMaterial
-                    )
+                    .filter(itemStack -> ItemStackUtil.isItemAchievedMinimumRequirements(itemStack, requiredItem))
                     .mapToInt(ItemStack::getAmount).sum();
                 if (inventoryAmount < requiredAmount) {
-                    String name = TranslationUtil.INSTANCE.getItemLocalizedName(requiredType);
-                    sb.append(tr(" \u00a74{0} \u00a7b{1}", (requiredAmount - inventoryAmount), name));
+                    String name = TranslationUtil.INSTANCE.getItemLocalizedName(requiredItem);
+                    var gson = new Gson();
+                    sb.append(tr(" \u00a74{0} \u00a7b{1} {2}", (requiredAmount - inventoryAmount), name, gson.toJson(requiredItem.getEnchantments())));
                     hasAll = false;
                 }
             }
             if (hasAll) {
                 if (challenge.isTakeItems()) {
                     // Search and remove all required items from player inventory
-                    requiredItems.forEach((key, value) -> {
-                        Material requiredMaterial = key.getType();
-                        AtomicInteger remainedAmount = new AtomicInteger(value);
+                    requiredItems.forEach((requiredItem, RequiredAmount) -> {
+                        AtomicInteger remainedAmount = new AtomicInteger(RequiredAmount);
                         // Search player's items to remove
                         Arrays.stream(player.getInventory().getContents()).forEach(itemStack -> {
                             if (remainedAmount.get() <= 0 || itemStack == null) {
                                 return;
                             }
-                            if (itemStack.getType().equals(requiredMaterial)) {
+                            if (ItemStackUtil.isItemAchievedMinimumRequirements(itemStack, requiredItem)) {
                                 ItemStack itemsToRemove = itemStack.clone();
                                 // Ensure amount
                                 if (itemsToRemove.getAmount() > remainedAmount.get()) {
