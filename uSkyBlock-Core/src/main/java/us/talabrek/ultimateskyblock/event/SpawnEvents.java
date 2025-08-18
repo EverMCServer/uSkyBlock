@@ -25,7 +25,48 @@ import java.util.Objects;
 import java.util.Set;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static org.bukkit.Bukkit.getServer;
 
+
+class TrialSpawnerConversion implements Runnable {
+    private final uSkyBlock plugin;
+    private final Location location;
+    private final EntityType entityType;
+
+    public TrialSpawnerConversion(uSkyBlock plugin, Location location, EntityType entityType) {
+        this.plugin = plugin;
+        this.location = location;
+        this.entityType = entityType;
+    }
+
+    static private String getEntityConfig(EntityType entityType) {
+        return switch (entityType) {
+            case ZOMBIE -> "normal_config: \"minecraft:trial_chamber/melee/zombie/normal\", ominous_config: \"minecraft:trial_chamber/melee/zombie/ominous\"";
+            case SLIME -> "normal_config: \"minecraft:trial_chamber/small_melee/slime/normal\", ominous_config: \"minecraft:trial_chamber/small_melee/slime/ominous\"";
+            case SPIDER -> "normal_config: \"minecraft:trial_chamber/melee/spider/normal\", ominous_config: \"minecraft:trial_chamber/melee/spider/ominous\"";
+            case SKELETON -> "normal_config: \"minecraft:trial_chamber/ranged/skeleton/normal\", ominous_config: \"minecraft:trial_chamber/ranged/skeleton/ominous\"";
+            case BREEZE -> "normal_config: \"minecraft:trial_chamber/breeze/normal\", ominous_config: \"minecraft:trial_chamber/breeze/ominous\"";
+            // default case for other entities
+            default -> "normal_config: \"minecraft:trial_chamber/melee/zombie/normal\", ominous_config: \"minecraft:trial_chamber/melee/zombie/ominous\"";
+        };
+    }
+
+    @Override
+    public void run() {
+        Block block = location.getBlock();
+        if (block.getType() != Material.TRIAL_SPAWNER) {
+            return; // Only convert if the block is still a trial spawner
+        }
+
+        String data_str = getEntityConfig(entityType);
+
+        String command_str = String.format("execute in %s run setblock %d %d %d minecraft:trial_spawner{%s} replace",
+            block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), data_str);
+
+        plugin.getLogger().info("Converting TrialSpawner: " + entityType);
+        getServer().dispatchCommand(getServer().getConsoleSender(), command_str);
+    }
+}
 /**
  * Responsible for controlling spawns on uSkyBlock islands.
  */
@@ -92,6 +133,8 @@ public class SpawnEvents implements Listener {
                     plugin.notifyPlayer(player, tr("\u00a7cYou cannot spawn this with a trial spawner."));
                     event.setUseItemInHand(Event.Result.DENY);
                     event.setUseInteractedBlock(Event.Result.DENY);
+                } else {
+                    Bukkit.getScheduler().runTaskLater(plugin, new TrialSpawnerConversion(plugin, block.getLocation(), entityType), 1L);
                 }
             }
         }
@@ -102,7 +145,7 @@ public class SpawnEvents implements Listener {
             return false;
         }
         return switch (entityType) {
-            case ZOMBIE, HUSK, SLIME, SPIDER, CAVE_SPIDER, SKELETON, STRAY, BOGGED, BREEZE -> true;
+            case ZOMBIE, SLIME, SPIDER, SKELETON, BREEZE -> true;
             default -> false;
         };
     }
