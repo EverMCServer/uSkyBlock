@@ -107,22 +107,15 @@ public class SpawnEvents implements Listener {
         if (event.useItemInHand() == Event.Result.DENY || !plugin.getWorldManager().isSkyAssociatedWorld(player.getWorld())) {
             return; // Bail out, we don't care
         }
-        if (player.hasPermission("usb.mod.bypassprotection") || player.isOp()) {
-            return;
-        }
+
         ItemStack item = event.getItem();
         if (RIGHT_CLICKS.contains(event.getAction()) && item != null && item.getItemMeta() instanceof SpawnEggMeta) {
-            if (!plugin.playerIsOnIsland(player)) {
-                event.setCancelled(true);
-                plugin.notifyPlayer(player, tr("\u00a7eYou can only use spawn-eggs on your own island."));
-                return;
-            }
-
-            checkLimits(event, getSpawnEggType(item), player.getLocation());
-            if (event.useItemInHand() == Event.Result.DENY) {
-                plugin.notifyPlayer(player, tr("\u00a7cYou have reached your spawn-limit for your island."));
-                event.setUseItemInHand(Event.Result.DENY);
-                event.setUseInteractedBlock(Event.Result.DENY);
+            if (!player.hasPermission("usb.mod.bypassprotection") && !player.isOp()) {
+                if (!plugin.playerIsOnIsland(player)) {
+                    event.setCancelled(true);
+                    plugin.notifyPlayer(player, tr("\u00a7eYou can only use spawn-eggs on your own island."));
+                    return;
+                }
             }
 
             Block block = event.getClickedBlock();
@@ -136,6 +129,15 @@ public class SpawnEvents implements Listener {
                 } else {
                     Bukkit.getScheduler().runTaskLater(plugin, new TrialSpawnerConversion(plugin, block.getLocation(), entityType), 1L);
                 }
+            } else {
+                // regular spawn egg, check limits
+                checkLimits(event, getSpawnEggType(item), player.getLocation());
+                if (event.useItemInHand() == Event.Result.DENY) {
+                    plugin.notifyPlayer(player, tr("\u00a7cYou have reached your spawn-limit for your island."));
+                    event.setUseItemInHand(Event.Result.DENY);
+                    event.setUseInteractedBlock(Event.Result.DENY);
+                }
+                return;
             }
         }
     }
