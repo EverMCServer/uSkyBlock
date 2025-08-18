@@ -7,11 +7,14 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Console;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -230,6 +233,37 @@ public enum ItemStackUtil {
             }
             return result.stream();
         }).toArray(ItemStack[]::new);
+    }
+
+    public static boolean isItemAchievedMinimumRequirements(@Nullable ItemStack checkedItem, @NotNull ItemStack requiredItem) {
+        if (checkedItem == null) {
+            return false;
+        }
+        // Check material
+        if (checkedItem.getType() != requiredItem.getType()) {
+            return false;
+        }
+        var itemMeta = checkedItem.getItemMeta();
+        var requiredMeta = requiredItem.getItemMeta();
+        if (requiredMeta != null) {
+            if (itemMeta == null) {
+                return false;
+            }
+            // Check Enchantments
+            if (
+                requiredMeta.hasEnchants() &&
+                    (!itemMeta.hasEnchants() || itemMeta.getEnchants().entrySet().stream().noneMatch(enchantmentEntry ->
+                        requiredMeta.hasEnchant(enchantmentEntry.getKey()) && requiredMeta.getEnchantLevel(enchantmentEntry.getKey()) == enchantmentEntry.getValue()
+                    ))
+            ) {
+                return false;
+            }
+            // Check display name
+            if (requiredMeta.hasDisplayName() && !requiredMeta.getDisplayName().equals(itemMeta.getDisplayName())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
