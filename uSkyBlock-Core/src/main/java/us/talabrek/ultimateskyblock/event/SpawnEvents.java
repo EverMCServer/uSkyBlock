@@ -41,13 +41,14 @@ class TrialSpawnerConversion implements Runnable {
 
     static private String getEntityConfig(EntityType entityType) {
         return switch (entityType) {
-            case ZOMBIE -> "normal_config: \"minecraft:trial_chamber/melee/zombie/normal\", ominous_config: \"minecraft:trial_chamber/melee/zombie/ominous\"";
-            case SLIME -> "normal_config: \"minecraft:trial_chamber/small_melee/slime/normal\", ominous_config: \"minecraft:trial_chamber/small_melee/slime/ominous\"";
-            case SPIDER -> "normal_config: \"minecraft:trial_chamber/melee/spider/normal\", ominous_config: \"minecraft:trial_chamber/melee/spider/ominous\"";
-            case SKELETON -> "normal_config: \"minecraft:trial_chamber/ranged/skeleton/normal\", ominous_config: \"minecraft:trial_chamber/ranged/skeleton/ominous\"";
-            case BREEZE -> "normal_config: \"minecraft:trial_chamber/breeze/normal\", ominous_config: \"minecraft:trial_chamber/breeze/ominous\"";
+            // TODO: Update these after 1.21.4(?)
+            case ZOMBIE -> "{normal_config: {simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {id: \"minecraft:zombie\"}}, weight: 1}]}, spawn_data: {entity: {id: \"minecraft:zombie\"}}, id: \"minecraft:trial_spawner\", ominous_config: {loot_tables_to_eject: [{data: \"minecraft:spawners/ominous/trial_chamber/key\", weight: 3}, {data: \"minecraft:spawners/ominous/trial_chamber/consumables\", weight: 7}], simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {equipment: {slot_drop_chances: 0.0f, loot_table: \"minecraft:equipment/trial_chamber_melee\"}, entity: {id: \"minecraft:zombie\"}}, weight: 1}]}}";
+            case SLIME -> "{normal_config: {simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {Size: 1, id: \"minecraft:slime\"}}, weight: 3}, {data: {entity: {Size: 2, id: \"minecraft:slime\"}}, weight: 1}]}, spawn_data: {entity: {Size: 1, id: \"minecraft:slime\"}}, id: \"minecraft:trial_spawner\", ominous_config: {loot_tables_to_eject: [{data: \"minecraft:spawners/ominous/trial_chamber/key\", weight: 3}, {data: \"minecraft:spawners/ominous/trial_chamber/consumables\", weight: 7}], simultaneous_mobs: 4.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {Size: 1, id: \"minecraft:slime\"}}, weight: 3}, {data: {entity: {Size: 2, id: \"minecraft:slime\"}}, weight: 1}], total_mobs: 12.0f}}";
+            case SPIDER -> "{normal_config: {simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {id: \"minecraft:spider\"}}, weight: 1}]}, spawn_data: {entity: {id: \"minecraft:spider\"}}, id: \"minecraft:trial_spawner\", ominous_config: {loot_tables_to_eject: [{data: \"minecraft:spawners/ominous/trial_chamber/key\", weight: 3}, {data: \"minecraft:spawners/ominous/trial_chamber/consumables\", weight: 7}], simultaneous_mobs: 4.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {id: \"minecraft:spider\"}}, weight: 1}], total_mobs: 12.0f}}";
+            case SKELETON -> "{normal_config: {simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {id: \"minecraft:skeleton\"}}, weight: 1}]}, spawn_data: {entity: {id: \"minecraft:skeleton\"}}, id: \"minecraft:trial_spawner\", ominous_config: {loot_tables_to_eject: [{data: \"minecraft:spawners/ominous/trial_chamber/key\", weight: 3}, {data: \"minecraft:spawners/ominous/trial_chamber/consumables\", weight: 7}], simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {equipment: {slot_drop_chances: 0.0f, loot_table: \"minecraft:equipment/trial_chamber_ranged\"}, entity: {id: \"minecraft:skeleton\"}}, weight: 1}]}}";
+            case BREEZE -> "{normal_config: {simultaneous_mobs: 1.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, total_mobs_added_per_player: 1.0f, spawn_potentials: [{data: {entity: {id: \"minecraft:breeze\"}}, weight: 1}], total_mobs: 2.0f}, spawn_data: {entity: {id: \"minecraft:breeze\"}}, id: \"minecraft:trial_spawner\", ominous_config: {loot_tables_to_eject: [{data: \"minecraft:spawners/ominous/trial_chamber/key\", weight: 3}, {data: \"minecraft:spawners/ominous/trial_chamber/consumables\", weight: 7}], simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, total_mobs_added_per_player: 1.0f, spawn_potentials: [{data: {entity: {id: \"minecraft:breeze\"}}, weight: 1}], total_mobs: 4.0f}}";
             // default case for other entities
-            default -> "normal_config: \"minecraft:trial_chamber/melee/zombie/normal\", ominous_config: \"minecraft:trial_chamber/melee/zombie/ominous\"";
+            default -> "{normal_config: {simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {entity: {id: \"minecraft:zombie\"}}, weight: 1}]}, spawn_data: {entity: {id: \"minecraft:zombie\"}}, id: \"minecraft:trial_spawner\", ominous_config: {loot_tables_to_eject: [{data: \"minecraft:spawners/ominous/trial_chamber/key\", weight: 3}, {data: \"minecraft:spawners/ominous/trial_chamber/consumables\", weight: 7}], simultaneous_mobs: 3.0f, simultaneous_mobs_added_per_player: 0.5f, ticks_between_spawn: 20, spawn_potentials: [{data: {equipment: {slot_drop_chances: 0.0f, loot_table: \"minecraft:equipment/trial_chamber_melee\"}, entity: {id: \"minecraft:zombie\"}}, weight: 1}]}}";
         };
     }
 
@@ -60,10 +61,11 @@ class TrialSpawnerConversion implements Runnable {
 
         String data_str = getEntityConfig(entityType);
 
-        String command_str = String.format("execute in %s run setblock %d %d %d minecraft:trial_spawner{%s} replace",
+        String command_str = String.format("execute in %s run setblock %d %d %d minecraft:trial_spawner%s replace",
             block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), data_str);
 
         plugin.getLogger().info("Converting TrialSpawner: " + entityType);
+        plugin.getLogger().info("CMD = " + command_str);
         getServer().dispatchCommand(getServer().getConsoleSender(), command_str);
     }
 }
