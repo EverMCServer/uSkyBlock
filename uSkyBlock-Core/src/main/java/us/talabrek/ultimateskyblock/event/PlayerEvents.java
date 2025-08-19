@@ -675,6 +675,15 @@ public class PlayerEvents implements Listener {
     }
 
     /**
+     * budding amethyst is allowed to drop its item when broken.
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBuddingAmethystBreak(BlockBreakEvent event) {
+        event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.BUDDING_AMETHYST));
+    }
+
+    /**
      * This EventHandler handles {@link BlockBreakEvent} to detect if a player broke leaves in the skyworld,
      * and will drop a sapling if so. This will prevent cases where the default generated tree on a new
      * island drops no saplings.
