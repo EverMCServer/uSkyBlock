@@ -680,7 +680,12 @@ public class PlayerEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBuddingAmethystBreak(BlockBreakEvent event) {
-        event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(Material.BUDDING_AMETHYST));
+        Block block = event.getBlock();
+        if (block.getType() != Material.BUDDING_AMETHYST) {
+            return;
+        }
+         // Drop the item
+        block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(Material.BUDDING_AMETHYST));
     }
 
     /**
