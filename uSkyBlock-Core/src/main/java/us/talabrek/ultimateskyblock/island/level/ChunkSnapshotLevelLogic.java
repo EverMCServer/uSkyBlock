@@ -132,7 +132,7 @@ public class ChunkSnapshotLevelLogic extends CommonLevelLogic {
                     }
                     int cx = (x & 0xf);
                     int cz = (z & 0xf);
-                    for (int y = 6; y < 120; y++) {
+                    for (int y = 0; y < 256; y++) {
                         Material blockType = chunk.getBlockType(cx, y, cz);
                         if (blockType == Material.AIR) {
                             continue;
