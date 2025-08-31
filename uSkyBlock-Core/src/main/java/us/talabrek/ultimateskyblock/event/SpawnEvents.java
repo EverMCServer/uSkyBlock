@@ -132,13 +132,7 @@ public class SpawnEvents implements Listener {
                     Bukkit.getScheduler().runTaskLater(plugin, new TrialSpawnerConversion(plugin, block.getLocation(), entityType), 1L);
                 }
             } else {
-                // regular spawn egg, check limits
-                checkLimits(event, getSpawnEggType(item), player.getLocation());
-                if (event.useItemInHand() == Event.Result.DENY) {
-                    plugin.notifyPlayer(player, tr("\u00a7cYou have reached your spawn-limit for your island."));
-                    event.setUseItemInHand(Event.Result.DENY);
-                    event.setUseInteractedBlock(Event.Result.DENY);
-                }
+                // No limit checks for spawner eggs now.
                 return;
             }
         }
@@ -171,12 +165,18 @@ public class SpawnEvents implements Listener {
         }
     }
 
+    private static boolean isReasonBypassLimit(CreatureSpawnEvent.SpawnReason reason) {
+        return switch (reason) {
+            case SPAWNER_EGG, LIGHTNING, SLIME_SPLIT, BUILD_WITHER, INFECTION, TRIAL_SPAWNER, TRAP, ENDER_PEARL, COMMAND, CUSTOM -> true;
+            default -> false;
+        };
+    }
     @EventHandler(ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         if (event == null || !plugin.getWorldManager().isSkyAssociatedWorld(event.getLocation().getWorld())) {
             return; // Bail out, we don't care
         }
-        if (event.getSpawnReason().equals(CreatureSpawnEvent.SpawnReason.SPAWNER_EGG)) {
+        if (isReasonBypassLimit(event.getSpawnReason())) {
             return; // Allow it, the above method would have blocked it if it should be blocked.
         }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
