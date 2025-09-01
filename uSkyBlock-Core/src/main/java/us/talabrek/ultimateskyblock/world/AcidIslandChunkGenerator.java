@@ -16,25 +16,16 @@ import java.util.List;
 import java.util.Random;
 
 public class AcidIslandChunkGenerator extends ChunkGenerator {
-
-    private final boolean old = false;
+    private final int worldYMin = -64;
 
     @Override
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
-        if (old) {
-            chunkData.setRegion(0, 1, 0, 16, Settings.island_height - 1, 16, Bukkit.createBlockData("acidwater:acid_block"));
-        } else {
-            chunkData.setRegion(0, -63, 0, 16, Settings.island_height - 1, 16, Bukkit.createBlockData("acidwater:acid_block"));
-        }
+        chunkData.setRegion(0, worldYMin +1, 0, 16, Settings.island_height - 1, 16, Bukkit.createBlockData("water"));
     }
 
     @Override
     public void generateBedrock(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
-        if (old) {
-            chunkData.setRegion(0, 0, 0, 16, 1, 16, Material.BARRIER);
-        } else {
-            chunkData.setRegion(0, -64, 0, 16, -63, 16, Material.BARRIER);
-        }
+        chunkData.setRegion(0, worldYMin, 0, 16, -63, 16, Material.BARRIER);
     }
 
     @Override
