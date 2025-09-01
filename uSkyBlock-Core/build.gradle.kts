@@ -11,6 +11,7 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.1")
     implementation("com.google.inject:guice:7.0.0")
     implementation("org.jetbrains:annotations:23.0.0")
+    implementation("com.jeff-media:custom-block-data:2.2.4")
     testImplementation(project(":bukkit-utils", "testsJar"))
     testImplementation("org.hamcrest:hamcrest:2.2")
     testImplementation("org.hamcrest:hamcrest-library:2.2")
