@@ -30,6 +30,7 @@ public class Listeners {
     private final ItemDropEvents itemDropEvents;
     private final IslandBorderEvent islandBorderEvent;
     private final SpawnEvents spawnEvents;
+    private final ToxicEvents toxicEvents;
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
     private final ToolMenuEvents toolMenuEvents;
@@ -51,6 +52,7 @@ public class Listeners {
         @NotNull ItemDropEvents itemDropEvents,
         @NotNull IslandBorderEvent islandBorderEvent,
         @NotNull SpawnEvents spawnEvents,
+        @NotNull ToxicEvents toxicEvents,
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
@@ -70,6 +72,7 @@ public class Listeners {
         this.itemDropEvents = itemDropEvents;
         this.islandBorderEvent = islandBorderEvent;
         this.spawnEvents = spawnEvents;
+        this.toxicEvents = toxicEvents;
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
         this.toolMenuEvents = toolMenuEvents;
@@ -116,6 +119,8 @@ public class Listeners {
         if (config.getYamlConfig().getBoolean("signs.enabled", true)) {
             manager.registerEvents(signEvents, plugin);
         }
+
+        manager.registerEvents(toxicEvents, plugin);
     }
 
     public void unregisterListeners(Plugin plugin) {
