@@ -9,6 +9,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -30,6 +31,9 @@ import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.*;
 
+import static org.bukkit.block.Biome.LUKEWARM_OCEAN;
+import static org.bukkit.block.Biome.OCEAN;
+
 @Singleton
 public class ToxicEvents implements Listener {
     private final uSkyBlock plugin;
@@ -47,8 +51,8 @@ public class ToxicEvents implements Listener {
         this.key = new NamespacedKey(plugin, "is_toxic");
         this.toxicData = new long[4 * 384];
         // toxicData: every 4 longs represent a layer of 16x16 blocks, starting from y=-64 to y=319
-        for (int i = 4; i < 4 + 4 * 126; i++) {
-            // toxic sea from y=-63 to y=62
+        for (int i = 4; i < 4 + 4 * 125; i++) {
+            // toxic sea from y=-63 to y=61
             this.toxicData[i] = ~0L;
         }
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::doToxicSpreadTick, 20L, 1L);
@@ -78,7 +82,13 @@ public class ToxicEvents implements Listener {
         int cy = b.getY() + 64;
         int index = cy * 4 + (cx >> 2);
         long bit = 1L << (((cx & 0x03) << 4) | cz);
-        return (data[index] & bit) != 0;
+        if ((data[index] & bit) != 0) {
+            plugin.getLogger().info("Block at " + b.getLocation() + " is toxic.");
+            return true;
+        } else {
+            return false;
+        }
+        //return (data[index] & bit) != 0;
     }
 
     private List<Pair<ItemStack, EquipmentSlot>> getAntiToxicArmors(Player player) {
@@ -101,23 +111,11 @@ public class ToxicEvents implements Listener {
         if (player == null) return;
         dmgTick.compute(player.getUniqueId(), (k, entry) -> Pair.of(entry == null ? 10 : entry.getLeft(), true));
     }
-    private boolean isRainyBiome(Biome b) {
-        // only consider uSkyBlock biomes:
-        return switch (b) {
-            case OCEAN, LUKEWARM_OCEAN, COLD_OCEAN, WARM_OCEAN -> true;
-            default -> false;
-        };
-    }
 
     private void checkToxicRain(Server server) {
         server.getOnlinePlayers().forEach((player) -> {
-            Location loc = player.getLocation();
-            if (!player.getWorld().isClearWeather() && isRainyBiome(loc.getBlock().getBiome())) {
-                if (loc.getY() >= player.getWorld().getHighestBlockYAt(loc) - 1) {
-                    // in toxic rain
-                    triggerToxicDamageTick(player);
-                    //plugin.getLogger().info("Player " + player.getName() + " is in toxic rain at " + loc.toString());
-                }
+            if (player.isInRain()) {
+                triggerToxicDamageTick(player);
             }
         });
     }
@@ -226,6 +224,7 @@ public class ToxicEvents implements Listener {
         PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
         long[] data = pdc.get(key, PersistentDataType.LONG_ARRAY);
         if (data == null || data.length != toxicData.length) {
+            plugin.getLogger().info("nope!");
             toxicizeChunk(b.getChunk());
         }
         int cx = b.getX() & 0x0F;
@@ -292,17 +291,19 @@ public class ToxicEvents implements Listener {
 
         if (toxic_from) {
             spread(from);
-        }
-        if (toxic_to) {
+        } else if (toxic_to) {
             spread(to);
+        } else {
+            checkPollute(to);
         }
     }
 
     /*
         Make drained/replaced water non-toxic
      */
-    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler (priority = EventPriority.MONITOR)
     public void onPhysicsCheck(BlockPhysicsEvent e) {
+        plugin.getLogger().info("BlockPhysicsEvent at " + e.getSourceBlock().getLocation());
         // TODO: make this more efficient, as BlockPhysicsEvent is very frequent
         Block b = e.getSourceBlock();
         if (!isWater(b)) {
