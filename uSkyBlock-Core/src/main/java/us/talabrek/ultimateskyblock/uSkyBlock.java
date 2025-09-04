@@ -210,7 +210,7 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
             getServer().dispatchCommand(getServer().getConsoleSender(), "usb flush"); // See uskyblock#4
         }, TimeUtil.ticksAsDuration(getConfig().getLong("init.initDelay", 50L)));
 
-        getScheduler().async(() -> getUpdateChecker().checkForUpdates(), Duration.ZERO, Duration.ofHours(4));
+        //getScheduler().async(() -> getUpdateChecker().checkForUpdates(), Duration.ZERO, Duration.ofHours(4));
     }
 
     public synchronized boolean isRequirementsMet(CommandSender sender, Command command, String... args) {
