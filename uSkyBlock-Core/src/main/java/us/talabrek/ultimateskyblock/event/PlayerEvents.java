@@ -435,7 +435,7 @@ public class PlayerEvents implements Listener {
             && block.getType() == Material.VAULT) {
             if (block.getBlockData() instanceof Vault vault) {
                 if (!vault.isOminous()) {
-                    if (vault.getTrialSpawnerState() == Vault.State.INACTIVE) {
+                    if (vault.getVaultState() == Vault.State.INACTIVE) {
                         // Reset this vault's blockdata to the default state
                         Location loc = block.getLocation();
                         BlockData BD = block.getBlockData().clone();
@@ -982,7 +982,7 @@ public class PlayerEvents implements Listener {
                 world.setBiome(x, k, z, biome);
             }
             Player player = event.getPlayer();
-            player.sendMessage("changed biome to" + biome.name());
+            player.sendMessage("changed biome to" + biome.toString());
         }
     }
 

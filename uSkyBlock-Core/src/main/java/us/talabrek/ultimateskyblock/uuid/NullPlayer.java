@@ -1,5 +1,6 @@
 package us.talabrek.ultimateskyblock.uuid;
 
+import io.papermc.paper.persistence.PersistentDataContainerView;
 import org.bukkit.BanEntry;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,6 +29,11 @@ public class NullPlayer implements OfflinePlayer {
     }
 
     @Override
+    public boolean isConnected() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return PlayerDB.UNKNOWN_PLAYER_NAME;
     }
@@ -37,9 +43,8 @@ public class NullPlayer implements OfflinePlayer {
         return PlayerDB.UNKNOWN_PLAYER_UUID;
     }
 
-    @NotNull
     @Override
-    public PlayerProfile getPlayerProfile() {
+    public com.destroystokyo.paper.profile.PlayerProfile getPlayerProfile() {
         return null;
     }
 
@@ -101,9 +106,24 @@ public class NullPlayer implements OfflinePlayer {
         return null;
     }
 
+    @Override
+    public long getLastLogin() {
+        return 0;
+    }
+
+    @Override
+    public long getLastSeen() {
+        return 0;
+    }
+
     @Nullable
     @Override
     public Location getRespawnLocation() {
+        return null;
+    }
+
+    @Override
+    public @org.jspecify.annotations.Nullable Location getRespawnLocation(boolean loadLocationAndValidate) {
         return null;
     }
 
@@ -206,6 +226,11 @@ public class NullPlayer implements OfflinePlayer {
     @Nullable
     @Override
     public Location getLocation() {
+        return null;
+    }
+
+    @Override
+    public PersistentDataContainerView getPersistentDataContainer() {
         return null;
     }
 
