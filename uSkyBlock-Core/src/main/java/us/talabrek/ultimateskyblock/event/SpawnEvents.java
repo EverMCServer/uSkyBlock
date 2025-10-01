@@ -152,10 +152,10 @@ public class SpawnEvents implements Listener {
             Location loc = conduit.getLocation();
             int currentCharge = conduits.getOrDefault(loc, 0);
             currentCharge += delta;
-            plugin.getLogger().info(String.format("Conduit at (%d,%d,%d): level %d->%d, charge %d->%d.",
-                loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
-                oldLevel, newLevel,
-                currentCharge - delta, currentCharge));
+//            plugin.getLogger().info(String.format("Conduit at (%d,%d,%d): level %d->%d, charge %d->%d.",
+//                loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
+//                oldLevel, newLevel,
+//                currentCharge - delta, currentCharge));
             if (currentCharge >= 30) {
                 loc.getWorld().playSound(loc, Sound.BLOCK_CONDUIT_ACTIVATE, 1.0f, 1.0f);
                 currentCharge -= 30;
