@@ -37,24 +37,26 @@ import static org.bukkit.block.Biome.OCEAN;
 @Singleton
 public class ToxicEvents implements Listener {
     private final uSkyBlock plugin;
-    private final NamespacedKey key;
+    private final NamespacedKey[] key;
     private final long[] toxicData;
+    private final long[] cleanData;
 
     private static final Set<Location> toSpread = new HashSet<>();
     //  uuid -> (#ticks to next damage, in toxic now?)
     private final Map<UUID, Pair<Integer, Boolean>> dmgTick = new HashMap<>();
     //  uuid -> #damage blocked since last coal taken
     private final Map<UUID, Integer> coalCount = new HashMap<>();
+
+
     @Inject
     public ToxicEvents(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
-        this.key = new NamespacedKey(plugin, "is_toxic");
-        this.toxicData = new long[4 * 384];
-        // toxicData: every 4 longs represent a layer of 16x16 blocks, starting from y=-64 to y=319
-        for (int i = 4; i < 4 + 4 * 125; i++) {
-            // toxic sea from y=-63 to y=61
-            this.toxicData[i] = ~0L;
+        this.key = new NamespacedKey[384];
+        for (int i = 0; i < 384; i++) {
+            this.key[i] = new NamespacedKey(plugin, "T" + (i-64));
         }
+        this.toxicData = new long[]{~0L, ~0L, ~0L, ~0L};
+        this.cleanData = new long[]{0L, 0L, 0L, 0L};
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::doToxicSpreadTick, 20L, 1L);
         plugin.getServer().getScheduler().runTaskTimer(plugin, () -> doToxicDamageTick(plugin.getServer()), 20L, 1L);
     }
@@ -71,16 +73,17 @@ public class ToxicEvents implements Listener {
         if (!isWater(b)) {
             return false;
         }
-        PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
-        long[] data = pdc.get(key, PersistentDataType.LONG_ARRAY);
-        if (data == null || data.length != toxicData.length) {
-            toxicizeChunk(b.getChunk());
-            data = pdc.get(key, PersistentDataType.LONG_ARRAY);
-        }
         int cx = b.getX() & 0x0F;
         int cz = b.getZ() & 0x0F;
         int cy = b.getY() + 64;
-        int index = cy * 4 + (cx >> 2);
+
+        PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
+        long[] data = pdc.get(key[cy], PersistentDataType.LONG_ARRAY);
+        if (data == null) {
+            return false;
+        }
+
+        int index = cx >> 2;
         long bit = 1L << (((cx & 0x03) << 4) | cz);
         if ((data[index] & bit) != 0) {
             plugin.getLogger().info("Block at " + b.getLocation() + " is toxic.");
@@ -218,21 +221,23 @@ public class ToxicEvents implements Listener {
         if (!plugin.getWorldManager().isSkyWorld(b.getWorld())) {
             return;
         }
-        if (b.getY() < -63 || b.getY() > 62) {
-            return;
-        }
-        PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
-        long[] data = pdc.get(key, PersistentDataType.LONG_ARRAY);
-        if (data == null || data.length != toxicData.length) {
-            plugin.getLogger().info("nope!");
-            toxicizeChunk(b.getChunk());
-        }
         int cx = b.getX() & 0x0F;
         int cz = b.getZ() & 0x0F;
         int cy = b.getY() + 64;
-        int index = cy * 4 + (cx >> 2);
+        PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
+        long[] data = pdc.get(key[cy], PersistentDataType.LONG_ARRAY);
+        if (data == null) {
+            if (!toxic) {
+                // 本来就不是毒水，不需要设置
+                return;
+            }
+            data = cleanData.clone();
+        }
+
+        int index = (cx >> 2);
         long bit = 1L << (((cx & 0x03) << 4) | cz);
         data[index] = toxic ? (data[index] | bit) : (data[index] & ~bit);
+        pdc.set(key[cy], PersistentDataType.LONG_ARRAY, data);
     }
 
     @EventHandler (priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -303,7 +308,7 @@ public class ToxicEvents implements Listener {
      */
     @EventHandler (priority = EventPriority.MONITOR)
     public void onPhysicsCheck(BlockPhysicsEvent e) {
-        plugin.getLogger().info("BlockPhysicsEvent at " + e.getSourceBlock().getLocation());
+        //plugin.getLogger().info("BlockPhysicsEvent at " + e.getSourceBlock().getLocation());
         // TODO: make this more efficient, as BlockPhysicsEvent is very frequent
         Block b = e.getSourceBlock();
         if (!isWater(b)) {
@@ -379,7 +384,10 @@ public class ToxicEvents implements Listener {
             return;
         }
         PersistentDataContainer pdc = chunk.getPersistentDataContainer();
-        pdc.set(key, PersistentDataType.LONG_ARRAY, toxicData);
+        for (int i = -63; i <= 61; ++i) {
+            pdc.set(key[i + 64], PersistentDataType.LONG_ARRAY, toxicData);
+        }
+
     }
 
 
