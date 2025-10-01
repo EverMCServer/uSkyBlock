@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.uSkyBlock;
-import us.talabrek.ultimateskyblock.util.LocationUtil;
 
 import java.util.*;
 
@@ -82,7 +81,8 @@ public class SpawnEvents implements Listener {
 
     private boolean phantomsInOverworld;
     private boolean phantomsInNether;
-    private static final Map<Location, Integer> Conduits = new HashMap<>();
+
+    private static final Map<Location, Integer> conduits = new HashMap<>();
     private static final Random random = new Random();
 
     @Inject
@@ -142,22 +142,28 @@ public class SpawnEvents implements Listener {
         if (newdata instanceof Levelled levelled) {
             // 参考文档：level 0为水源，1-7逐渐降低；8-15表示falling water，减去8为其上面一格的level
             int oldLevel = ((Levelled) water.getBlockData()).getLevel();
-            if (oldLevel > 8) oldLevel = 0;
+            if (oldLevel >= 8) oldLevel = 0;
             int newLevel = levelled.getLevel();
-            if (newLevel > 8) newLevel = 0;
+            if (newLevel >= 8) newLevel = 0;
             if (newLevel == oldLevel) {
                 return;
             }
             int delta = abs(oldLevel - newLevel);
             Location loc = conduit.getLocation();
-            int currentCharge = Conduits.getOrDefault(loc, 0);
+            int currentCharge = conduits.getOrDefault(loc, 0);
             currentCharge += delta;
-            plugin.getLogger().info("Conduit at " + loc + " gained " + delta + " charge, now at " + currentCharge);
-            if (currentCharge >= 20) {
-                currentCharge = 0;
+            plugin.getLogger().info(String.format("Conduit at (%d,%d,%d): level %d->%d, charge %d->%d.",
+                loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
+                oldLevel, newLevel,
+                currentCharge - delta, currentCharge));
+            if (currentCharge >= 30) {
+                loc.getWorld().playSound(loc, Sound.BLOCK_CONDUIT_ACTIVATE, 1.0f, 1.0f);
+                currentCharge -= 30;
                 conduitTrySummonGuardian(conduit);
+            } else {
+                loc.getWorld().playSound(loc, Sound.BLOCK_CONDUIT_AMBIENT, 1.0f, 1.0f);
             }
-            Conduits.put(loc, currentCharge);
+            conduits.put(loc, currentCharge);
         }
     }
 
@@ -167,12 +173,12 @@ public class SpawnEvents implements Listener {
         if (!plugin.getLimitLogic().canSpawn(EntityType.GUARDIAN, ii)) {
             return;
         }
-        int maxGuardians = 3;
+        int maxGuardians = 2;
         if (loc.getWorld().hasStorm() && loc.getWorld().getBiome(loc) != Biome.FROZEN_OCEAN){
             maxGuardians = 5;
         }
         int spawned = 0;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 5; i++) {
             Location randomLoc = loc.clone().add(
                 random.nextInt(9) - 4,
                 random.nextInt(9) - 4,

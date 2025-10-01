@@ -248,7 +248,13 @@ public class PlayerEvents implements Listener {
 
         if (mob.getType() == EntityType.GUARDIAN) {
             DamageType damageType = event.getDamageSource().getDamageType();
-            plugin.getLogger().info("Guardian killed by " + damageType + ", src = " + event.getDamageSource().getCausingEntity());
+            if (damageType == DamageType.MAGIC && event.getDamageSource().getCausingEntity() == null) {
+                // Assume this is killed by a conduit
+                if (RANDOM.nextDouble() < 0.001) {
+                    mob.getWorld().spawnEntity(mob.getLocation(), EntityType.ELDER_GUARDIAN);
+                }
+            }
+            return;
         }
         // Piglins drop an extra Pigstep CD if killed by a skeleton
         if (mob.getType() == org.bukkit.entity.EntityType.PIGLIN) {
