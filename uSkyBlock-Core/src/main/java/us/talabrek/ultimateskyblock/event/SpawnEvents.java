@@ -3,11 +3,14 @@ package us.talabrek.ultimateskyblock.event;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.bukkit.*;
-import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
+import org.bukkit.block.*;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Levelled;
+import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.*;
 import org.bukkit.event.*;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.FluidLevelChangeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -15,16 +18,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SpawnEggMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import us.talabrek.ultimateskyblock.api.IslandInfo;
+import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static java.lang.Math.abs;
 import static org.bukkit.Bukkit.getServer;
 
 
@@ -80,12 +82,138 @@ public class SpawnEvents implements Listener {
 
     private boolean phantomsInOverworld;
     private boolean phantomsInNether;
+    private static final Map<Location, Integer> Conduits = new HashMap<>();
+    private static final Random random = new Random();
 
     @Inject
     public SpawnEvents(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
         phantomsInOverworld = plugin.getConfig().getBoolean("options.spawning.phantoms.overworld", true);
         phantomsInNether = plugin.getConfig().getBoolean("options.spawning.phantoms.nether", false);
+    }
+
+    private static boolean isWaterBlock(Material material) {
+        return material == Material.WATER || material == Material.BUBBLE_COLUMN;
+    }
+
+    private static boolean isPrismarineBlock(Material material) {
+        return switch (material) {
+            case PRISMARINE, PRISMARINE_SLAB, PRISMARINE_STAIRS, PRISMARINE_WALL,
+                 PRISMARINE_BRICKS, PRISMARINE_BRICK_SLAB, PRISMARINE_BRICK_STAIRS,
+                 DARK_PRISMARINE, DARK_PRISMARINE_SLAB, DARK_PRISMARINE_STAIRS,
+                 SEA_LANTERN -> true;
+            default -> false;
+        };
+    }
+
+    /*
+        当含水且未激活的潮涌核心上方的方块是流动水、且其水位改变时，潮涌核心会获得“充能”，充能层数等于水位改变的层数。
+        注意，必须是水位改变，不能是水直接被替换，比如被活塞推
+        充能达到20时，潮涌核心会清空充能，在9x9x9范围内随机选择8个位置，各按以下的规则尝试生成1个守卫者。
+        1. 检查此位置的方块为水方块(水、流动水或气泡柱)。如果不满足条件，则放弃生成。
+        2. 设置基础生成概率p=0.2。
+        3. 在此位置的6个方向检查，是否此方向最远9格内第一个非水方块是海晶石类方块(包括海晶石、暗海晶石、海晶石砖及海晶灯)。每有一个方向满足条件，则p增加0.05。
+        4. 以p概率在此位置生成一个守卫者。
+        5. 每次最多生成3个守卫者。如果在下雨、且不是冻洋，则上限增加至5个。
+        当守卫者被满级的潮涌核心击杀时，有0.1%概率在原地生成一个远古守卫者。
+        守卫者和远古守卫者的战利品掉落与原版相同。
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWaterLevelChanged(FluidLevelChangeEvent event) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getBlock().getWorld())) {
+            return;
+        }
+        Block conduit = event.getBlock().getRelative(BlockFace.DOWN);
+
+        if (conduit.getType() != Material.CONDUIT) {
+            return;
+        }
+        if (!(conduit.getBlockData() instanceof Waterlogged waterlogged) || !waterlogged.isWaterlogged()) {
+            return;
+        }
+        if (!(conduit.getState() instanceof Conduit conduitState) || conduitState.isActive()) {
+            return;
+        }
+        Block water = event.getBlock();
+        if (water.getType() != Material.WATER) {
+            return;
+        }
+        BlockData newdata = event.getNewData();
+        if (newdata instanceof Levelled levelled) {
+            // 参考文档：level 0为水源，1-7逐渐降低；8-15表示falling water，减去8为其上面一格的level
+            int oldLevel = ((Levelled) water.getBlockData()).getLevel();
+            if (oldLevel > 8) oldLevel = 0;
+            int newLevel = levelled.getLevel();
+            if (newLevel > 8) newLevel = 0;
+            if (newLevel == oldLevel) {
+                return;
+            }
+            int delta = abs(oldLevel - newLevel);
+            Location loc = conduit.getLocation();
+            int currentCharge = Conduits.getOrDefault(loc, 0);
+            currentCharge += delta;
+            plugin.getLogger().info("Conduit at " + loc + " gained " + delta + " charge, now at " + currentCharge);
+            if (currentCharge >= 20) {
+                currentCharge = 0;
+                conduitTrySummonGuardian(conduit);
+            }
+            Conduits.put(loc, currentCharge);
+        }
+    }
+
+    private void conduitTrySummonGuardian(Block conduit) {
+        Location loc = conduit.getLocation().clone().add(0.5, 0.5, 0.5);
+        IslandInfo ii = plugin.getIslandInfo(loc);
+        if (!plugin.getLimitLogic().canSpawn(EntityType.GUARDIAN, ii)) {
+            return;
+        }
+        int maxGuardians = 3;
+        if (loc.getWorld().hasStorm() && loc.getWorld().getBiome(loc) != Biome.FROZEN_OCEAN){
+            maxGuardians = 5;
+        }
+        int spawned = 0;
+        for (int i = 0; i < 8; i++) {
+            Location randomLoc = loc.clone().add(
+                random.nextInt(9) - 4,
+                random.nextInt(9) - 4,
+                random.nextInt(9) - 4
+            );
+            if (!IslandBorderEvent.isBothTrusted(ii, plugin.getIslandInfo(randomLoc))) {
+                continue;
+            }
+            if (locationTrySummonGuardian(randomLoc)) {
+                spawned++;
+                if (spawned >= maxGuardians) {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Returns true if a guardian was summoned
+    private boolean locationTrySummonGuardian(Location loc) {
+        if (!isWaterBlock(loc.getBlock().getType()) || !isWaterBlock(loc.getBlock().getRelative(BlockFace.DOWN).getType())) {
+            return false;
+        }
+        double p = 0.2;
+        for (BlockFace face : List.of(BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST)) {
+            Block checkBlock = loc.getBlock();
+            for (int i = 0; i < 9; i++) {
+                checkBlock = checkBlock.getRelative(face);
+                if (!isWaterBlock(checkBlock.getType())) {
+                    if (isPrismarineBlock(checkBlock.getType())) {
+                        p += 0.05;
+                    }
+                    break;
+                }
+            }
+        }
+        if (random.nextDouble() < p) {
+            loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -177,21 +305,9 @@ public class SpawnEvents implements Listener {
             return; // Bail out, we don't care
         }
         if (isReasonBypassLimit(event.getSpawnReason())) {
-            return; // Allow it, the above method would have blocked it if it should be blocked.
+            return; // Allow it, no limit checks
         }
         checkLimits(event, event.getEntity().getType(), event.getLocation());
-        if (event.getEntity() instanceof WaterMob) {
-            Location loc = event.getLocation();
-            if (isDeepOceanBiome(loc) && isPrismarineRoof(loc)) {
-                loc.getWorld().spawnEntity(loc, EntityType.GUARDIAN);
-                event.setCancelled(true);
-            }
-        }
-    }
-
-    private boolean isPrismarineRoof(Location loc) {
-        Collection<Material> prismarineBlocks = Set.of(Material.PRISMARINE, Material.PRISMARINE_BRICKS, Material.DARK_PRISMARINE);
-        return prismarineBlocks.contains(LocationUtil.findRoofBlock(loc).getType());
     }
 
     private boolean isDeepOceanBiome(Location loc) {

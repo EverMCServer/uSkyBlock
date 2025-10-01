@@ -12,6 +12,7 @@ import org.bukkit.block.data.type.Leaves;
 import org.bukkit.block.data.type.Vault;
 import org.bukkit.command.Command;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.damage.DamageType;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -245,6 +246,10 @@ public class PlayerEvents implements Listener {
             return;
         }
 
+        if (mob.getType() == EntityType.GUARDIAN) {
+            DamageType damageType = event.getDamageSource().getDamageType();
+            plugin.getLogger().info("Guardian killed by " + damageType + ", src = " + event.getDamageSource().getCausingEntity());
+        }
         // Piglins drop an extra Pigstep CD if killed by a skeleton
         if (mob.getType() == org.bukkit.entity.EntityType.PIGLIN) {
             Entity killer = event.getDamageSource().getCausingEntity();
