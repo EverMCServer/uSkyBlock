@@ -3,6 +3,7 @@ package us.talabrek.ultimateskyblock.event;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import jdk.jfr.Timestamp;
 import net.kyori.adventure.text.BlockNBTComponent;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -21,6 +22,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -435,35 +438,58 @@ public class PlayerEvents implements Listener {
         }
     }
 
+    private NamespacedKey getKeyVaultLastRefreshed(Block b) {
+        return new NamespacedKey(plugin, String.format("vault_last_refreshed_%d_%d_%d", b.getX(), b.getY(), b.getZ()));
+    }
+
+    private static void RefreshVault(Block b, Player player, ItemStack item) {
+        Location loc = b.getLocation();
+        BlockData BD = b.getBlockData().clone();
+        b.breakNaturally();
+        b.getWorld().setBlockData(loc, BD);
+        if (player.getGameMode() != GameMode.CREATIVE) {
+            item.setAmount(item.getAmount() - 1);
+            if (item.getAmount() <= 0) {
+                // If the item is depleted, remove it from the player's inventory
+                PlayerInventory inventory = player.getInventory();
+                inventory.remove(item);
+            }
+        }
+        player.sendMessage(tr("\u00a7eVault refreshed!"));
+    }
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onRefreshVaults(final PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         Block block = event.getClickedBlock();
         if (item != null && event.getAction() == Action.RIGHT_CLICK_BLOCK
-            && item.getType() == Material.GOLD_INGOT
             && block != null
-            && block.getType() == Material.VAULT) {
-            if (block.getBlockData() instanceof Vault vault) {
-                if (!vault.isOminous()) {
+            && block.getBlockData() instanceof Vault vault) {
+            if (!vault.isOminous()) {
+                // 普通宝库使用一个金锭刷新
+                if (item.getType() == Material.GOLD_INGOT) {
                     if (vault.getTrialSpawnerState() == Vault.State.INACTIVE) {
-                        // Reset this vault's blockdata to the default state
-                        Location loc = block.getLocation();
-                        BlockData BD = block.getBlockData().clone();
-                        block.breakNaturally();
-                        player.getWorld().setBlockData(loc, BD);
-                        if (player.getGameMode() != GameMode.CREATIVE) {
-                            item.setAmount(item.getAmount() - 1);
-                            if (item.getAmount() <= 0) {
-                                // If the item is depleted, remove it from the player's inventory
-                                PlayerInventory inventory = player.getInventory();
-                                inventory.remove(item);
-                            }
-                        }
-                        player.sendMessage(tr("\u00a7eVault refreshed!"));
+                        RefreshVault(block, player, item);
                     }
-                } else {
-                    player.sendMessage(tr("\u00a74You cannot refresh an ominous vault!"));
+                }
+            } else {
+                long timestamp = System.currentTimeMillis() / 1000;
+                // 不祥宝库使用一个钻石刷新，且以此法刷新有160h的cd
+                if (item.getType() == Material.DIAMOND) {
+                    if (vault.getTrialSpawnerState() == Vault.State.INACTIVE) {
+                        PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
+                        NamespacedKey key = getKeyVaultLastRefreshed(block);
+                        Long last_refresh = pdc.getOrDefault(key, PersistentDataType.LONG, (long) -1);
+                        if (last_refresh == -1 || last_refresh + 576000 < timestamp) {
+                            RefreshVault(block, player, item);
+                            pdc.set(key, PersistentDataType.LONG, timestamp);
+                        } else {
+                            long seconds_left = (last_refresh + 576000 - timestamp);
+                            long hours = seconds_left / 3600;
+                            long minutes = (seconds_left % 3600) / 60;
+                            player.sendMessage(tr("\u00a74You must wait {0} hours and {1} minutes before refreshing this vault again.", hours, minutes));
+                        }
+                    }
                 }
             }
         }
@@ -697,6 +723,25 @@ public class PlayerEvents implements Listener {
         }
          // Drop the item
         block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(Material.BUDDING_AMETHYST));
+    }
+
+    /**
+     * budding amethyst is allowed to drop its item when broken.
+     * @param event
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onVaultBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() != Material.VAULT) {
+            return;
+        }
+
+        // Clear key
+        NamespacedKey key = getKeyVaultLastRefreshed(block);
+        PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
+        if (pdc.has(key)) {
+            pdc.remove(key);
+        }
     }
 
     /**
