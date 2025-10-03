@@ -52,6 +52,35 @@ import java.util.*;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static org.bukkit.Bukkit.getServer;
 
+class VaultRefresh implements Runnable {
+    private final uSkyBlock plugin;
+    private final Location location;
+    private final String tagOminous = "{config: {loot_table: \"minecraft:chests/trial_chambers/reward_ominous\", key_item: {id: \"minecraft:ominous_trial_key\", count: 1}}, id: \"minecraft:vault\", components: {\"minecraft:block_state\": {ominous: \"true\"}}}\n";
+    private final String tagNormal = "{config: {key_item: {id: \"minecraft:trial_key\", count: 1}}, id: \"minecraft:vault\"}\n";
+
+    public VaultRefresh(uSkyBlock plugin, Location location) {
+        this.plugin = plugin;
+        this.location = location;
+    }
+
+    @Override
+    public void run() {
+        Block block = location.getBlock();
+        if (block.getType() != Material.VAULT) {
+            return; // Only refresh if the block is still a vault
+        }
+
+        if (block.getBlockData() instanceof Vault vault) {
+            String command_str = String.format("execute in %s run setblock %d %d %d minecraft:vault%s replace",
+                block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), vault.isOminous() ? tagOminous : tagNormal);
+
+            plugin.getLogger().info("Refreshing Vault: " + location);
+            plugin.getLogger().info("CMD = " + command_str);
+            getServer().dispatchCommand(getServer().getConsoleSender(), command_str);
+        }
+    }
+}
+
 class SuspiciousConversion implements Runnable {
     private final uSkyBlock plugin;
     private final Location location;
@@ -442,11 +471,9 @@ public class PlayerEvents implements Listener {
         return new NamespacedKey(plugin, String.format("vault_last_refreshed_%d_%d_%d", b.getX(), b.getY(), b.getZ()));
     }
 
-    private static void RefreshVault(Block b, Player player, ItemStack item) {
+    private void RefreshVault(Block b, Player player, ItemStack item) {
         Location loc = b.getLocation();
-        BlockData BD = b.getBlockData().clone();
-        b.breakNaturally();
-        b.getWorld().setBlockData(loc, BD);
+        Bukkit.getScheduler().runTaskLater(plugin, new VaultRefresh(plugin, loc), 1L);
         if (player.getGameMode() != GameMode.CREATIVE) {
             item.setAmount(item.getAmount() - 1);
             if (item.getAmount() <= 0) {
