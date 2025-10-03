@@ -55,8 +55,8 @@ import static org.bukkit.Bukkit.getServer;
 class VaultRefresh implements Runnable {
     private final uSkyBlock plugin;
     private final Location location;
-    private final String tagOminous = "{config: {loot_table: \"minecraft:chests/trial_chambers/reward_ominous\", key_item: {id: \"minecraft:ominous_trial_key\", count: 1}}, id: \"minecraft:vault\", components: {\"minecraft:block_state\": {ominous: \"true\"}}}\n";
-    private final String tagNormal = "{config: {key_item: {id: \"minecraft:trial_key\", count: 1}}, id: \"minecraft:vault\"}\n";
+    private final String tagOminous = "{config: {loot_table: \"minecraft:chests/trial_chambers/reward_ominous\", key_item: {id: \"minecraft:ominous_trial_key\", count: 1}}, id: \"minecraft:vault\", components: {\"minecraft:block_state\": {ominous: \"true\"}}}";
+    private final String tagNormal = "{config: {key_item: {id: \"minecraft:trial_key\", count: 1}}, id: \"minecraft:vault\"}";
 
     public VaultRefresh(uSkyBlock plugin, Location location) {
         this.plugin = plugin;
