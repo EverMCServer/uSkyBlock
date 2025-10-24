@@ -91,6 +91,12 @@ public class IslandBorderEvent implements Listener {
     @EventHandler
     public void onEntitySpawn(EntitySpawnEvent event) {
         Entity entity = event.getEntity();
+        if (entity.getType() == EntityType.TNT) {
+            // prevent any tnt from spawning
+            event.setCancelled(true);
+            return;
+        }
+
         Location loc = entity.getLocation();
         origin.put(entity.getUniqueId(), loc);
         if (entity.getType() == EntityType.ITEM) {
