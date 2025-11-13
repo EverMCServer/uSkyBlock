@@ -909,7 +909,7 @@ public class PlayerEvents implements Listener {
                 loc.getWorld().setBiome(loc.getBlockX(), y, loc.getBlockZ(), AcidBiomeProvider.tempToBiome[i]);
             }
             if (i == 0) {
-                plugin.getChallengeLogic().completeLocationChallengeIfNotDone(loc, "biome_nether");
+                plugin.getChallengeLogic().completeLocationChallengeIfNotDone(loc, "biome_frozen");
             }
         }
     }
