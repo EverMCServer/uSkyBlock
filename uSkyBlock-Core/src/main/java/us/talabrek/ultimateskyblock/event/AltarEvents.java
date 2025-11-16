@@ -6,7 +6,6 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,8 +24,8 @@ import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -55,10 +54,10 @@ public class AltarEvents implements Listener {
         meta.setDisplayName(tr("\u00a7l\u00a79和平之石"));
         meta.addEnchant(Enchantment.PROTECTION, 10, true);
         List<String> lore = new ArrayList<>();
-        lore.add(tr("\u00a7l\u00a79和平之石"));
-        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a79保护"));
-        lore.add(tr("\u00a7l\u00a7e消耗数等于目标保护等级"));
-        lore.add(tr("\u00a7l\u00a7e最多升级到保护10"));
+        lore.add("\u00a7l\u00a79和平之石");
+        lore.add("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a79保护");
+        lore.add("\u00a7l\u00a7e消耗数等于目标保护等级");
+        lore.add("\u00a7l\u00a7e最多升级到保护10");
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
@@ -69,10 +68,10 @@ public class AltarEvents implements Listener {
         meta.setDisplayName(tr("\u00a7l\u00a7b永久之石"));
         meta.addEnchant(Enchantment.UNBREAKING, 10, true);
         List<String> lore = new ArrayList<>();
-        lore.add(tr("\u00a7l\u00a7b永久之石"));
-        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a7b耐久"));
-        lore.add(tr("\u00a7l\u00a7e消耗数等于目标等级"));
-        lore.add(tr("\u00a7l\u00a7e最多升级到耐久10"));
+        lore.add("\u00a7l\u00a7b永久之石");
+        lore.add("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a7b耐久");
+        lore.add("\u00a7l\u00a7e消耗数等于目标等级");
+        lore.add("\u00a7l\u00a7e最多升级到耐久10");
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
@@ -83,10 +82,10 @@ public class AltarEvents implements Listener {
         meta.setDisplayName(tr("\u00a7l\u00a76财富之石"));
         meta.addEnchant(Enchantment.FORTUNE, 1, true);
         List<String> lore = new ArrayList<>();
-        lore.add(tr("\u00a7l\u00a76财富之石"));
-        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a76时运"));
-        lore.add(tr("\u00a7l\u00a7e消耗数等于目标等级的\u00a7l\u00a76平方"));
-        lore.add(tr("\u00a7l\u00a7e最多升级到时运8"));
+        lore.add("\u00a7l\u00a76财富之石");
+        lore.add("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a76时运");
+        lore.add("\u00a7l\u00a7e消耗数等于目标等级的\u00a7l\u00a76平方");
+        lore.add("\u00a7l\u00a7e最多升级到时运8");
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
@@ -126,9 +125,17 @@ public class AltarEvents implements Listener {
         Player player = event.getPlayer();
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         if (itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasLore()) {
-            String lore = itemInHand.getItemMeta().getLore().get(0);
-            if (lore.contains("和平之石")) {
+            List<String> lore = itemInHand.getItemMeta().getLore();
+            if (lore == null || lore.isEmpty()) {
+                return;
+            }
+            String firstLore = itemInHand.getItemMeta().getLore().getFirst();
+            if (firstLore.equals("\u00a7l\u00a79和平之石")) {
                 tryUseStoneOfPeace(player, itemInHand, event);
+            } else if (firstLore.equals("\u00a7l\u00a7b永久之石")) {
+                tryUseStoneOfEternity(player, itemInHand, event);
+            } else if (firstLore.equals("\u00a7l\u00a76财富之石")) {
+                tryUseStoneOfWealth(player, itemInHand, event);
             }
         }
     }
