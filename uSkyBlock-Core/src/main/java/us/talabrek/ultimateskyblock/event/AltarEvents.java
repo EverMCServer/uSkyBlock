@@ -130,6 +130,8 @@ public class AltarEvents implements Listener {
                 return;
             }
             String firstLore = itemInHand.getItemMeta().getLore().getFirst();
+            plugin.getLogger().info(String.format("Item lore first line: %s", firstLore));
+            plugin.getLogger().info(String.format("Event action: %s", event.getAction().name()));
             if (firstLore.equals("\u00a7l\u00a79和平之石")) {
                 tryUseStoneOfPeace(player, itemInHand, event);
             } else if (firstLore.equals("\u00a7l\u00a7b永久之石")) {
