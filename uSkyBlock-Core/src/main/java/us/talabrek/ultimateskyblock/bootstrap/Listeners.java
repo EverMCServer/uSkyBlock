@@ -23,6 +23,7 @@ public class Listeners {
     private final GuiListener guiListener;
     private final InternalEvents internalEvents;
     private final PlayerEvents playerEvents;
+    private final AltarEvents alterEvents;
     private final MenuEvents menuEvents;
     private final ExploitEvents exploitEvents;
     private final WitherTagEvents witherTagEvents;
@@ -44,6 +45,7 @@ public class Listeners {
         @NotNull GuiListener guiListener,
         @NotNull InternalEvents internalEvents,
         @NotNull PlayerEvents playerEvents,
+        @NotNull AltarEvents alterEvents,
         @NotNull MenuEvents menuEvents,
         @NotNull ExploitEvents exploitEvents,
         @NotNull WitherTagEvents witherTagEvents,
@@ -63,6 +65,7 @@ public class Listeners {
         this.guiListener = guiListener;
         this.internalEvents = internalEvents;
         this.playerEvents = playerEvents;
+        this.alterEvents = alterEvents;
         this.menuEvents = menuEvents;
         this.exploitEvents = exploitEvents;
         this.witherTagEvents = witherTagEvents;
@@ -84,6 +87,7 @@ public class Listeners {
 
         manager.registerEvents(internalEvents, plugin);
         manager.registerEvents(playerEvents, plugin);
+        manager.registerEvents(alterEvents, plugin);
         manager.registerEvents(menuEvents, plugin);
         manager.registerEvents(guiListener, plugin);
         manager.registerEvents(exploitEvents, plugin);
