@@ -135,8 +135,8 @@ public class AltarEvents implements Listener {
                 return;
             }
             String firstLore = itemInHand.getItemMeta().getLore().getFirst();
-            plugin.getLogger().info(String.format("Item lore first line: %s", firstLore));
-            plugin.getLogger().info(String.format("Event action: %s", event.getAction().name()));
+//            plugin.getLogger().info(String.format("Item lore first line: %s", firstLore));
+//            plugin.getLogger().info(String.format("Event action: %s", event.getAction().name()));
             if (firstLore.contains("和平之石")) {
                 tryUseStoneOfPeace(player, itemInHand, event);
             } else if (firstLore.contains("永久之石")) {
@@ -148,8 +148,7 @@ public class AltarEvents implements Listener {
     }
 
     private void tryUseStoneOfPeace(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
-        // 只在右键空气时响应
-        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
         event.setCancelled(true);
@@ -191,7 +190,7 @@ public class AltarEvents implements Listener {
 
     private void tryUseStoneOfEternity(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
         // 只在右键空气时响应
-        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
         event.setCancelled(true);
@@ -233,7 +232,7 @@ public class AltarEvents implements Listener {
 
     public void tryUseStoneOfWealth(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
         // 只在右键空气时响应
-        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
         event.setCancelled(true);
