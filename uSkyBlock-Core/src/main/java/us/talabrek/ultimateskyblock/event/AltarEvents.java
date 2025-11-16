@@ -443,6 +443,7 @@ public class AltarEvents implements Listener {
                             block.getWorld().dropItemNaturally(player.getLocation(), stoneOfPeace());
                             block.getWorld().dropItemNaturally(player.getLocation(), stoneOfEternity());
                             block.getWorld().dropItemNaturally(player.getLocation(), stoneOfWealth());
+                            plugin.getChallengeLogic().completeChallengeIfNotDone(plugin.getPlayerInfo(player), "build_altar");
                         } else {
                             player.sendMessage(tr("\u00a7c需要5个钻石和50000g来建造 富饶之祭坛。"));
                             return;
