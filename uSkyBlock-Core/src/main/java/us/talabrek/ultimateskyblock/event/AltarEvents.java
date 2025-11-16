@@ -56,7 +56,7 @@ public class AltarEvents implements Listener {
         meta.addEnchant(Enchantment.PROTECTION, 10, true);
         List<String> lore = new ArrayList<>();
         lore.add(tr("\u00a7l\u00a79和平之石"));
-        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级保护"));
+        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a79保护"));
         lore.add(tr("\u00a7l\u00a7e消耗数等于目标保护等级"));
         lore.add(tr("\u00a7l\u00a7e最多升级到保护10"));
         meta.setLore(lore);
@@ -66,12 +66,13 @@ public class AltarEvents implements Listener {
     static public ItemStack stoneOfEternity() {
         ItemStack item = new ItemStack(Material.DIAMOND);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(tr("永久之石"));
+        meta.setDisplayName(tr("\u00a7l\u00a7b永久之石"));
         meta.addEnchant(Enchantment.UNBREAKING, 10, true);
         List<String> lore = new ArrayList<>();
-        lore.add(tr("永久之石"));
-        lore.add(tr("消耗品，为副手的物品增加一级耐久附魔"));
-        lore.add(tr("消耗数量等于目标耐久等级，最多升级到耐久10。"));
+        lore.add(tr("\u00a7l\u00a7b永久之石"));
+        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a7b耐久"));
+        lore.add(tr("\u00a7l\u00a7e消耗数等于目标等级"));
+        lore.add(tr("\u00a7l\u00a7e最多升级到耐久10"));
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
@@ -79,12 +80,13 @@ public class AltarEvents implements Listener {
     static public ItemStack stoneOfWealth() {
         ItemStack item = new ItemStack(Material.GOLD_INGOT);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(tr("财富之石"));
+        meta.setDisplayName(tr("\u00a7l\u00a76财富之石"));
         meta.addEnchant(Enchantment.FORTUNE, 1, true);
         List<String> lore = new ArrayList<>();
-        lore.add(tr("财富之石"));
-        lore.add(tr("消耗品，为副手的物品增加一级时运附魔"));
-        lore.add(tr("消耗数量等于目标时运等级的平方，最多升级到时运8。"));
+        lore.add(tr("\u00a7l\u00a76财富之石"));
+        lore.add(tr("\u00a7l\u00a7e消耗品，为副手物品加一级\u00a7l\u00a76时运"));
+        lore.add(tr("\u00a7l\u00a7e消耗数等于目标等级的\u00a7l\u00a76平方"));
+        lore.add(tr("\u00a7l\u00a7e最多升级到时运8"));
         meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
@@ -120,6 +122,144 @@ public class AltarEvents implements Listener {
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onSpecialItemsUsed(final PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        if (itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasLore()) {
+            String lore = itemInHand.getItemMeta().getLore().get(0);
+            if (lore.contains("和平之石")) {
+                tryUseStoneOfPeace(player, itemInHand, event);
+            }
+        }
+    }
+
+    private void tryUseStoneOfPeace(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
+        // 只在右键空气时响应
+        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+            return;
+        }
+        event.setCancelled(true);
+        // 只能对副手物品使用
+        ItemStack offHandItem = player.getInventory().getItemInOffHand();
+        if (offHandItem.getType() == Material.AIR) {
+            player.sendMessage(tr("\u00a7c你必须在副手持有一个物品。"));
+            return;
+        }
+        ItemMeta offHandMeta = offHandItem.getItemMeta();
+        if (offHandMeta == null) {
+            // This should never happen
+            return;
+        }
+        if (!offHandMeta.hasEnchant(Enchantment.PROTECTION)) {
+            player.sendMessage(tr("\u00a7c你的副手物品没有保护附魔。"));
+            return;
+        }
+        int currentProtectionLevel = offHandMeta.getEnchantLevel(Enchantment.PROTECTION);
+        if (currentProtectionLevel >= 10) {
+            player.sendMessage(tr("\u00a7c你的副手物品的等级已经达到最高。"));
+            return;
+        }
+        // 消耗对应数量的和平之石
+        int stonesNeeded = currentProtectionLevel + 1;
+        if (itemInHand.getAmount() < stonesNeeded) {
+            player.sendMessage(String.format("\u00a7c你需要 %d 个和平之石来提升副手物品的保护等级。", stonesNeeded));
+            return;
+        }
+        // 提升保护等级
+        offHandMeta.addEnchant(Enchantment.PROTECTION, currentProtectionLevel + 1, true);
+        offHandItem.setItemMeta(offHandMeta);
+        // 消耗和平之石
+        itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
+        plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a79和平之石 \u00a7a，将 %s 的保护等级提升到了 \u00a79%d\u00a7a！",
+            player.getName(), offHandMeta.getDisplayName(), currentProtectionLevel + 1));
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+    }
+
+    private void tryUseStoneOfEternity(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
+        // 只在右键空气时响应
+        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+            return;
+        }
+        event.setCancelled(true);
+        // 只能对副手物品使用
+        ItemStack offHandItem = player.getInventory().getItemInOffHand();
+        if (offHandItem.getType() == Material.AIR) {
+            player.sendMessage(tr("\u00a7c你必须在副手持有一个物品。"));
+            return;
+        }
+        ItemMeta offHandMeta = offHandItem.getItemMeta();
+        if (offHandMeta == null) {
+            // This should never happen
+            return;
+        }
+        if (!offHandMeta.hasEnchant(Enchantment.UNBREAKING)) {
+            player.sendMessage(tr("\u00a7c你的副手物品没有耐久附魔。"));
+            return;
+        }
+        int currentUnbreakingLevel = offHandMeta.getEnchantLevel(Enchantment.UNBREAKING);
+        if (currentUnbreakingLevel >= 10) {
+            player.sendMessage(tr("\u00a7c你的副手物品的耐久等级已经达到最高。"));
+            return;
+        }
+        // 消耗对应数量的永久之石
+        int stonesNeeded = currentUnbreakingLevel + 1;
+        if (itemInHand.getAmount() < stonesNeeded) {
+            player.sendMessage(String.format("\u00a7c你需要 %d 个永久之石来提升副手物品的耐久等级。", stonesNeeded));
+            return;
+        }
+        // 提升耐久等级
+        offHandMeta.addEnchant(Enchantment.UNBREAKING, currentUnbreakingLevel + 1, true);
+        offHandItem.setItemMeta(offHandMeta);
+        // 消耗永久之石
+        itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
+        plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a7b永久之石 \u00a7a，将 %s 的耐久等级提升到了 \u00a7b%d\u00a7a！",
+            player.getName(), offHandMeta.getDisplayName(), currentUnbreakingLevel + 1));
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+    }
+
+    public void tryUseStoneOfWealth(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
+        // 只在右键空气时响应
+        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+            return;
+        }
+        event.setCancelled(true);
+        // 只能对副手物品使用
+        ItemStack offHandItem = player.getInventory().getItemInOffHand();
+        if (offHandItem.getType() == Material.AIR) {
+            player.sendMessage(tr("\u00a7c你必须在副手持有一个物品。"));
+            return;
+        }
+        ItemMeta offHandMeta = offHandItem.getItemMeta();
+        if (offHandMeta == null) {
+            // This should never happen
+            return;
+        }
+        if (!offHandMeta.hasEnchant(Enchantment.FORTUNE)) {
+            player.sendMessage(tr("\u00a7c你的副手物品没有时运附魔。"));
+            return;
+        }
+        int currentFortuneLevel = offHandMeta.getEnchantLevel(Enchantment.FORTUNE);
+        if (currentFortuneLevel >= 8) {
+            player.sendMessage(tr("\u00a7c你的副手物品的时运等级已经达到最高。"));
+            return;
+        }
+        // 消耗对应数量的财富之石
+        int stonesNeeded = (currentFortuneLevel + 1) * (currentFortuneLevel + 1);
+        if (itemInHand.getAmount() < stonesNeeded) {
+            player.sendMessage(String.format("\u00a7c你需要 %d 个财富之石来提升副手物品的时运等级。", stonesNeeded));
+            return;
+        }
+        // 提升时运等级
+        offHandMeta.addEnchant(Enchantment.FORTUNE, currentFortuneLevel + 1, true);
+        offHandItem.setItemMeta(offHandMeta);
+        // 消耗财富之石
+        itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
+        plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a76财富之石 \u00a7a，将 %s 的时运等级提升到了 \u00a76%d\u00a7a！",
+            player.getName(), offHandMeta.getDisplayName(), currentFortuneLevel + 1));
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onAltarInteract(final PlayerInteractEvent event) {
         // 当玩家右键点击祭坛时，提示其类型和计数器
         Player player = event.getPlayer();
@@ -130,16 +270,18 @@ public class AltarEvents implements Listener {
         if (block != null &&
             block.getType() == Material.REINFORCED_DEEPSLATE &&
             event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            // 如果此方块不是玩家的岛屿，则提示
-            IslandInfo islandInfo = plugin.getIslandInfo(block.getLocation());
-            if (islandInfo == null || !islandInfo.isMember(player)) {
-                player.sendMessage(tr("\u00a7c你只能在自己的岛屿上使用祭坛。"));
-                return;
-            }
+
             PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
             Integer altarTypeOrdinal = pdc.get(getKeyAltarType(block), PersistentDataType.INTEGER);
             Long altarCounter = pdc.get(getKeyAltarCounter(block), PersistentDataType.LONG);
             if (altarTypeOrdinal != null && altarCounter != null) {
+                event.setCancelled(true);
+                // 如果此方块不是玩家的岛屿，则提示
+                IslandInfo islandInfo = plugin.getIslandInfo(block.getLocation());
+                if (islandInfo == null || !islandInfo.isMember(player)) {
+                    player.sendMessage(tr("\u00a7c你只能在自己的岛屿上使用祭坛。"));
+                    return;
+                }
                 AltarType altarType = AltarType.values()[altarTypeOrdinal];
                 // 检查上面是信标
                 Block up = block.getRelative(0, 1, 0);
@@ -156,7 +298,7 @@ public class AltarEvents implements Listener {
                         // player.sendMessage(tr("\u00a7a这是一个 \u00a7l\u00a74战争之祭坛\u00a7a，已被使用了 \u00a7l\u00a73%d \u00a7a次。", altarCounter));
                     }
                     case WEALTH -> {
-                        player.sendMessage(tr("\u00a7a这是一个 \u00a7l\u00a76富饶之祭坛\u00a7a，共奉献了 \u00a7l\u00a73%d \u00a7a金币。", altarCounter));
+                        player.sendMessage(String.format("\u00a7a这是一个 \u00a7l\u00a76富饶之祭坛\u00a7a，共奉献了 \u00a7l\u00a73%d \u00a7a金币。", altarCounter));
                         // 玩家可奉献1个钻石+1000金币
                         ItemStack itemInHand = player.getInventory().getItemInMainHand();
                         if (itemInHand.getType() == Material.DIAMOND) {
