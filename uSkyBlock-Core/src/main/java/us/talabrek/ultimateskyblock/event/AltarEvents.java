@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -120,9 +121,13 @@ public class AltarEvents implements Listener {
         pdc.remove(getKeyAltarCounter(block));
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onSpecialItemsUsed(final PlayerInteractEvent event) {
         Player player = event.getPlayer();
+        // 只处理主手的交互，防止重复响应
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         if (itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasLore()) {
             List<String> lore = itemInHand.getItemMeta().getLore();
@@ -273,6 +278,10 @@ public class AltarEvents implements Listener {
         // 当玩家右键点击祭坛时，提示其类型和计数器
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
+        // 只处理主手的交互，防止重复响应
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
         if (!plugin.getWorldManager().isSkyWorld(player.getWorld())) {
             return;
         }
@@ -389,6 +398,10 @@ public class AltarEvents implements Listener {
         // 当右键点击一个下界合金块时，检查是否允许建造祭坛
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
+        // 只处理主手，防止重复响应
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
         if (!plugin.getWorldManager().isSkyWorld(player.getWorld())) {
             return;
         }
