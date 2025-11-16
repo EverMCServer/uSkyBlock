@@ -52,7 +52,7 @@ public class AltarEvents implements Listener {
     static public ItemStack stoneOfPeace() {
         ItemStack item = new ItemStack(Material.LAPIS_LAZULI);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(tr("\u00a7l\u00a79和平之石"));
+        meta.setItemName(tr("\u00a7l\u00a79和平之石"));
         meta.addEnchant(Enchantment.PROTECTION, 10, true);
         List<String> lore = new ArrayList<>();
         lore.add("\u00a7l\u00a79和平之石");
@@ -66,7 +66,7 @@ public class AltarEvents implements Listener {
     static public ItemStack stoneOfEternity() {
         ItemStack item = new ItemStack(Material.DIAMOND);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(tr("\u00a7l\u00a7b永久之石"));
+        meta.setItemName(tr("\u00a7l\u00a7b永久之石"));
         meta.addEnchant(Enchantment.UNBREAKING, 10, true);
         List<String> lore = new ArrayList<>();
         lore.add("\u00a7l\u00a7b永久之石");
@@ -80,7 +80,7 @@ public class AltarEvents implements Listener {
     static public ItemStack stoneOfWealth() {
         ItemStack item = new ItemStack(Material.GOLD_INGOT);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(tr("\u00a7l\u00a76财富之石"));
+        meta.setItemName(tr("\u00a7l\u00a76财富之石"));
         meta.addEnchant(Enchantment.FORTUNE, 1, true);
         List<String> lore = new ArrayList<>();
         lore.add("\u00a7l\u00a76财富之石");
@@ -185,7 +185,7 @@ public class AltarEvents implements Listener {
         // 消耗和平之石
         itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a79和平之石 \u00a7a，将 %s 的保护等级提升到了 \u00a79%d\u00a7a！",
-            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandMeta.getItemName(), currentProtectionLevel + 1));
+            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentProtectionLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
@@ -227,7 +227,7 @@ public class AltarEvents implements Listener {
         // 消耗永久之石
         itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a7b永久之石 \u00a7a，将 %s 的耐久等级提升到了 \u00a7b%d\u00a7a！",
-            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandMeta.getItemName(), currentUnbreakingLevel + 1));
+            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentUnbreakingLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
@@ -269,7 +269,7 @@ public class AltarEvents implements Listener {
         // 消耗财富之石
         itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a76财富之石 \u00a7a，将 %s 的时运等级提升到了 \u00a76%d\u00a7a！",
-            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandMeta.getItemName(), currentFortuneLevel + 1));
+            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentFortuneLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
