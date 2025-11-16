@@ -155,7 +155,7 @@ public class AltarEvents implements Listener {
         event.setCancelled(true);
         // 只能对副手物品使用
         ItemStack offHandItem = player.getInventory().getItemInOffHand();
-        if (offHandItem.getType() == Material.AIR) {
+        if (offHandItem.getType() == Material.AIR || offHandItem.getAmount() != 1) {
             player.sendMessage(tr("\u00a7c你必须在副手持有一个物品。"));
             return;
         }
@@ -185,7 +185,7 @@ public class AltarEvents implements Listener {
         // 消耗和平之石
         itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a79和平之石 \u00a7a，将 %s 的保护等级提升到了 \u00a79%d\u00a7a！",
-            player.getName(), offHandMeta.getDisplayName(), currentProtectionLevel + 1));
+            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandMeta.getItemName(), currentProtectionLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
@@ -197,7 +197,7 @@ public class AltarEvents implements Listener {
         event.setCancelled(true);
         // 只能对副手物品使用
         ItemStack offHandItem = player.getInventory().getItemInOffHand();
-        if (offHandItem.getType() == Material.AIR) {
+        if (offHandItem.getType() == Material.AIR || offHandItem.getAmount() != 1) {
             player.sendMessage(tr("\u00a7c你必须在副手持有一个物品。"));
             return;
         }
@@ -227,7 +227,7 @@ public class AltarEvents implements Listener {
         // 消耗永久之石
         itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a7b永久之石 \u00a7a，将 %s 的耐久等级提升到了 \u00a7b%d\u00a7a！",
-            player.getName(), offHandMeta.getDisplayName(), currentUnbreakingLevel + 1));
+            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandMeta.getItemName(), currentUnbreakingLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
@@ -239,7 +239,7 @@ public class AltarEvents implements Listener {
         event.setCancelled(true);
         // 只能对副手物品使用
         ItemStack offHandItem = player.getInventory().getItemInOffHand();
-        if (offHandItem.getType() == Material.AIR) {
+        if (offHandItem.getType() == Material.AIR || offHandItem.getAmount() != 1) {
             player.sendMessage(tr("\u00a7c你必须在副手持有一个物品。"));
             return;
         }
@@ -269,7 +269,7 @@ public class AltarEvents implements Listener {
         // 消耗财富之石
         itemInHand.setAmount(itemInHand.getAmount() - stonesNeeded);
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a76财富之石 \u00a7a，将 %s 的时运等级提升到了 \u00a76%d\u00a7a！",
-            player.getName(), offHandMeta.getDisplayName(), currentFortuneLevel + 1));
+            player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandMeta.getItemName(), currentFortuneLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
