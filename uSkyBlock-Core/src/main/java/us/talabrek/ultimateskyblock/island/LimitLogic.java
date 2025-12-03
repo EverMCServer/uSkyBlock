@@ -77,10 +77,7 @@ public class LimitLogic {
     }
 
     public CreatureType getCreatureType(LivingEntity creature) {
-        if (creature instanceof Monster
-            || creature instanceof Slime
-            || creature instanceof Ghast
-            || creature instanceof Shulker) {
+        if (creature instanceof Enemy) {
             return CreatureType.MONSTER;
         } else if (creature instanceof Animals
             || creature instanceof WaterMob) {
