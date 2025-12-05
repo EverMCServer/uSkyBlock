@@ -1277,6 +1277,7 @@ public class AltarEvents implements Listener {
             } else {
                 // 否则，提示玩家需要的物品
                 player.sendMessage(tr("\u00a7c需要5个钻石和50000g来建造 富饶之祭坛。"));
+                player.sendMessage(tr("\u00a7c需要64个金苹果来建造 收获之祭坛。"));
             }
         }
     }
