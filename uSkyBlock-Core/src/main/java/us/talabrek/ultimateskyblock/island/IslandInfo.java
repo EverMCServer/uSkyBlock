@@ -21,6 +21,7 @@ import us.talabrek.ultimateskyblock.api.event.island.IslandTrustPlayerEvent;
 import us.talabrek.ultimateskyblock.api.event.island.IslandUnbanPlayerEvent;
 import us.talabrek.ultimateskyblock.api.event.island.IslandUnlockEvent;
 import us.talabrek.ultimateskyblock.api.event.island.IslandUntrustPlayerEvent;
+import us.talabrek.ultimateskyblock.event.AltarEvents;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
@@ -118,6 +119,36 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
         save();
     }
 
+    public int getAltarBuffLevel(AltarEvents.AltarBuffType buffType) {
+        return switch (buffType) {
+            case THRIVE -> config.getInt("altar.thrive", 0);
+            default -> 0;
+        };
+    }
+
+    public void setAltarBuffLevel(AltarEvents.AltarBuffType buffType, int level) {
+        switch (buffType) {
+            case THRIVE -> config.set("altar.thrive", level);
+        }
+        save();
+    }
+
+    public int getAltarBuilt(AltarEvents.AltarType type) {
+        return switch (type) {
+            case WEALTH -> config.getInt("altar.wealthBuilt", 0);
+            case HARVEST -> config.getInt("altar.harvestBuilt", 0);
+            default -> 0;
+        };
+    }
+
+    public void setAltarBuilt(AltarEvents.AltarType type, int amount) {
+        switch (type) {
+            case WEALTH -> config.set("altar.wealthBuilt", amount);
+            case HARVEST -> config.set("altar.harvestBuilt", amount);
+        }
+        save();
+    }
+
     public void resetIslandConfig(@NotNull final String leader) {
         Validate.notNull(leader, "Leader cannot be null");
         Validate.notEmpty(leader, "Leader cannot be empty");
@@ -133,6 +164,8 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
         config.set("general.scoreMultiply", null);
         config.set("general.scoreOffset", null);
         config.set("blocks.hopperCount", 0);
+        config.set("altar.wealthBuilt", 0);
+        config.set("altar.harvestBuilt", 0);
         setupPartyLeader(leader);
         sendMessageToIslandGroup(false, marktr("The island has been created."));
     }
@@ -289,7 +322,7 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
 
     @Override
     public int getMaxAnimals() {
-        return getMaxPartyIntValue("maxAnimals",
+        return getAltarBuffLevel(AltarEvents.AltarBuffType.THRIVE) / 5 * 2 + getMaxPartyIntValue("maxAnimals",
             plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getAnimals());
     }
 
