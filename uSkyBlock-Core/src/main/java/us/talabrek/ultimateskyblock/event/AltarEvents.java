@@ -12,9 +12,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Cocoa;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Animals;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -173,7 +171,7 @@ public class AltarEvents implements Listener {
 
         List<String> lore = new ArrayList<>();
         lore.add("\u00a7l\u00a76收获之镰");
-        lore.add(String.format("\u00a7l\u00a76lv%d 0/%d", fortuneLevel, scytheOfHarvestExpRequired(fortuneLevel)));
+        lore.add(String.format("lv%d 0/%d", fortuneLevel, scytheOfHarvestExpRequired(fortuneLevel)));
         lore.add("\u00a7l\u00a7e右键使用以收获而不破坏作物");
         lore.add("\u00a7l\u00a7e使用以积累经验值并升级，上限为10");
         meta.setLore(lore);
@@ -463,7 +461,7 @@ public class AltarEvents implements Listener {
         }
         // 如果实体是动物，则一击必杀
         Entity target = event.getEntity();
-        if (target instanceof org.bukkit.entity.Animals) {
+        if (target instanceof Animals) {
             event.setDamage(99);
         } else {
             // 不能对敌对生物造成伤害
@@ -506,11 +504,17 @@ public class AltarEvents implements Listener {
         }
         if (f instanceof Animals father) {
             int newAge = (int) Math.ceil(father.getAge() / (1.0 + 0.01 * thriveLevel));
-            father.setAge(newAge);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                () -> father.setAge(newAge),
+                1L
+            );
         }
         if (event.getMother() instanceof Animals mother) {
             int newAge = (int) Math.ceil(mother.getAge() / (1.0 + 0.01 * thriveLevel));
-            mother.setAge(newAge);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                () -> mother.setAge(newAge),
+                1L
+            );
         }
     }
 
@@ -518,7 +522,7 @@ public class AltarEvents implements Listener {
     public void thriveEffect(final EntityDropItemEvent event) {
         // 使鸡下蛋的产量增加0.03*thriveLevel
         Entity e = event.getEntity();
-        if (!(e instanceof org.bukkit.entity.Chicken)) {
+        if (!(e instanceof Chicken)) {
             return;
         }
         ItemStack eggs = event.getItemDrop().getItemStack();
@@ -576,7 +580,7 @@ public class AltarEvents implements Listener {
         if (damager == null) {
             return;
         }
-        if (!(damager instanceof org.bukkit.entity.Enemy)) {
+        if (!(damager instanceof Enemy)) {
             return;
         }
         // 移除饱和效果
@@ -760,7 +764,7 @@ public class AltarEvents implements Listener {
             return;
         }
         String levelPart = parts[0]; // e.g. "lv1"
-        if (!levelPart.startsWith("\u00a7l\u00a76lv")) {
+        if (!levelPart.startsWith("lv")) {
             return;
         }
         String[] expParts = parts[1].split("/");
@@ -769,8 +773,8 @@ public class AltarEvents implements Listener {
         }
         int currentLevel, currentExp, expRequired;
         try {
-            plugin.getLogger().info("substr = " + levelPart.substring(4));
-            currentLevel = Integer.parseInt(levelPart.substring(4));
+            plugin.getLogger().info("substr = " + levelPart.substring(2));
+            currentLevel = Integer.parseInt(levelPart.substring(2));
             currentExp = Integer.parseInt(expParts[0]);
             expRequired = Integer.parseInt(expParts[1]);
         } catch (NumberFormatException e) {
@@ -1053,47 +1057,52 @@ public class AltarEvents implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBoneMealDispensed(final BlockDispenseEvent event) {
-        // 当发射骨粉时，使生命之石不生效
-        ItemStack item = event.getItem();
-        if (item.getType() != Material.BONE_MEAL) {
-            return;
-        }
-        Block block = event.getBlock();
-        plugin.getLogger().info("onBoneMealDispensed called for block " + block.getType().name() + " at " + block.getLocation());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBoneMealUsed(final PlayerInteractEvent event) {
-        // 当使用骨粉时，使生命之石不生效
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
-        ItemStack itemInHand = event.getItem();
-        if (itemInHand == null || itemInHand.getType() != Material.BONE_MEAL) {
-            return;
-        }
-        Block block = event.getClickedBlock();
-        plugin.getLogger().info("onBoneMealUsed called for block " + block.getType().name() + " at " + block.getLocation());
-    }
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onCropGrowth(final BlockGrowEvent event) {
         plugin.getLogger().info(String.format("onCropGrowth called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
         // 当作物生长时，检查其附着的方块是否被生命之石祝福过
+        // 注意：甘蔗、竹子、仙人掌会触发BlockGrowEvent，形式为从AIR长出植物，因此需要特殊处理
+        BlockState newState = event.getNewState();
         Block block = event.getBlock();
-        Block toCheck = switch (block.getType()) {
-            case COCOA -> block.getRelative(((Cocoa) block.getBlockData()).getFacing());
-            default -> block.getRelative(BlockFace.DOWN);
-        };
+        Block toCheck, toGrow2 = null;
+        switch (newState.getType()) {
+            case COCOA -> {
+                toCheck = block.getRelative(((Cocoa) newState.getBlockData()).getFacing());
+            }
+            case CACTUS, SUGAR_CANE -> {
+                toGrow2 = block.getRelative(BlockFace.DOWN);
+                toCheck = toGrow2.getRelative(BlockFace.DOWN);
+                if (toCheck.getType() == newState.getType()) {
+                    // 最多3格
+                    toCheck = toCheck.getRelative(BlockFace.DOWN);
+                }
+            }
+            case BAMBOO -> {
+                // 无法处理，因为本就是一次概率生长
+                return;
+            }
+            case WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART, SWEET_BERRY_BUSH -> {
+                toCheck = block.getRelative(BlockFace.DOWN);
+            }
+            default -> {
+                return;
+            }
+        }
         if (!isPlantableBlock(toCheck.getType()) || !getStoneOfLifeFlag(toCheck)) {
             return;
         }
         // 祝福生效，使作物立即成熟
-        BlockData bd = event.getNewState().getBlockData();
+        BlockData bd = newState.getBlockData();
         if (bd instanceof Ageable ageable) {
             ageable.setAge(ageable.getMaximumAge());
             event.getNewState().setBlockData(bd);
+        }
+        if (toGrow2 != null) {
+            // 处理仙人掌、甘蔗第二格的生长
+            BlockData bd2 = toGrow2.getBlockData();
+            if (bd2 instanceof Ageable ageable2) {
+                ageable2.setAge(ageable2.getMaximumAge());
+                toGrow2.setBlockData(bd2);
+            }
         }
     }
 
@@ -1326,10 +1335,10 @@ public class AltarEvents implements Listener {
             return;
         }
         if (block != null &&
-            block.getType() == org.bukkit.Material.NETHERITE_BLOCK &&
+            block.getType() == Material.NETHERITE_BLOCK &&
             event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             // 如果上方的方块不是信标，则忽略
-            if (block.getRelative(0, 1, 0).getType() != org.bukkit.Material.BEACON) {
+            if (block.getRelative(0, 1, 0).getType() != Material.BEACON) {
                 return;
             }
             // 如果此方块不是玩家的岛屿，则提示
