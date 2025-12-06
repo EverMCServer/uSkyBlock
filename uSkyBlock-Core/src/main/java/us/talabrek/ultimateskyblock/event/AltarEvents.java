@@ -2,10 +2,7 @@ package us.talabrek.ultimateskyblock.event;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
-import org.bukkit.Tag;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -88,6 +85,24 @@ public class AltarEvents implements Listener {
     @Inject
     public AltarEvents(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
+        Bukkit.getScheduler().runTaskTimer(
+            plugin,
+            () -> {
+                for (World world : Bukkit.getWorlds()) {
+                    for (Animals animal : world.getEntitiesByClass(Animals.class)) {
+                        int remainingTicks = getSpecialBlendTick(animal);
+                        if (remainingTicks > 0) {
+                            if (animal.getAge() == 0) {
+                                animal.setLoveModeTicks(remainingTicks);
+                            }
+                            setSpecialBlendTick(animal, remainingTicks - 60);
+                        }
+                    }
+                }
+            },
+            100L,
+            60L
+        );
     }
 
     static public ItemStack stoneOfPeace() {
@@ -386,6 +401,12 @@ public class AltarEvents implements Listener {
         // Stored as 256-bit (long[4]) for a y-layer
         return new NamespacedKey(plugin, String.format("altar_SoL_y%d", b.getY()));
     }
+
+    private NamespacedKey getKeySpecialBlendTick() {
+        // Stored as int (remaining ticks)
+        return new NamespacedKey(plugin, "special_blend");
+    }
+
     private void buildAltar(IslandInfo ii, Block block, AltarType type) {
         ii.setAltarBuilt(type, ii.getAltarBuilt(type) + 1);
         block.setType(Material.REINFORCED_DEEPSLATE);
@@ -617,8 +638,11 @@ public class AltarEvents implements Listener {
             return;
         }
         // 使动物进入love mode，持续24小时
-        animal.setLoveModeTicks(1728000); // 24 hours
-        // TODO: 确认在本次繁殖后仍然起效
+        animal.setLoveModeTicks(1728000);
+        setSpecialBlendTick(e, 1728000);
+        // 播放粒子效果
+        Location loc = animal.getLocation().add(0, animal.getHeight() / 2.0, 0);
+        animal.getWorld().spawnParticle(Particle.HEART, loc, 10, 0.5, 0.5, 0.5, 0.1);
         // 消耗秘制特调
         itemInHand.setAmount(itemInHand.getAmount() - 1);
         event.setCancelled(true);
@@ -730,19 +754,23 @@ public class AltarEvents implements Listener {
         }
         List<String> lore = meta.getLore();
         if (lore == null || lore.size() < 2) {
+            plugin.getLogger().info("lore");
             return;
         }
         String secondLine = lore.get(1); // e.g. "lv1 0/32"
         String[] parts = secondLine.split(" ");
         if (parts.length != 2) {
+            plugin.getLogger().info("parts");
             return;
         }
         String levelPart = parts[0]; // e.g. "lv1"
         if (!levelPart.startsWith("lv")) {
+            plugin.getLogger().info("lv");
             return;
         }
         String[] expParts = parts[1].split("/");
         if (expParts.length != 2) {
+            plugin.getLogger().info("expParts");
             return;
         }
         int currentLevel, currentExp, expRequired;
@@ -755,6 +783,7 @@ public class AltarEvents implements Listener {
             return;
         }
         if (currentLevel < 1 || currentLevel >= 10) {
+            plugin.getLogger().info("currentLevel");
             return;
         }
         if (currentExp + 1 >= expRequired) {
@@ -941,6 +970,18 @@ public class AltarEvents implements Listener {
         pdc.set(key, PersistentDataType.LONG_ARRAY, yLayer);
     }
 
+    public int getSpecialBlendTick(Entity e) {
+        PersistentDataContainer pdc = e.getPersistentDataContainer();
+        NamespacedKey key = getKeySpecialBlendTick();
+        return pdc.getOrDefault(key, PersistentDataType.INTEGER, 0);
+    }
+
+    public void setSpecialBlendTick(Entity e, int ticks) {
+        PersistentDataContainer pdc = e.getPersistentDataContainer();
+        NamespacedKey key = getKeySpecialBlendTick();
+        pdc.set(key, PersistentDataType.INTEGER, ticks);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void updateStoneOfLifeOnBlockBreak(final BlockBreakEvent event) {
         // 当被破坏的方块有生命之石祝福时，移除祝福
@@ -1037,10 +1078,10 @@ public class AltarEvents implements Listener {
             return;
         }
         // 祝福生效，使作物立即成熟
-        BlockData bd = block.getBlockData();
+        BlockData bd = event.getNewState().getBlockData();
         if (bd instanceof Ageable ageable) {
             ageable.setAge(ageable.getMaximumAge());
-            block.setBlockData(bd);
+            event.getNewState().setBlockData(bd);
         }
     }
 
