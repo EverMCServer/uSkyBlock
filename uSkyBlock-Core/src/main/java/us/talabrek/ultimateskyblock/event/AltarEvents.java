@@ -18,10 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockFertilizeEvent;
-import org.bukkit.event.block.BlockGrowEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -760,30 +757,26 @@ public class AltarEvents implements Listener {
         String secondLine = lore.get(1); // e.g. "lv1 0/32"
         String[] parts = secondLine.split(" ");
         if (parts.length != 2) {
-            plugin.getLogger().info("parts");
             return;
         }
         String levelPart = parts[0]; // e.g. "lv1"
-        if (!levelPart.startsWith("lv")) {
-            plugin.getLogger().info("lv");
+        if (!levelPart.startsWith("\u00a7l\u00a76lv")) {
             return;
         }
         String[] expParts = parts[1].split("/");
         if (expParts.length != 2) {
-            plugin.getLogger().info("expParts");
             return;
         }
         int currentLevel, currentExp, expRequired;
         try {
-            currentLevel = Integer.parseInt(levelPart.substring(2));
+            plugin.getLogger().info("substr = " + levelPart.substring(4));
+            currentLevel = Integer.parseInt(levelPart.substring(4));
             currentExp = Integer.parseInt(expParts[0]);
             expRequired = Integer.parseInt(expParts[1]);
         } catch (NumberFormatException e) {
-            plugin.getLogger().info("parseInt failed!");
             return;
         }
         if (currentLevel < 1 || currentLevel >= 10) {
-            plugin.getLogger().info("currentLevel");
             return;
         }
         if (currentExp + 1 >= expRequired) {
@@ -799,7 +792,7 @@ public class AltarEvents implements Listener {
         } else {
             currentExp += 1;
         }
-        lore.set(1, String.format("lv%d %d/%d", currentLevel, currentExp, expRequired));
+        lore.set(1, String.format("\u00a7l\u00a76lv%d %d/%d", currentLevel, currentExp, expRequired));
         meta.setLore(lore);
         scythe.setItemMeta(meta);
         plugin.getLogger().info("scytheOfHarvestAddExp finally returned");
@@ -1060,9 +1053,28 @@ public class AltarEvents implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBoneMealUsed(final BlockFertilizeEvent event) {
-        // 防止骨粉直接催熟
-        plugin.getLogger().info(String.format("onBoneMealUsed called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
+    public void onBoneMealDispensed(final BlockDispenseEvent event) {
+        // 当发射骨粉时，使生命之石不生效
+        ItemStack item = event.getItem();
+        if (item.getType() != Material.BONE_MEAL) {
+            return;
+        }
+        Block block = event.getBlock();
+        plugin.getLogger().info("onBoneMealDispensed called for block " + block.getType().name() + " at " + block.getLocation());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBoneMealUsed(final PlayerInteractEvent event) {
+        // 当使用骨粉时，使生命之石不生效
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        ItemStack itemInHand = event.getItem();
+        if (itemInHand == null || itemInHand.getType() != Material.BONE_MEAL) {
+            return;
+        }
+        Block block = event.getClickedBlock();
+        plugin.getLogger().info("onBoneMealUsed called for block " + block.getType().name() + " at " + block.getLocation());
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -1071,7 +1083,7 @@ public class AltarEvents implements Listener {
         // 当作物生长时，检查其附着的方块是否被生命之石祝福过
         Block block = event.getBlock();
         Block toCheck = switch (block.getType()) {
-            case COCOA -> block.getRelative(((Cocoa) block.getBlockData()).getFacing().getOppositeFace());
+            case COCOA -> block.getRelative(((Cocoa) block.getBlockData()).getFacing());
             default -> block.getRelative(BlockFace.DOWN);
         };
         if (!isPlantableBlock(toCheck.getType()) || !getStoneOfLifeFlag(toCheck)) {
