@@ -13,6 +13,7 @@ import org.bukkit.block.data.type.Cocoa;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -46,7 +47,7 @@ public class AltarEvents implements Listener {
     private final uSkyBlock plugin;
     private static final Random RANDOM = new Random();
     private static final HashMap<UUID, Long> deliciousFruitConsumers = new HashMap<>();
-
+    private static final HashMap<UUID, Long> specialBlendConfirm = new HashMap<>();
     public enum AltarType {
         NONE,
         HARVEST,
@@ -84,11 +85,22 @@ public class AltarEvents implements Listener {
             plugin,
             () -> {
                 for (World world : Bukkit.getWorlds()) {
+                    for (Player p : world.getPlayers()) {
+                        int remainingTicks = getSpecialBlendTick(p);
+                        if (remainingTicks > 0) {
+                            p.getWorld().spawnParticle(Particle.HEART, p.getLocation().add(0, 1.0, 0), 5, 0.5, 0.5, 0.5, 0.1);
+                            setSpecialBlendTick(p, remainingTicks - 60);
+                        }
+                    }
                     for (Animals animal : world.getEntitiesByClass(Animals.class)) {
                         int remainingTicks = getSpecialBlendTick(animal);
                         if (remainingTicks > 0) {
                             if (animal.getAge() == 0) {
                                 animal.setLoveModeTicks(remainingTicks);
+                            } else {
+                                // 产生较小的粒子效果以提示
+                                Location loc = animal.getLocation().add(0, animal.getHeight() / 2.0, 0);
+                                animal.getWorld().spawnParticle(Particle.HEART, loc, 3, 0.5, 0.5, 0.5, 0.1);
                             }
                             setSpecialBlendTick(animal, remainingTicks - 60);
                         }
@@ -503,14 +515,14 @@ public class AltarEvents implements Listener {
             return;
         }
         if (f instanceof Animals father) {
-            int newAge = (int) Math.ceil(father.getAge() / (1.0 + 0.01 * thriveLevel));
+            int newAge = (int) Math.ceil(6000 / (1.0 + 0.01 * thriveLevel));
             Bukkit.getScheduler().runTaskLater(plugin,
                 () -> father.setAge(newAge),
                 1L
             );
         }
         if (event.getMother() instanceof Animals mother) {
-            int newAge = (int) Math.ceil(mother.getAge() / (1.0 + 0.01 * thriveLevel));
+            int newAge = (int) Math.ceil(6000 / (1.0 + 0.01 * thriveLevel));
             Bukkit.getScheduler().runTaskLater(plugin,
                 () -> mother.setAge(newAge),
                 1L
@@ -638,17 +650,58 @@ public class AltarEvents implements Listener {
         if (!firstLore.contains("秘制特调")) {
             return;
         }
+        int tickNow = getSpecialBlendTick(e);
+        if (tickNow > 0) {
+            boolean needConfirm = true;
+            if (specialBlendConfirm.containsKey(e.getUniqueId())) {
+                Long confirmTime = specialBlendConfirm.get(e.getUniqueId());
+                if (System.currentTimeMillis() - confirmTime < 10000L) {
+                    needConfirm = false;
+                }
+            }
+            if (needConfirm) {
+                specialBlendConfirm.put(e.getUniqueId(), System.currentTimeMillis());
+                player.sendMessage(tr(String.format("\u00a7e该动物已经处于秘制特调的影响下，仍有 %d 分钟的效果剩余。", tickNow / 1200)));
+                player.sendMessage(tr("\u00a7e再次使用以确认。"));
+                event.setCancelled(true);
+                return;
+            } else {
+                specialBlendConfirm.remove(e.getUniqueId());
+            }
+        }
         // 使动物进入love mode，持续24小时
-        animal.setLoveModeTicks(1728000);
-        setSpecialBlendTick(e, 1728000);
+        if (e.getType() != EntityType.AXOLOTL) {
+            animal.setLoveModeTicks(1728000);
+            setSpecialBlendTick(e, 1728000);
+        } else {
+            // 平衡性调整，对美西螈只持续4小时
+            animal.setLoveModeTicks(288000);
+            setSpecialBlendTick(e, 288000);
+            // 提示玩家
+            player.sendMessage(tr("\u00a7e美西螈对秘制特调的反应似乎没有那么强烈..."));
+        }
         // 播放粒子效果
         Location loc = animal.getLocation().add(0, animal.getHeight() / 2.0, 0);
         animal.getWorld().spawnParticle(Particle.HEART, loc, 10, 0.5, 0.5, 0.5, 0.1);
         // 消耗秘制特调
         itemInHand.setAmount(itemInHand.getAmount() - 1);
-        event.setCancelled(true);
+        event.setCancelled(false);
     }
 
+    // 彩蛋，玩家食用秘制特调后持续冒爱心
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSpecialBlendConsumed(final PlayerItemConsumeEvent event) {
+        // 确认是秘制特调
+        ItemStack item = event.getItem();
+        if (item.getType() != Material.HONEY_BOTTLE || !item.hasItemMeta() || !item.getItemMeta().hasLore()) {
+            return;
+        }
+        if (!item.getItemMeta().getItemName().contains("秘制特调")) {
+            return;
+        }
+        Player player = event.getPlayer();
+        setSpecialBlendTick(player, 12000); // 10分钟
+    }
     static private Material getCropDropType(Material mat) {
         return switch (mat) {
             case WHEAT -> Material.WHEAT;
@@ -672,6 +725,7 @@ public class AltarEvents implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
+        event.setCancelled(true);
         Block block = event.getClickedBlock();
         Material mat = block.getType();
         BlockData bd = block.getBlockData();
@@ -729,8 +783,8 @@ public class AltarEvents implements Listener {
         li.forEach(is -> player.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), is));
         // 积累经验值
         scytheOfHarvestAddExp(player, itemInHand);
-
-        event.setCancelled(true);
+        event.setCancelled(false);
+        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     static public int scytheOfHarvestExpRequired(int level) {
@@ -761,14 +815,17 @@ public class AltarEvents implements Listener {
         String secondLine = lore.get(1); // e.g. "lv1 0/32"
         String[] parts = secondLine.split(" ");
         if (parts.length != 2) {
+            plugin.getLogger().info("parts length");
             return;
         }
         String levelPart = parts[0]; // e.g. "lv1"
         if (!levelPart.startsWith("lv")) {
+            plugin.getLogger().info("lv");
             return;
         }
         String[] expParts = parts[1].split("/");
         if (expParts.length != 2) {
+            plugin.getLogger().info("expParts");
             return;
         }
         int currentLevel, currentExp, expRequired;
@@ -840,6 +897,8 @@ public class AltarEvents implements Listener {
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a79和平之石 \u00a7a，将 %s 的保护等级提升到了 \u00a79%d\u00a7a！",
             player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentProtectionLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        event.setCancelled(false);
+        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     private void tryUseStoneOfEternity(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
@@ -881,6 +940,8 @@ public class AltarEvents implements Listener {
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a7b永久之石 \u00a7a，将 %s 的耐久等级提升到了 \u00a7b%d\u00a7a！",
             player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentUnbreakingLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        event.setCancelled(false);
+        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     public void tryUseStoneOfWealth(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
@@ -922,6 +983,8 @@ public class AltarEvents implements Listener {
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a76财富之石 \u00a7a，将 %s 的时运等级提升到了 \u00a76%d\u00a7a！",
             player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentFortuneLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        event.setCancelled(false);
+        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     static boolean isPlantableBlock(Material mat) {
@@ -1010,6 +1073,8 @@ public class AltarEvents implements Listener {
         itemInHand.setAmount(itemInHand.getAmount() - 1);
         player.sendMessage(tr("\u00a7a你用生命之石祝福了这个方块。"));
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
+        event.setCancelled(false);
+        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     public void tryUpgradeWhipOfPastor(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
@@ -1054,6 +1119,8 @@ public class AltarEvents implements Listener {
         } else {
             player.sendMessage(String.format("\u00a7a你合成了 \u00a76lv%d\u00a7a 的牧者之鞭！", level + 1));
         }
+        event.setCancelled(false);
+        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
