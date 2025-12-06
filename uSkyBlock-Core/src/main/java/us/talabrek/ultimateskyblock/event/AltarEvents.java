@@ -1081,7 +1081,7 @@ public class AltarEvents implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCropGrowth(final BlockGrowEvent event) {
-        plugin.getLogger().info(String.format("onCropGrowth called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
+        //plugin.getLogger().info(String.format("onCropGrowth called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
         // 当作物生长时，检查其附着的方块是否被生命之石祝福过
         // 注意：甘蔗、竹子、仙人掌会触发BlockGrowEvent，形式为从AIR长出植物，因此需要特殊处理
         BlockState newState = event.getNewState();
