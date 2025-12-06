@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.ShulkerBox;
@@ -42,6 +43,7 @@ import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.*;
 
+import static com.sk89q.worldguard.bukkit.util.Materials.isShulkerBox;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 @Singleton
@@ -195,12 +197,8 @@ public class AltarEvents implements Listener {
         ItemMeta meta = item.getItemMeta();
         meta.setItemName(tr("\u00a7l\u00a75美味果实"));
         List<String> lore = new ArrayList<>();
-        lore.add("\u00a7l\u00a75美味果实");
         lore.add("\u00a7l\u00a7e一个看起来非常好吃的苹果...还是樱桃？");
         meta.setLore(lore);
-        FoodComponent food = meta.getFood();
-        food.addEffect(new PotionEffect(PotionEffectType.SATURATION, 72000, 0), 1.0f); // 60 minutes of saturation
-        meta.setFood(food);
         item.setItemMeta(meta);
         return item;
     }
@@ -217,26 +215,35 @@ public class AltarEvents implements Listener {
         return item;
     }
 
-    static public double getHarvestFoodValue(Material mat) {
+    public double getHarvestFoodValue(ItemStack itemStack) {
         // handle special cases first
-        if (mat == Material.CAKE) {
-            return 14 + 2.8;
-        }
-        if (mat == Material.ENCHANTED_GOLDEN_APPLE) {
-            return 10000;
-        }
-        // value = hunger + saturation
-        if (!mat.isItem()) {
-            return 0;
-        }
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null || !meta.hasFood() || meta.hasLore()) {
+        Material mat = itemStack.getType();
+        int num = itemStack.getAmount();
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null || meta.hasLore()) {
             // 防止把特殊物品送出去
+            plugin.getLogger().info("getHarvestFoodValue: item has lore!");
             return 0;
         }
-        FoodComponent food = meta.getFood();
-        return food.getNutrition() + food.getSaturation();
+        // value = (saturation + hunger) * num
+        return switch (mat) {
+            case ENCHANTED_GOLDEN_APPLE -> 10000 * num;
+            case RABBIT_STEW -> 22 * num;
+            case COOKED_PORKCHOP, COOKED_BEEF -> 20.8 * num;
+            case GOLDEN_CARROT -> 20.4 * num;
+            case CAKE -> 16.8 * num;
+            case COOKED_MUTTON, COOKED_SALMON -> 15.6 * num;
+            case GOLDEN_APPLE -> 13.6 * num;
+            case BEETROOT_SOUP, MUSHROOM_STEW, COOKED_CHICKEN, SUSPICIOUS_STEW -> 13.2 * num;
+            case PUMPKIN_PIE -> 12.8 * num;
+            case BAKED_POTATO, BREAD, COOKED_COD, COOKED_RABBIT -> 11 * num;
+            case HONEY_BOTTLE -> 7.2 * num;
+            case APPLE -> 6.4 * num;
+            case MELON_SLICE -> 3.2 * num;
+            case COOKIE -> 2.4 * num;
+            case DRIED_KELP -> 1.6 * num;
+            default -> 0.0;
+        };
     }
 
     static public String getHarvestFoodTypeName(HarvestFoodType type) {
@@ -275,7 +282,7 @@ public class AltarEvents implements Listener {
         items.forEach( itemstack -> {
             HarvestFoodType type = getHarvestFoodType(itemstack.getType());
             if (type != HarvestFoodType.NOT_ACCEPTED) {
-                double value = getHarvestFoodValue(itemstack.getType()) * itemstack.getAmount();
+                double value = getHarvestFoodValue(itemstack);
                 raw_values[type.ordinal()] += value;
                 // 移除物品
                 itemstack.setAmount(0);
@@ -363,6 +370,10 @@ public class AltarEvents implements Listener {
         PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
         pdc.set(getKeyAltarType(block), PersistentDataType.INTEGER, type.ordinal());
         pdc.set(getKeyAltarCounter(block), PersistentDataType.LONG, 0L);
+        switch (type) {
+            case HARVEST -> pdc.set(getKeyAltarHarvestCounters(block), PersistentDataType.LONG_ARRAY, new long[7]);
+            default -> {}
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -379,8 +390,8 @@ public class AltarEvents implements Listener {
         Integer type = pdc.get(getKeyAltarType(block), PersistentDataType.INTEGER);
         if (type != null) {
             IslandInfo islandInfo = plugin.getIslandInfo(block.getLocation());
+            AltarType altarType = AltarType.values()[type];
             if (islandInfo != null) {
-                AltarType altarType = AltarType.values()[type];
                 int n = islandInfo.getAltarBuilt(altarType);
                 if (n > 0) {
                     islandInfo.setAltarBuilt(altarType, n - 1);
@@ -388,6 +399,10 @@ public class AltarEvents implements Listener {
             }
             pdc.remove(getKeyAltarType(block));
             pdc.remove(getKeyAltarCounter(block));
+            switch (altarType) {
+                case HARVEST -> pdc.remove(getKeyAltarHarvestCounters(block));
+                default -> {}
+            }
         }
     }
 
@@ -498,6 +513,7 @@ public class AltarEvents implements Listener {
         }
         // 是美味果实，临时记录状态：在玩家收到来自怪物的伤害时，失去饱和效果
         Player player = event.getPlayer();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 72000, 0));
         deliciousFruitConsumers.put(player.getUniqueId(), System.currentTimeMillis());
     }
 
@@ -687,6 +703,7 @@ public class AltarEvents implements Listener {
         };
     }
     private void scytheOfHarvestAddExp(Player player, ItemStack scythe) {
+        plugin.getLogger().info("scytheOfHarvestAddExp called");
         ItemMeta meta = scythe.getItemMeta();
         if (meta == null || !meta.hasLore()) {
             return;
@@ -714,6 +731,7 @@ public class AltarEvents implements Listener {
             currentExp = Integer.parseInt(expParts[0]);
             expRequired = Integer.parseInt(expParts[1]);
         } catch (NumberFormatException e) {
+            plugin.getLogger().info("parseInt failed!");
             return;
         }
         if (currentLevel < 1 || currentLevel >= 10) {
@@ -735,6 +753,7 @@ public class AltarEvents implements Listener {
         lore.set(1, String.format("lv%d %d/%d", currentLevel, currentExp, expRequired));
         meta.setLore(lore);
         scythe.setItemMeta(meta);
+        plugin.getLogger().info("scytheOfHarvestAddExp finally returned");
     }
     private void tryUseStoneOfPeace(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -1016,9 +1035,9 @@ public class AltarEvents implements Listener {
                         player.sendMessage(String.format("\u00a7a这是一个 \u00a7l\u00a72收获之祭坛\u00a7a，共奉献了价值 \u00a7l\u00a73%d \u00a7a的食物。", altarCounter));
                         // 玩家可以奉献食物,或者潜影盒装的食物
                         ItemStack itemInHand = player.getInventory().getItemInMainHand();
-                        double foodValue = getHarvestFoodValue(itemInHand.getType());
+                        double foodValue = getHarvestFoodValue(itemInHand);
                         plugin.getLogger().info(String.format("getHarvestFoodValue(%s) = %f", itemInHand.getType().name(), foodValue));
-                        if (itemInHand.getType() == Material.SHULKER_BOX) {
+                        if (Tag.SHULKER_BOXES.isTagged(itemInHand.getType())) {
                             // 潜影盒，检查里面的物品
                             BlockStateMeta bsm = (BlockStateMeta) itemInHand.getItemMeta();
                             if (bsm == null) {
