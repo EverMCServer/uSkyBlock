@@ -27,6 +27,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -274,20 +275,9 @@ public class AltarEvents implements Listener {
 
     /*
         玩家向祭坛献祭物品。items中适合的物品会被移除。
-        warning: 默认altar是一个合法的收获之祭坛
+        warning: 默认altar是一个合法的收获之祭坛, raw_values长度为7，对应每一类食物的总价值
      */
-    public void offerToHarvestAltar(Player p, Block altar, List<ItemStack> items) {
-        // 统计每一类
-        double[] raw_values = new double[7];
-        items.forEach( itemstack -> {
-            HarvestFoodType type = getHarvestFoodType(itemstack.getType());
-            if (type != HarvestFoodType.NOT_ACCEPTED) {
-                double value = getHarvestFoodValue(itemstack);
-                raw_values[type.ordinal()] += value;
-                // 移除物品
-                itemstack.setAmount(0);
-            }
-        });
+    public void offerToAltarOfHarvestEval(Player p, Block altar, double[] raw_values) {
         // 获得原值
         PersistentDataContainer pdc = altar.getChunk().getPersistentDataContainer();
         long[] old_values = pdc.getOrDefault(getKeyAltarHarvestCounters(altar), PersistentDataType.LONG_ARRAY, new long[7]);
@@ -343,6 +333,36 @@ public class AltarEvents implements Listener {
         }
         long draws = (old_counter + sum) / 5000 - old_counter / 5000;
         harvestReward(p, draws);
+    }
+    public void offerToAltarOfHarvest(Player p, Block altar, Inventory inventory) {
+        double[] raw_values = new double[7];
+        for (int slot = 0; slot < inventory.getSize(); ++slot) {
+            ItemStack itemstack = inventory.getItem(slot);
+            if (itemstack == null) {
+                continue;
+            }
+            HarvestFoodType type = getHarvestFoodType(itemstack.getType());
+            if (type != HarvestFoodType.NOT_ACCEPTED) {
+                double value = getHarvestFoodValue(itemstack);
+                raw_values[type.ordinal()] += value;
+                // 移除物品
+                inventory.setItem(slot, null);
+            }
+        }
+        offerToAltarOfHarvestEval(p, altar, raw_values);
+    }
+
+    public void offerToAltarOfHarvest(Player p, Block altar, ItemStack item) {
+        // 统计每一类
+        double[] raw_values = new double[7];
+        HarvestFoodType type = getHarvestFoodType(item.getType());
+        if (type != HarvestFoodType.NOT_ACCEPTED) {
+            double value = getHarvestFoodValue(item);
+            raw_values[type.ordinal()] += value;
+            // 移除物品
+            item.setAmount(0);
+        }
+        offerToAltarOfHarvestEval(p, altar, raw_values);
     }
 
     private NamespacedKey getKeyAltarType(Block b) {
@@ -508,7 +528,7 @@ public class AltarEvents implements Listener {
         if (item.getType() != Material.APPLE || !item.hasItemMeta() || !item.getItemMeta().hasLore()) {
             return;
         }
-        if (!item.getItemMeta().getLore().getFirst().contains("美味果实")) {
+        if (!item.getItemMeta().getItemName().contains("美味果实")) {
             return;
         }
         // 是美味果实，临时记录状态：在玩家收到来自怪物的伤害时，失去饱和效果
@@ -888,6 +908,45 @@ public class AltarEvents implements Listener {
         };
     }
 
+    public boolean getStoneOfLifeFlag(Block block) {
+        PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
+        NamespacedKey key = getKeyStoneOfLifeBlocks(block);
+        long[] yLayer = pdc.get(key, PersistentDataType.LONG_ARRAY);
+        if (yLayer == null || yLayer.length != 4) {
+            return false;
+        }
+        int id = (block.getX() & 0x0F) << 4 | (block.getZ() & 0x0F);  // 0-255
+        int longIndex = id / 64;
+        int bitIndex = id % 64;
+        return (yLayer[longIndex] & (1L << bitIndex)) != 0;
+    }
+    public void setStoneOfLifeFlag(Block block, boolean flag) {
+        PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
+        NamespacedKey key = getKeyStoneOfLifeBlocks(block);
+        long[] yLayer = pdc.get(key, PersistentDataType.LONG_ARRAY);
+        if (yLayer == null || yLayer.length != 4) {
+            if (!flag) {
+                return;
+            }
+            yLayer = new long[4];
+        }
+        int id = (block.getX() & 0x0F) << 4 | (block.getZ() & 0x0F);  // 0-255
+        int longIndex = id / 64;
+        int bitIndex = id % 64;
+        if (flag) {
+            yLayer[longIndex] |= (1L << bitIndex);
+        } else {
+            yLayer[longIndex] &= ~(1L << bitIndex);
+        }
+        pdc.set(key, PersistentDataType.LONG_ARRAY, yLayer);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void updateStoneOfLifeOnBlockBreak(final BlockBreakEvent event) {
+        // 当被破坏的方块有生命之石祝福时，移除祝福
+        setStoneOfLifeFlag(event.getBlock(), false);
+    }
+
     public void tryUseStoneOfLife(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
         // 必须对方块使用
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -903,22 +962,12 @@ public class AltarEvents implements Listener {
             return;
         }
         // 在chunk pdc读取此方块
-        PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
-        NamespacedKey key = getKeyStoneOfLifeBlocks(block);
-        long[] yLayer = pdc.get(key, PersistentDataType.LONG_ARRAY);
-        if (yLayer == null || yLayer.length != 4) {
-            yLayer = new long[4];
-        }
-        int id = (block.getX() & 0x0F) << 4 | (block.getZ() & 0x0F);  // 0-255
-        int longIndex = id / 64;
-        int bitIndex = id % 64;
-        if ((yLayer[longIndex] & (1L << bitIndex)) != 0) {
-            player.sendMessage(tr("\u00a7c这个方块已经被生命之石祝福过了。"));
+        if (getStoneOfLifeFlag(block)) {
+            player.sendMessage(tr("\u00a7c这个方块已经被祝福过了。"));
             return;
         }
-        // 标记此方块
-        yLayer[longIndex] |= (1L << bitIndex);
-        pdc.set(key, PersistentDataType.LONG_ARRAY, yLayer);
+        // 祝福此方块
+        setStoneOfLifeFlag(block, true);
         // 消耗生命之石
         itemInHand.setAmount(itemInHand.getAmount() - 1);
         player.sendMessage(tr("\u00a7a你用生命之石祝福了这个方块。"));
@@ -967,6 +1016,7 @@ public class AltarEvents implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onCropGrowth(final BlockGrowEvent event) {
         // TODO: 防止影响骨粉
+        plugin.getLogger().info(String.format("onCropGrowth called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
         // 当作物生长时，检查其下方方块是否被生命之石祝福过
         Block block = event.getBlock();
         Material mat = block.getType();
@@ -1047,9 +1097,11 @@ public class AltarEvents implements Listener {
                             if (!(bs instanceof ShulkerBox shulkerBox)) {
                                 return;
                             }
-                            offerToHarvestAltar(player, block, Arrays.asList(shulkerBox.getInventory().getContents()));
+                            offerToAltarOfHarvest(player, block, shulkerBox.getInventory());
+                            bsm.setBlockState(bs);
+                            itemInHand.setItemMeta(bsm);
                         } else if (foodValue > 0) {
-                            offerToHarvestAltar(player, block, List.of(itemInHand));
+                            offerToAltarOfHarvest(player, block, itemInHand);
                         } else {
                             // 提示目前供奉的各类食物的价值
                             long[] counters = pdc.getOrDefault(getKeyAltarHarvestCounters(block), PersistentDataType.LONG_ARRAY, new long[7]);
@@ -1065,7 +1117,7 @@ public class AltarEvents implements Listener {
                             player.sendMessage(String.format("\u00a7a<茁壮> \u00a7l\u00a76lv. %d\u00a7a 提供家畜成长速度和鸡蛋产量+%d%%，繁殖恢复速度+%d%%",
                                 thriveLevel, thriveLevel * 3, thriveLevel));
                             // 提示玩家需要的物品
-                            player.sendMessage(tr("\u00a7c奉献需要食物或装有食物的潜影盒。"));
+                            player.sendMessage(tr("\u00a7c奉献需要合适的食物或潜影盒。"));
                             return;
                         }
                     }
