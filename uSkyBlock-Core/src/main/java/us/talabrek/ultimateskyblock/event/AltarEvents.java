@@ -39,7 +39,6 @@ import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.*;
 
-import static com.sk89q.worldguard.bukkit.util.Materials.isShulkerBox;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 @Singleton
@@ -623,7 +622,7 @@ public class AltarEvents implements Listener {
             } else if (firstLore.contains("生命之石")) {
                 tryUseStoneOfLife(player, itemInHand, event);
             } else if (firstLore.contains("收获之镰")) {
-                // Handled in onScytheOfHarvestUsed
+                tryUseScytheOfHarvest(player, itemInHand, event);
             } else if (firstLore.contains("牧者之鞭")) {
                 tryUpgradeWhipOfPastor(player, itemInHand, event);
             }
@@ -714,13 +713,9 @@ public class AltarEvents implements Listener {
             default -> Material.AIR;
         };
     }
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    public void onScytheOfHarvestUsed(final PlayerInteractEvent event) {
+
+    public void tryUseScytheOfHarvest(Player player, ItemStack itemInHand, final PlayerInteractEvent event) {
         // 当使用收获之镰，右键使用以收获而不破坏作物
-        // 只处理主手的交互，防止重复响应
-        if (event.getHand() != EquipmentSlot.HAND) {
-            return;
-        }
         // 确认交互的方块是成熟的作物
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -744,20 +739,6 @@ public class AltarEvents implements Listener {
             default -> {
                 return;
             }
-        }
-        // 以上确认手中的物品是收获之镰
-        Player player = event.getPlayer();
-        ItemStack itemInHand = event.getItem();
-        if (itemInHand.getType() != Material.GOLDEN_HOE || !itemInHand.hasItemMeta() || !itemInHand.getItemMeta().hasLore()) {
-            return;
-        }
-        List<String> lore = itemInHand.getItemMeta().getLore();
-        if (lore == null || lore.isEmpty()) {
-            return;
-        }
-        String firstLore = lore.getFirst();
-        if (!firstLore.contains("收获之镰")) {
-            return;
         }
 
         // 获取掉落物
@@ -818,11 +799,8 @@ public class AltarEvents implements Listener {
             plugin.getLogger().info("parts length");
             return;
         }
-        String levelPart = parts[0]; // e.g. "lv1"
-        if (!levelPart.startsWith("lv")) {
-            plugin.getLogger().info("lv");
-            return;
-        }
+        String[] levelPart = parts[0].split("lv"); // e.g. "lv1"
+        plugin.getLogger().info(Arrays.toString(levelPart));
         String[] expParts = parts[1].split("/");
         if (expParts.length != 2) {
             plugin.getLogger().info("expParts");
@@ -830,8 +808,8 @@ public class AltarEvents implements Listener {
         }
         int currentLevel, currentExp, expRequired;
         try {
-            plugin.getLogger().info("substr = " + levelPart.substring(2));
-            currentLevel = Integer.parseInt(levelPart.substring(2));
+            plugin.getLogger().info("substr = " + levelPart[levelPart.length-1]);
+            currentLevel = Integer.parseInt(levelPart[levelPart.length-1]);
             currentExp = Integer.parseInt(expParts[0]);
             expRequired = Integer.parseInt(expParts[1]);
         } catch (NumberFormatException e) {
