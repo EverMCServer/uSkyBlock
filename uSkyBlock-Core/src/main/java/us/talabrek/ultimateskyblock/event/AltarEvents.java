@@ -1013,9 +1013,11 @@ public class AltarEvents implements Listener {
 
                 switch (altarType) {
                     case HARVEST -> {
-                        player.sendMessage(tr("\u00a7a这是一个 \u00a7l\u00a72收获之祭坛\u00a7a，共奉献了价值 \u00a7l\u00a73%d \u00a7a的食物。", altarCounter));
+                        player.sendMessage(String.format("\u00a7a这是一个 \u00a7l\u00a72收获之祭坛\u00a7a，共奉献了价值 \u00a7l\u00a73%d \u00a7a的食物。", altarCounter));
                         // 玩家可以奉献食物,或者潜影盒装的食物
                         ItemStack itemInHand = player.getInventory().getItemInMainHand();
+                        double foodValue = getHarvestFoodValue(itemInHand.getType());
+                        plugin.getLogger().info(String.format("getHarvestFoodValue(%s) = %f", itemInHand.getType().name(), foodValue));
                         if (itemInHand.getType() == Material.SHULKER_BOX) {
                             // 潜影盒，检查里面的物品
                             BlockStateMeta bsm = (BlockStateMeta) itemInHand.getItemMeta();
@@ -1027,12 +1029,12 @@ public class AltarEvents implements Listener {
                                 return;
                             }
                             offerToHarvestAltar(player, block, Arrays.asList(shulkerBox.getInventory().getContents()));
-                        } else if (getHarvestFoodValue(itemInHand.getType()) > 0) {
+                        } else if (foodValue > 0) {
                             offerToHarvestAltar(player, block, List.of(itemInHand));
                         } else {
                             // 提示目前供奉的各类食物的价值
                             long[] counters = pdc.getOrDefault(getKeyAltarHarvestCounters(block), PersistentDataType.LONG_ARRAY, new long[7]);
-                            for (int i = 0; i < HarvestFoodType.values().length; i++) {
+                            for (int i = 0; i < 7; i++) {
                                 HarvestFoodType hft = HarvestFoodType.values()[i];
                                 if (counters[i] > 0) {
                                     player.sendMessage(String.format("\u00a7a- %s: \u00a7l\u00a73%d",
