@@ -720,7 +720,6 @@ public class AltarEvents implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        event.setCancelled(true);
         Block block = event.getClickedBlock();
         Material mat = block.getType();
         BlockData bd = block.getBlockData();
@@ -764,8 +763,6 @@ public class AltarEvents implements Listener {
         li.forEach(is -> player.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), is));
         // 积累经验值
         scytheOfHarvestAddExp(player, itemInHand);
-        event.setCancelled(false);
-        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     static public int scytheOfHarvestExpRequired(int level) {
@@ -875,8 +872,6 @@ public class AltarEvents implements Listener {
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a79和平之石 \u00a7a，将 %s 的保护等级提升到了 \u00a79%d\u00a7a！",
             player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentProtectionLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        event.setCancelled(false);
-        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     private void tryUseStoneOfEternity(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
@@ -918,8 +913,6 @@ public class AltarEvents implements Listener {
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a7b永久之石 \u00a7a，将 %s 的耐久等级提升到了 \u00a7b%d\u00a7a！",
             player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentUnbreakingLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        event.setCancelled(false);
-        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     public void tryUseStoneOfWealth(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
@@ -961,8 +954,6 @@ public class AltarEvents implements Listener {
         plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a使用\u00a76财富之石 \u00a7a，将 %s 的时运等级提升到了 \u00a76%d\u00a7a！",
             player.getName(), offHandMeta.hasDisplayName() ? offHandMeta.getDisplayName() : offHandItem.getType().toString(), currentFortuneLevel + 1));
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        event.setCancelled(false);
-        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     static boolean isPlantableBlock(Material mat) {
@@ -1051,19 +1042,17 @@ public class AltarEvents implements Listener {
         itemInHand.setAmount(itemInHand.getAmount() - 1);
         player.sendMessage(tr("\u00a7a你用生命之石祝福了这个方块。"));
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
-        event.setCancelled(false);
-        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     public void tryUpgradeWhipOfPastor(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        event.setCancelled(true);
         // 确认主手有至少2个相同等级的牧者之鞭
         if (itemInHand.getAmount() < 2) {
             return;
         }
+        event.setCancelled(true);
         ItemMeta meta = itemInHand.getItemMeta();
         if (meta == null || !meta.hasLore()) {
             return;
@@ -1097,8 +1086,6 @@ public class AltarEvents implements Listener {
         } else {
             player.sendMessage(String.format("\u00a7a你合成了 \u00a76lv%d\u00a7a 的牧者之鞭！", level + 1));
         }
-        event.setCancelled(false);
-        event.setUseItemInHand(Event.Result.ALLOW);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
