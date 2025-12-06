@@ -7,10 +7,12 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Cocoa;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Animals;
@@ -21,6 +23,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFertilizeEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -31,7 +34,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.components.FoodComponent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
@@ -213,6 +215,7 @@ public class AltarEvents implements Listener {
         lore.add("\u00a7l\u00a7d秘制特调");
         lore.add("\u00a7l\u00a7e动物们吃了以后...根本把持不住！");
         meta.setLore(lore);
+        item.setItemMeta(meta);
         return item;
     }
 
@@ -223,7 +226,6 @@ public class AltarEvents implements Listener {
         ItemMeta meta = itemStack.getItemMeta();
         if (meta == null || meta.hasLore()) {
             // 防止把特殊物品送出去
-            plugin.getLogger().info("getHarvestFoodValue: item has lore!");
             return 0;
         }
         // value = (saturation + hunger) * num
@@ -578,8 +580,6 @@ public class AltarEvents implements Listener {
                 return;
             }
             String firstLore = itemInHand.getItemMeta().getLore().getFirst();
-//            plugin.getLogger().info(String.format("Item lore first line: %s", firstLore));
-//            plugin.getLogger().info(String.format("Event action: %s", event.getAction().name()));
             if (firstLore.contains("和平之石")) {
                 tryUseStoneOfPeace(player, itemInHand, event);
             } else if (firstLore.contains("永久之石")) {
@@ -1001,10 +1001,15 @@ public class AltarEvents implements Listener {
         if (count % 2 == 1) {
             ItemStack remainingWhip = whipOfPastor(level);
             remainingWhip.setAmount(1);
-            player.getInventory().addItem(remainingWhip);
+            if (player.getInventory().firstEmpty() == -1) {
+                // 没有空位，掉落在地上
+                player.getWorld().dropItemNaturally(player.getLocation(), remainingWhip);
+            } else {
+                player.getInventory().addItem(remainingWhip);
+            }
         }
         // 如果合成的达到6级或以上，全服播报
-        if (level + 1 >= 6) {
+        if (level + 1 >= 7) {
             plugin.getServer().broadcastMessage(String.format("\u00a7e%s \u00a7a合成了 \u00a76lv%d\u00a7a 的牧者之鞭！",
                 player.getName(), level + 1));
             player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
@@ -1013,28 +1018,22 @@ public class AltarEvents implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBoneMealUsed(final BlockFertilizeEvent event) {
+        // 防止骨粉直接催熟
+        plugin.getLogger().info(String.format("onBoneMealUsed called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
+    }
+
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onCropGrowth(final BlockGrowEvent event) {
-        // TODO: 防止影响骨粉
         plugin.getLogger().info(String.format("onCropGrowth called for block %s at %s", event.getBlock().getType().name(), event.getBlock().getLocation()));
-        // 当作物生长时，检查其下方方块是否被生命之石祝福过
+        // 当作物生长时，检查其附着的方块是否被生命之石祝福过
         Block block = event.getBlock();
-        Material mat = block.getType();
-        // 只处理可种植方块上的作物
-        if (!isPlantableBlock(mat)) {
-            return;
-        }
-        Block below = block.getRelative(0, -1, 0);
-        PersistentDataContainer pdc = below.getChunk().getPersistentDataContainer();
-        NamespacedKey key = getKeyStoneOfLifeBlocks(below);
-        long[] yLayer = pdc.get(key, PersistentDataType.LONG_ARRAY);
-        if (yLayer == null || yLayer.length != 4) {
-            return;
-        }
-        int id = (below.getX() & 0x0F) << 4 | (below.getZ() & 0x0F);  // 0-255
-        int longIndex = id / 64;
-        int bitIndex = id % 64;
-        if ((yLayer[longIndex] & (1L << bitIndex)) == 0) {
+        Block toCheck = switch (block.getType()) {
+            case COCOA -> block.getRelative(((Cocoa) block.getBlockData()).getFacing().getOppositeFace());
+            default -> block.getRelative(BlockFace.DOWN);
+        };
+        if (!isPlantableBlock(toCheck.getType()) || !getStoneOfLifeFlag(toCheck)) {
             return;
         }
         // 祝福生效，使作物立即成熟
@@ -1086,7 +1085,6 @@ public class AltarEvents implements Listener {
                         // 玩家可以奉献食物,或者潜影盒装的食物
                         ItemStack itemInHand = player.getInventory().getItemInMainHand();
                         double foodValue = getHarvestFoodValue(itemInHand);
-                        plugin.getLogger().info(String.format("getHarvestFoodValue(%s) = %f", itemInHand.getType().name(), foodValue));
                         if (Tag.SHULKER_BOXES.isTagged(itemInHand.getType())) {
                             // 潜影盒，检查里面的物品
                             BlockStateMeta bsm = (BlockStateMeta) itemInHand.getItemMeta();
