@@ -99,7 +99,7 @@ public class AltarEvents implements Listener {
                             } else {
                                 // 产生较小的粒子效果以提示
                                 Location loc = animal.getLocation().add(0, animal.getHeight() / 2.0, 0);
-                                animal.getWorld().spawnParticle(Particle.HEART, loc, 3, 0.5, 0.5, 0.5, 0.1);
+                                animal.getWorld().spawnParticle(Particle.HEART, loc, 1, 0.5, 0.5, 0.5, 0.1);
                             }
                             setSpecialBlendTick(animal, remainingTicks - 60);
                         }
@@ -182,7 +182,7 @@ public class AltarEvents implements Listener {
 
         List<String> lore = new ArrayList<>();
         lore.add("\u00a7l\u00a76收获之镰");
-        lore.add(String.format("lv%d 0/%d", fortuneLevel, scytheOfHarvestExpRequired(fortuneLevel)));
+        lore.add(String.format("\u00a7l\u00a76lv%d 0/%d", fortuneLevel, scytheOfHarvestExpRequired(fortuneLevel)));
         lore.add("\u00a7l\u00a7e右键使用以收获而不破坏作物");
         lore.add("\u00a7l\u00a7e使用以积累经验值并升级，上限为10");
         meta.setLore(lore);
@@ -204,7 +204,7 @@ public class AltarEvents implements Listener {
         // 使用右键可以将堆叠的两个此物品合成为更高等级
         List<String> lore = new ArrayList<>();
         lore.add("\u00a7l\u00a76牧者之鞭");
-        lore.add("\u00a7l\u00a7e一击杀死动物，但无法对敌对生物造成伤害");
+        lore.add("\u00a7l\u00a7e一击杀死动物，但无法对其他生物造成伤害");
         lore.add("\u00a7l\u00a7e右键合成两个相同等级的牧者之鞭以提升等级");
         meta.setLore(lore);
         item.setItemMeta(meta);
@@ -233,7 +233,6 @@ public class AltarEvents implements Listener {
         ItemMeta meta = item.getItemMeta();
         meta.setItemName(tr("\u00a7l\u00a7d秘制特调"));
         List<String> lore = new ArrayList<>();
-        lore.add("\u00a7l\u00a7d秘制特调");
         lore.add("\u00a7l\u00a7e动物们吃了以后...根本把持不住！");
         meta.setLore(lore);
         item.setItemMeta(meta);
@@ -641,12 +640,11 @@ public class AltarEvents implements Listener {
         if (itemInHand.getType() != Material.HONEY_BOTTLE || !itemInHand.hasItemMeta() || !itemInHand.getItemMeta().hasLore()) {
             return;
         }
-        List<String> lore = itemInHand.getItemMeta().getLore();
-        if (lore == null || lore.isEmpty()) {
+        ItemMeta meta = itemInHand.getItemMeta();
+        if (meta == null || !meta.hasItemName()) {
             return;
         }
-        String firstLore = lore.getFirst();
-        if (!firstLore.contains("秘制特调")) {
+        if (!meta.getItemName().contains("秘制特调")) {
             return;
         }
         int tickNow = getSpecialBlendTick(e);
@@ -692,7 +690,7 @@ public class AltarEvents implements Listener {
     public void onSpecialBlendConsumed(final PlayerItemConsumeEvent event) {
         // 确认是秘制特调
         ItemStack item = event.getItem();
-        if (item.getType() != Material.HONEY_BOTTLE || !item.hasItemMeta() || !item.getItemMeta().hasLore()) {
+        if (item.getType() != Material.HONEY_BOTTLE || !item.hasItemMeta() || !item.getItemMeta().hasItemName()) {
             return;
         }
         if (!item.getItemMeta().getItemName().contains("秘制特调")) {
@@ -780,32 +778,26 @@ public class AltarEvents implements Listener {
         };
     }
     private void scytheOfHarvestAddExp(Player player, ItemStack scythe) {
-        plugin.getLogger().info("scytheOfHarvestAddExp called");
         ItemMeta meta = scythe.getItemMeta();
         if (meta == null || !meta.hasLore()) {
             return;
         }
         List<String> lore = meta.getLore();
         if (lore == null || lore.size() < 2) {
-            plugin.getLogger().info("lore");
             return;
         }
         String secondLine = lore.get(1); // e.g. "lv1 0/32"
         String[] parts = secondLine.split(" ");
         if (parts.length != 2) {
-            plugin.getLogger().info("parts length");
             return;
         }
         String[] levelPart = parts[0].split("lv"); // e.g. "lv1"
-        plugin.getLogger().info(Arrays.toString(levelPart));
         String[] expParts = parts[1].split("/");
         if (expParts.length != 2) {
-            plugin.getLogger().info("expParts");
             return;
         }
         int currentLevel, currentExp, expRequired;
         try {
-            plugin.getLogger().info("substr = " + levelPart[levelPart.length-1]);
             currentLevel = Integer.parseInt(levelPart[levelPart.length-1]);
             currentExp = Integer.parseInt(expParts[0]);
             expRequired = Integer.parseInt(expParts[1]);
@@ -831,7 +823,6 @@ public class AltarEvents implements Listener {
         lore.set(1, String.format("\u00a7l\u00a76lv%d %d/%d", currentLevel, currentExp, expRequired));
         meta.setLore(lore);
         scythe.setItemMeta(meta);
-        plugin.getLogger().info("scytheOfHarvestAddExp finally returned");
     }
     private void tryUseStoneOfPeace(Player player, ItemStack itemInHand, PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -1130,11 +1121,15 @@ public class AltarEvents implements Listener {
         }
         if (toGrow2 != null) {
             // 处理仙人掌、甘蔗第二格的生长
-            BlockData bd2 = toGrow2.getBlockData();
-            if (bd2 instanceof Ageable ageable2) {
-                ageable2.setAge(ageable2.getMaximumAge());
-                toGrow2.setBlockData(bd2);
-            }
+            Block finalToGrow = toGrow2;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                BlockData bd2 = finalToGrow.getBlockData();
+                if (bd2 instanceof Ageable ageable2) {
+                    ageable2.setAge(ageable2.getMaximumAge());
+                    finalToGrow.setBlockData(bd2);
+                }
+            }, 1L
+            );
         }
     }
 
@@ -1206,8 +1201,8 @@ public class AltarEvents implements Listener {
                             }
                             // 提示当前的THRIVE等级
                             int thriveLevel = islandInfo.getAltarBuffLevel(AltarBuffType.THRIVE);
-                            player.sendMessage(String.format("\u00a7a<茁壮> \u00a7l\u00a76lv. %d\u00a7a 提供家畜成长速度和鸡蛋产量+%d%%，繁殖恢复速度+%d%%",
-                                thriveLevel, thriveLevel * 3, thriveLevel));
+                            player.sendMessage(String.format("\u00a7a<茁壮> \u00a7l\u00a76lv. %d\u00a7a 提供家畜成长速度和鸡蛋产量+%d%%，繁殖恢复速度+%d%%，动物上限增加%d",
+                                thriveLevel, thriveLevel * 3, thriveLevel, thriveLevel / 5 * 2));
                             // 提示玩家需要的物品
                             player.sendMessage(tr("\u00a7c奉献需要合适的食物或潜影盒。"));
                             return;
