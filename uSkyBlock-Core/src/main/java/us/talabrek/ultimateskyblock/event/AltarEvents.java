@@ -770,11 +770,11 @@ public class AltarEvents implements Listener {
             case 3 -> 512;
             case 4 -> 2048;
             case 5 -> 8192;
-            case 6 -> 16384;
-            case 7 -> 24576;
-            case 8 -> 40960;
-            case 9 -> 65536;
-            default -> Integer.MAX_VALUE;
+            case 6 -> 32768;
+            case 7 -> 131072;
+            case 8 -> 524288;
+            case 9 -> 2097152;
+            default -> 9999999; // should not happen
         };
     }
     private void scytheOfHarvestAddExp(Player player, ItemStack scythe) {
