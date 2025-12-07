@@ -40,6 +40,7 @@ public class PlaceholderReplacerImpl implements PlaceholderAPI.PlaceholderReplac
         "usb_island_golems_max",
         "usb_island_monsters_max",
         "usb_island_animals_max",
+        "usb_island_cats_max",
         "usb_island_villagers_max",
         "usb_island_partysize_max",
         "usb_island_golems",
@@ -120,6 +121,7 @@ public class PlaceholderReplacerImpl implements PlaceholderAPI.PlaceholderReplac
             case "usb_island_leader" -> islandInfo.getLeader();
             case "usb_island_golems_max" -> "" + islandInfo.getMaxGolems();
             case "usb_island_monsters_max" -> "" + islandInfo.getMaxMonsters();
+            case "usb_island_cats_max" -> "" + islandInfo.getMaxCats();
             case "usb_island_animals_max" -> "" + islandInfo.getMaxAnimals();
             case "usb_island_villagers_max" -> "" + islandInfo.getMaxVillagers();
             case "usb_island_partysize_max" -> "" + islandInfo.getMaxPartySize();

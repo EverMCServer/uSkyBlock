@@ -325,7 +325,11 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
         return getAltarBuffLevel(AltarEvents.AltarBuffType.THRIVE) / 5 * 2 + getMaxPartyIntValue("maxAnimals",
             plugin.getPerkLogic().getIslandPerk(getSchematicName()).getPerk().getAnimals());
     }
-
+    @Override
+    public int getMaxCats() {
+        // TODO: use configuration value
+        return 5;
+    }
     @Override
     public int getMaxMonsters() {
         return getMaxPartyIntValue("maxMonsters",
@@ -1040,6 +1044,7 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
         str += ChatColor.DARK_AQUA + "Limits:\n";
         str += ChatColor.GRAY + "  - maxParty: " + ChatColor.DARK_AQUA + getMaxPartySize() + "\n";
         str += ChatColor.GRAY + "  - animals: " + ChatColor.DARK_AQUA + getMaxAnimals() + "\n";
+        str += ChatColor.GRAY + "  - cats: " + ChatColor.DARK_AQUA + getMaxCats() + "\n";
         str += ChatColor.GRAY + "  - monsters: " + ChatColor.DARK_AQUA + getMaxMonsters() + "\n";
         str += ChatColor.GRAY + "  - villagers: " + ChatColor.DARK_AQUA + getMaxVillagers() + "\n";
         str += ChatColor.DARK_AQUA + "Bans:\n";

@@ -23,7 +23,7 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 @Singleton
 public class LimitLogic {
-    public enum CreatureType {UNKNOWN, ANIMAL, MONSTER, VILLAGER, GOLEM}
+    public enum CreatureType {UNKNOWN, ANIMAL, MONSTER, VILLAGER, GOLEM, CAT}
 
     static {
         marktr("UNKNOWN");
@@ -31,6 +31,7 @@ public class LimitLogic {
         marktr("MONSTER");
         marktr("VILLAGER");
         marktr("GOLEM");
+        marktr("CAT");
     }
 
     private final WorldManager worldManager;
@@ -79,8 +80,10 @@ public class LimitLogic {
     public CreatureType getCreatureType(LivingEntity creature) {
         if (creature instanceof Enemy) {
             return CreatureType.MONSTER;
+        } else if (creature instanceof Cat) {
+            return CreatureType.CAT;
         } else if (creature instanceof Animals
-            || creature instanceof WaterMob) {
+                || creature instanceof WaterMob) {
             return CreatureType.ANIMAL;
         } else if (creature instanceof Villager) {
             return CreatureType.VILLAGER;
@@ -98,6 +101,8 @@ public class LimitLogic {
             || Ghast.class.isAssignableFrom(entityType.getEntityClass())
         ) {
             return CreatureType.MONSTER;
+        } else if (Cat.class.isAssignableFrom(entityType.getEntityClass())) {
+            return CreatureType.CAT;
         } else if (Animals.class.isAssignableFrom(entityType.getEntityClass())) {
             return CreatureType.ANIMAL;
         } else if (Villager.class.isAssignableFrom(entityType.getEntityClass())) {
@@ -125,6 +130,8 @@ public class LimitLogic {
                 return islandInfo.getMaxVillagers();
             case GOLEM:
                 return islandInfo.getMaxGolems();
+            case CAT:
+                return islandInfo.getMaxCats();
         }
         return Integer.MAX_VALUE;
     }
