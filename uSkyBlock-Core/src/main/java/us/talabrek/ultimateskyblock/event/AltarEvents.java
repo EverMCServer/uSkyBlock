@@ -737,7 +737,11 @@ public class AltarEvents implements Listener {
                 return;
             }
         }
-
+        // 必须是自己岛上的方块
+        IslandInfo ii = plugin.getIslandInfo(block.getLocation());
+        if (ii == null || !ii.isMember(player)) {
+            return;
+        }
         // 获取掉落物
         var li = block.getDrops(itemInHand, player);  // TODO: check if FORTUNE works
 
@@ -1014,8 +1018,12 @@ public class AltarEvents implements Listener {
             return;
         }
         event.setCancelled(true);
-
+        // 必须是自己岛上的方块
         Block block = event.getClickedBlock();
+        IslandInfo ii = plugin.getIslandInfo(block.getLocation());
+        if (ii == null || !ii.isMember(player)) {
+            return;
+        }
         Material mat = block.getType();
         // 确认交互的方块是可种植方块
         if (!isPlantableBlock(mat)) {
