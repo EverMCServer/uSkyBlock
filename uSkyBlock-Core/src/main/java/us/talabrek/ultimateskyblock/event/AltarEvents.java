@@ -776,7 +776,7 @@ public class AltarEvents implements Listener {
         ((Ageable)bd).setAge(0);
         block.setBlockData(bd);
         // 掉落物品
-        li.forEach(is -> player.getWorld().dropItem(block.getLocation().add(0.5, 0.5, 0.5), is));
+        li.forEach(is -> player.getWorld().dropItemNaturally(block.getLocation(), is));
         // 积累经验值
         scytheOfHarvestAddExp(player, itemInHand);
     }
