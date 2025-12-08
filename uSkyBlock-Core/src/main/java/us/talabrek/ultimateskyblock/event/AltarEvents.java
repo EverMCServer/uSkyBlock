@@ -297,7 +297,7 @@ public class AltarEvents implements Listener {
 
     /*
         玩家向祭坛献祭物品。items中适合的物品会被移除。
-        warning: 默认altar是一个合法的收获之祭坛, raw_values长度为7，对应每一类食物的总价值
+        warning: 默认altar是一个合法的收获之祭坛, raw_values长度为7，对应本次供奉的每一类食物的总价值
      */
     public void offerToAltarOfHarvestEval(Player p, Block altar, double[] raw_values) {
         // 获得原值
@@ -306,7 +306,7 @@ public class AltarEvents implements Listener {
         // 计算最小值
         long minimal = Long.MAX_VALUE;
         long maximal = Long.MIN_VALUE;
-        HarvestFoodType min_type = HarvestFoodType.MEAT, max_type = HarvestFoodType.MEAT;
+        HarvestFoodType min_type = HarvestFoodType.MEAT, max_type = HarvestFoodType.NOT_ACCEPTED;
         for (int i = 0; i < 7; ++i) {
             long effective_value = old_values[i];
             if (i == HarvestFoodType.EGA.ordinal()) {
@@ -316,13 +316,18 @@ public class AltarEvents implements Listener {
                 minimal = effective_value;
                 min_type = HarvestFoodType.values()[i];
             }
-            if (maximal < old_values[i]) {
+            if (raw_values[i] > 0 && maximal < old_values[i]) {
                 maximal = old_values[i];
                 max_type = HarvestFoodType.values()[i];
             }
         }
         if (minimal < 10000) {
             minimal = 10000;
+        }
+        // 最大值没有更新，说明所有类别均为0
+        if (max_type == HarvestFoodType.NOT_ACCEPTED) {
+            p.sendMessage(tr("\u00a7a祭坛似乎不太喜欢这些......"));
+            return;
         }
         // 计算打折后的新值
         double max_ratio = maximal / (5.0 * minimal);
@@ -332,7 +337,11 @@ public class AltarEvents implements Listener {
         }
         // 结算
         long sum = 0;
+        int count = 0;
         for (int i = 0; i < 7; ++i) {
+            if (raw_values[i] > 0) {
+                count += 1;
+            }
             old_values[i] += (long) Math.floor(raw_values[i]);
             sum += (long) Math.floor(raw_values[i]);
         }
@@ -340,12 +349,17 @@ public class AltarEvents implements Listener {
         long old_counter = pdc.getOrDefault(getKeyAltarCounter(altar), PersistentDataType.LONG, 0L);
         pdc.set(getKeyAltarCounter(altar), PersistentDataType.LONG, old_counter + sum);
         // 向玩家展示结算结果
-        if (sum == 0) {
-            p.sendMessage(tr("\u00a7a祭坛似乎不太喜欢这些......"));
-            return;
+        if (count == 1) {
+            p.sendMessage(String.format(tr("\u00a7a你向收获之祭坛奉献了总价值 \u00a7l\u00a73%d \u00a7a的\u00a74%s\u00a7a。"), sum, getHarvestFoodTypeName(max_type)));
+        } else {
+            p.sendMessage(String.format(tr("\u00a7a你向收获之祭坛奉献了总价值 \u00a7l\u00a73%d \u00a7a的多种食物。其中："), sum));
+            for (int i = 0; i < 7; ++i) {
+                if (raw_values[i] > 0) {
+                    p.sendMessage(String.format(tr("\u00a7a - \u00a74%s\u00a7a：\u00a7l\u00a73%d"), getHarvestFoodTypeName(HarvestFoodType.values()[i]), (long) Math.floor(raw_values[i])));
+                }
+            }
         }
 
-        p.sendMessage(String.format(tr("\u00a7a你向收获之祭坛奉献了总价值 \u00a7l\u00a73%d \u00a7a的食物。"), sum));
         // 如果触发打折，则提示
         if (max_ratio > 1) {
             p.sendMessage(String.format(tr("\u00a7a祭坛之灵对\u00a74%s\u00a7a有些抗拒了，效率降低了%.2f%%。多试试\u00a74%s\u00a7a吧！"),
