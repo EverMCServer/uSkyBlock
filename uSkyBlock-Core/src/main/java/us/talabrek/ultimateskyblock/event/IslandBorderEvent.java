@@ -187,10 +187,6 @@ public class IslandBorderEvent implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getSource().getLocation().getWorld())) {
             return;
         }
-        plugin.getLogger().info(String.format("InventoryMoveItemEvent fired: from %s to %s",
-            event.getSource().getType(),
-            event.getDestination().getType()
-        ));
         IslandInfo ii = plugin.getIslandInfo(event.getSource().getLocation());
         IslandInfo ii2 = plugin.getIslandInfo(event.getDestination().getLocation());
         event.setCancelled(!isBothTrusted(ii, ii2));
