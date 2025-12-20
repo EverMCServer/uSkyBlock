@@ -779,8 +779,10 @@ public class AltarEvents implements Listener {
         li.forEach(is -> {
             var pos = block.getLocation().clone().add(0.5, 0.5, 0.5);
             if (block.getType() == Material.COCOA) {
-                // 向下位移，防止与可可豆方块重叠
-                pos.add(0, -0.375, 0);
+                // 向可可豆附着面的另一边位移，防止与可可豆方块重叠
+                Cocoa cocoa = (Cocoa) block.getBlockData();
+                var dir = cocoa.getFacing().getOppositeFace().getDirection();
+                pos.add(dir.getX() * 0.25, dir.getY() * 0.25, dir.getZ() * 0.25);
             }
             player.getWorld().dropItem(pos, is);
         });
