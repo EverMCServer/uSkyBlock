@@ -776,7 +776,14 @@ public class AltarEvents implements Listener {
         ((Ageable)bd).setAge(0);
         block.setBlockData(bd);
         // 掉落物品
-        li.forEach(is -> player.getWorld().dropItemNaturally(block.getLocation(), is));
+        li.forEach(is -> {
+            var pos = block.getLocation().clone().add(0.5, 0.5, 0.5);
+            if (block.getType() == Material.COCOA) {
+                // 向下位移，防止与可可豆方块重叠
+                pos.add(0, -0.375, 0);
+            }
+            player.getWorld().dropItem(pos, is);
+        });
         // 积累经验值
         scytheOfHarvestAddExp(player, itemInHand);
     }
