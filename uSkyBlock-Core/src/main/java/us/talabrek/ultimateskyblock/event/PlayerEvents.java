@@ -1064,7 +1064,7 @@ public class PlayerEvents implements Listener {
                 world.setBiome(x, k, z, biome);
             }
             Player player = event.getPlayer();
-            player.sendMessage("changed biome to" + biome.name());
+            player.sendMessage("changed biome to" + biome.toString());
         }
     }
 

@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
+import org.bukkit.block.Dropper;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.HopperMinecart;
@@ -146,12 +147,12 @@ public class IslandBorderEvent implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(block.getWorld())) {
             return;
         }
-        if (!(block.getState() instanceof Dispenser dispenser)) {//发射器
+        if (!(block.getState() instanceof Dispenser) && !(block.getState() instanceof Dropper)) { //发射器&投掷器
             plugin.getLogger().severe("BlockDispenseEvent: block is not Dispenser! " + event.getBlock());
             return;
         }
         IslandInfo ii = plugin.getIslandInfo(block.getLocation());
-        IslandInfo ii2 = plugin.getIslandInfo(block.getRelative(((Directional)dispenser.getBlockData()).getFacing()).getLocation());
+        IslandInfo ii2 = plugin.getIslandInfo(block.getRelative(((Directional)block.getState().getBlockData()).getFacing()).getLocation());
         if (!isBothTrusted(ii, ii2)) {
             event.setCancelled(true);
         }

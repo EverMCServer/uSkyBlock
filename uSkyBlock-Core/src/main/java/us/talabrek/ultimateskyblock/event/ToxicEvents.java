@@ -2,29 +2,26 @@ package us.talabrek.ultimateskyblock.event;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.papermc.paper.registry.RegistryAccess;
-import io.papermc.paper.registry.RegistryKey;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockPhysicsEvent;
-import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
-import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
@@ -40,9 +37,8 @@ public class ToxicEvents implements Listener {
     private final NamespacedKey[] key;
     private final long[] toxicData;
     private final long[] cleanData;
-    private final Registry<Enchantment> enchantmentRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
-    public final Enchantment acidEnchant = enchantmentRegistry.get(new NamespacedKey("acidwater", "acid"));
-    public final Enchantment antiAcidEnchant = enchantmentRegistry.get(new NamespacedKey("acidwater", "anti_acid"));
+    public final Enchantment acidEnchant = Enchantment.getByKey(new NamespacedKey("acidwater", "acid"));
+    public final Enchantment antiAcidEnchant = Enchantment.getByKey(new NamespacedKey("acidwater", "anti_acid"));
     private static final Set<Location> toSpread = new HashSet<>();
     //  uuid -> (#ticks to next damage, in toxic now?)
     private final Map<UUID, Pair<Integer, Boolean>> dmgTick = new HashMap<>();
@@ -89,7 +85,7 @@ public class ToxicEvents implements Listener {
         int index = cx >> 2;
         long bit = 1L << (((cx & 0x03) << 4) | cz);
         if ((data[index] & bit) != 0) {
-            plugin.getLogger().info("Block at " + b.getLocation() + " is toxic.");
+            // plugin.getLogger().info("Block at " + b.getLocation() + " is toxic.");
             return true;
         } else {
             return false;
@@ -127,13 +123,8 @@ public class ToxicEvents implements Listener {
         for (EquipmentSlot slot : new EquipmentSlot[] {
                 EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET }) {
             ItemStack armor = player.getInventory().getItem(slot);
-            if (armor.getType() != Material.AIR) {
-                if (!armor.getEnchantments().isEmpty()) {
-                    /* 检查是否有附魔 */
-                    if (armor.getEnchantments().containsKey(antiAcidEnchant)) {
-                        ret.add(Pair.of(armor, slot));
-                    }
-                }
+            if (armor != null && armor.getEnchantmentLevel(antiAcidEnchant) > 0) {
+                ret.add(Pair.of(armor, slot));
             }
         }
         return ret;
@@ -145,7 +136,8 @@ public class ToxicEvents implements Listener {
 
     private void checkToxicRain(Server server) {
         server.getOnlinePlayers().forEach((player) -> {
-            if (player.isInRain()) {
+            // TODO: 目前Bukkit API没有提供玩家是否在雨中这个信息，升级后再实现
+            if (false /* player.isInRain() */ ) {
                 triggerToxicDamageTick(player);
             }
         });
@@ -227,13 +219,14 @@ public class ToxicEvents implements Listener {
                             EquipmentSlot slot = armorPair.getRight();
                             int unbreaking = armor.getEnchantmentLevel(Enchantment.UNBREAKING);
                             if (random.nextInt(unbreaking + 1) == 0) {
-                                Damageable meta = (Damageable) armor.getItemMeta();
+                                Damageable meta = (Damageable)armor.getItemMeta();
                                 if (meta != null) {
                                     meta.setDamage(meta.getDamage() + 1);
                                     // 如果装备损坏完毕，移除
                                     if (meta.getDamage() >= armor.getType().getMaxDurability()) {
                                         player.getInventory().setItem(slot, null);
                                     }
+                                    armor.setItemMeta(meta);
                                 }
                             }
                         }
@@ -260,18 +253,11 @@ public class ToxicEvents implements Listener {
     }
 
     public void setBucketToxic(ItemStack item) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null && acidEnchant != null) {
-            meta.addEnchant(acidEnchant, 1, true);
-        }
+        item.addEnchantment(acidEnchant, 1);
     }
 
     public boolean isBucketToxic(ItemStack item) {
-        if (item == null) {
-            return false;
-        }
-        ItemMeta meta = item.getItemMeta();
-        return meta != null && meta.hasEnchant(acidEnchant);
+        return item.getEnchantmentLevel(acidEnchant) > 0;
     }
 
     @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -282,7 +268,7 @@ public class ToxicEvents implements Listener {
         }
 
         var bucket = event.getItemStack();
-        if (bucket != null && isGeneralWaterBucket(bucket)) {
+        if (isGeneralWaterBucket(bucket)) {
             if (isToxic(event.getBlock())) {
                 setBucketToxic(bucket);
                 setToxic(b, false);
@@ -302,7 +288,7 @@ public class ToxicEvents implements Listener {
         Player p = event.getPlayer();
         var hand = event.getHand();
         var bucket = p.getInventory().getItem(hand);
-        if (isGeneralWaterBucket(bucket)) {
+        if (bucket != null && isGeneralWaterBucket(bucket)) {
             if (isBucketToxic(bucket)) {
                 setToxic(b, true);
                 spread(b);
@@ -313,7 +299,7 @@ public class ToxicEvents implements Listener {
         }
     }
 
-    // 防止毒水生成石头，毒水只能生成圆石
+    // 防止毒水生成石头
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled = true)
     public void preventAcidStone(BlockFromToEvent event) {
         Block from = event.getBlock();
@@ -321,10 +307,36 @@ public class ToxicEvents implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(from.getWorld()) || !isWater(from)) {
             return;
         }
-        if (to.getType() == Material.WATER && event.getBlock().getType() == Material.LAVA) {
-            if (isToxic(from)) {
+        // 当岩浆流进水（只能是从上往下流进），会生成石头。我们取消这个事件，让它不能生成
+        if (to.getType() == Material.WATER && from.getType() == Material.LAVA) {
+            if (isToxic(to)) {
                 event.setCancelled(true);
             }
+        }
+    }
+
+    // 防止毒水中自然生成生物
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void preventAcidCreature(CreatureSpawnEvent event) {
+        Entity e = event.getEntity();
+        Block b = e.getLocation().getBlock();
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(b.getWorld())) {
+            return;
+        }
+        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.NATURAL && isWater(b) && isToxic(b)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPurifyByBlockPlace(BlockPlaceEvent event) {
+        Block b = event.getBlock();
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(b.getWorld())) {
+            return;
+        }
+
+        if (!isWater(b)) {
+            setToxic(b, false);
         }
     }
 
@@ -335,18 +347,17 @@ public class ToxicEvents implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(from.getWorld()) || !isWater(from)) {
             return;
         }
-        plugin.getLogger().info("Water flowing from " + from.getLocation() + " to " + to.getLocation());
+        // plugin.getLogger().info("Water flowing from " + from.getLocation() + " to " + to.getLocation());
         if (to.getY() < -64) {
             return;
         }
         boolean toxic_from = isToxic(from);
-        boolean toxic_to = isToxic(to);
 
         if (toxic_from) {
-            spread(from);
-        } else if (toxic_to) {
+            setToxic(to, true);
             spread(to);
         } else {
+            setToxic(to, false);
             checkPollute(to);
         }
     }
@@ -358,6 +369,7 @@ public class ToxicEvents implements Listener {
             Block nb = b.getRelative(face);
             if (isToxic(nb)) {
                 setToxic(b, true);
+                b.getWorld().playEffect(b.getLocation(), Effect.LAVA_INTERACT, 0);
                 spread(b);
                 return;
             }
@@ -380,7 +392,7 @@ public class ToxicEvents implements Listener {
                     BlockFace.UP, BlockFace.DOWN }) {
                 Block nb = b.getRelative(face);
                 if (isWater(nb) && !isToxic(nb) && !newToSpread.contains(nb.getLocation())) {
-                    plugin.getLogger().info("Water at " + nb.getLocation() + " became toxic.");
+                    // plugin.getLogger().info("Water at " + nb.getLocation() + " became toxic.");
                     setToxic(nb, true);
                     nb.getWorld().playEffect(nb.getLocation(), Effect.LAVA_INTERACT, 0);
                     newToSpread.add(nb.getLocation());

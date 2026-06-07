@@ -97,7 +97,7 @@ public class ChunkRegenerator {
         // Clear plugin PDC data in this chunk
         var pdc = chunk.getPersistentDataContainer();
         for (var key : pdc.getKeys()) {
-            if (key.getNamespace().equals(plugin.getName())) {
+            if (key.getNamespace().equals("uskyblock")) {
                 pdc.remove(key);
             }
         }
