@@ -2,20 +2,21 @@ package us.talabrek.ultimateskyblock.event;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.*;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.world.ChunkPopulateEvent;
@@ -26,13 +27,12 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
+import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.*;
-
-import static org.bukkit.block.Biome.LUKEWARM_OCEAN;
-import static org.bukkit.block.Biome.OCEAN;
 
 @Singleton
 public class ToxicEvents implements Listener {
@@ -40,7 +40,9 @@ public class ToxicEvents implements Listener {
     private final NamespacedKey[] key;
     private final long[] toxicData;
     private final long[] cleanData;
-
+    private final Registry<Enchantment> enchantmentRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+    public final Enchantment acidEnchant = enchantmentRegistry.get(new NamespacedKey("acidwater", "acid"));
+    public final Enchantment antiAcidEnchant = enchantmentRegistry.get(new NamespacedKey("acidwater", "anti_acid"));
     private static final Set<Location> toSpread = new HashSet<>();
     //  uuid -> (#ticks to next damage, in toxic now?)
     private final Map<UUID, Pair<Integer, Boolean>> dmgTick = new HashMap<>();
@@ -76,11 +78,12 @@ public class ToxicEvents implements Listener {
         int cx = b.getX() & 0x0F;
         int cz = b.getZ() & 0x0F;
         int cy = b.getY() + 64;
+        boolean is_sea_area = -64 < b.getY() && b.getY() < Settings.island_height;
 
         PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
         long[] data = pdc.get(key[cy], PersistentDataType.LONG_ARRAY);
         if (data == null) {
-            return false;
+            return is_sea_area;
         }
 
         int index = cx >> 2;
@@ -94,15 +97,40 @@ public class ToxicEvents implements Listener {
         //return (data[index] & bit) != 0;
     }
 
+    public void setToxic(Block b, Boolean toxic) {
+        if (!plugin.getWorldManager().isSkyWorld(b.getWorld())) {
+            return;
+        }
+        int cx = b.getX() & 0x0F;
+        int cz = b.getZ() & 0x0F;
+        int cy = b.getY() + 64;
+        boolean is_sea_area = -64 < b.getY() && b.getY() < Settings.island_height;
+
+        PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
+        long[] data = pdc.get(key[cy], PersistentDataType.LONG_ARRAY);
+        if (data == null) {
+            if (toxic == is_sea_area) {
+                // 与默认状态相同，无需设置
+                return;
+            }
+            data = (is_sea_area ? toxicData : cleanData).clone();
+        }
+
+        int index = (cx >> 2);
+        long bit = 1L << (((cx & 0x03) << 4) | cz);
+        data[index] = toxic ? (data[index] | bit) : (data[index] & ~bit);
+        pdc.set(key[cy], PersistentDataType.LONG_ARRAY, data);
+    }
+
     private List<Pair<ItemStack, EquipmentSlot>> getAntiToxicArmors(Player player) {
         List<Pair<ItemStack, EquipmentSlot>> ret = new ArrayList<>();
         for (EquipmentSlot slot : new EquipmentSlot[] {
                 EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET }) {
             ItemStack armor = player.getInventory().getItem(slot);
-            if (armor != null && armor.getType() != Material.AIR) {
+            if (armor.getType() != Material.AIR) {
                 if (!armor.getEnchantments().isEmpty()) {
-                    // TODO: implement pseudo-enchantment for anti-toxic
-                    if (true /*armor.getEnchantments().containsKey(plugin.getCustomEnchants().ANTI_TOXIC)*/) {
+                    /* 检查是否有附魔 */
+                    if (armor.getEnchantments().containsKey(antiAcidEnchant)) {
                         ret.add(Pair.of(armor, slot));
                     }
                 }
@@ -136,6 +164,13 @@ public class ToxicEvents implements Listener {
         });
     }
 
+    public static boolean isImmune(Player player) {
+        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) {
+            return true;
+        }
+        return player.hasPotionEffect(PotionEffectType.CONDUIT_POWER);
+    }
+
     private void doToxicDamageTick(Server server) {
         checkToxicRain(server);
         checkToxicWater(server);
@@ -154,7 +189,7 @@ public class ToxicEvents implements Listener {
                 continue;
             }
 
-            if (inToxic) {
+            if (inToxic && !isImmune(player)) {
                 if (ticks <= 1) {
                     List<Pair<ItemStack, EquipmentSlot>> antiToxicArmors = getAntiToxicArmors(player);
                     if (antiToxicArmors.isEmpty()) {
@@ -217,78 +252,91 @@ public class ToxicEvents implements Listener {
         }
     }
 
-    public void setToxic(Block b, Boolean toxic) {
-        if (!plugin.getWorldManager().isSkyWorld(b.getWorld())) {
-            return;
-        }
-        int cx = b.getX() & 0x0F;
-        int cz = b.getZ() & 0x0F;
-        int cy = b.getY() + 64;
-        PersistentDataContainer pdc = b.getChunk().getPersistentDataContainer();
-        long[] data = pdc.get(key[cy], PersistentDataType.LONG_ARRAY);
-        if (data == null) {
-            if (!toxic) {
-                // 本来就不是毒水，不需要设置
-                return;
-            }
-            data = cleanData.clone();
-        }
-
-        int index = (cx >> 2);
-        long bit = 1L << (((cx & 0x03) << 4) | cz);
-        data[index] = toxic ? (data[index] | bit) : (data[index] & ~bit);
-        pdc.set(key[cy], PersistentDataType.LONG_ARRAY, data);
+    public boolean isGeneralWaterBucket(ItemStack item) {
+        return switch (item.getType()) {
+            case WATER_BUCKET, AXOLOTL_BUCKET, COD_BUCKET, PUFFERFISH_BUCKET, SALMON_BUCKET, TADPOLE_BUCKET, TROPICAL_FISH_BUCKET -> true;
+            default -> false;
+        };
     }
 
-    @EventHandler (priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void setBucketToxic(ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && acidEnchant != null) {
+            meta.addEnchant(acidEnchant, 1, true);
+        }
+    }
+
+    public boolean isBucketToxic(ItemStack item) {
+        if (item == null) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && meta.hasEnchant(acidEnchant);
+    }
+
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerBucketToxicWater(PlayerBucketFillEvent event) {
         Block b = event.getBlock();
         if (!plugin.getWorldManager().isSkyAssociatedWorld(b.getWorld())) {
             return;
         }
 
-        if (event.getItemStack().getType() == Material.WATER_BUCKET) {
-            if (isToxic(event.getBlock())){
-                setBucketToxic(event.getItemStack());
+        var bucket = event.getItemStack();
+        if (bucket != null && isGeneralWaterBucket(bucket)) {
+            if (isToxic(event.getBlock())) {
+                setBucketToxic(bucket);
                 setToxic(b, false);
+                event.setItemStack(bucket);
             }
         }
     }
 
-    /*
-        This only trigger pollution check when player releases water,
-        as the event cannot tell whether the water bucket used is toxic or not.
-     */
-    @EventHandler (priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerReleaseWater(PlayerBucketEmptyEvent event) {
         Block b = event.getBlock();
 
         if (!plugin.getWorldManager().isSkyAssociatedWorld(b.getWorld())) {
             return;
         }
-
-        if (event.getItemStack() != null && event.getItemStack().getType() == Material.WATER_BUCKET) {
-            setToxic(b, false);
-            checkPollute(b);
+        /* Event本身无法获得使用的ItemStack(只有Result ItemStack)，以下workaround */
+        Player p = event.getPlayer();
+        var hand = event.getHand();
+        var bucket = p.getInventory().getItem(hand);
+        if (isGeneralWaterBucket(bucket)) {
+            if (isBucketToxic(bucket)) {
+                setToxic(b, true);
+                spread(b);
+            } else {
+                setToxic(b, false);
+                checkPollute(b);
+            }
         }
     }
 
-    @EventHandler (priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    // 防止毒水生成石头，毒水只能生成圆石
+    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled = true)
+    public void preventAcidStone(BlockFromToEvent event) {
+        Block from = event.getBlock();
+        Block to = event.getToBlock();
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(from.getWorld()) || !isWater(from)) {
+            return;
+        }
+        if (to.getType() == Material.WATER && event.getBlock().getType() == Material.LAVA) {
+            if (isToxic(from)) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onWaterFlow(BlockFromToEvent event) {
         Block from = event.getBlock();
         Block to = event.getToBlock();
         if (!plugin.getWorldManager().isSkyAssociatedWorld(from.getWorld()) || !isWater(from)) {
             return;
         }
-
+        plugin.getLogger().info("Water flowing from " + from.getLocation() + " to " + to.getLocation());
         if (to.getY() < -64) {
-            return;
-        }
-        if (event.getToBlock().getType() == Material.WATER && event.getBlock().getType() == Material.LAVA) {
-            // 防止毒水生成石头
-            if (isToxic(to)) {
-                event.setCancelled(true);
-            }
             return;
         }
         boolean toxic_from = isToxic(from);
@@ -300,19 +348,6 @@ public class ToxicEvents implements Listener {
             spread(to);
         } else {
             checkPollute(to);
-        }
-    }
-
-    /*
-        Make drained/replaced water non-toxic
-     */
-    @EventHandler (priority = EventPriority.MONITOR)
-    public void onPhysicsCheck(BlockPhysicsEvent e) {
-        //plugin.getLogger().info("BlockPhysicsEvent at " + e.getSourceBlock().getLocation());
-        // TODO: make this more efficient, as BlockPhysicsEvent is very frequent
-        Block b = e.getSourceBlock();
-        if (!isWater(b)) {
-            setToxic(b, false);
         }
     }
 
@@ -356,46 +391,4 @@ public class ToxicEvents implements Listener {
         toSpread.addAll(newToSpread);
     }
 
-    public static void setBucketToxic(ItemStack item) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName("有毒的水桶");
-            meta.setLore(List.of("从污染水源里面舀到的水", "剧毒"));
-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            meta.addEnchant(Enchantment.UNBREAKING, 1, true);
-            item.setItemMeta(meta);
-        }
-    }
-
-    public static boolean isBucketToxic(ItemStack item) {
-        if (item == null || item.getType() != Material.WATER_BUCKET) {
-            return false;
-        }
-        ItemMeta meta = item.getItemMeta();
-        return meta != null && meta.hasEnchant(Enchantment.UNBREAKING);
-    }
-
-    /*
-        Set toxic data of chunk as if the chunk is newly generated/reset, i.e., all blocks from y=-63 to y=62 are toxic.
-     */
-    public void toxicizeChunk(Chunk chunk) {
-        // only work in overworld
-        if (!plugin.getWorldManager().isSkyAssociatedWorld(chunk.getWorld())) {
-            return;
-        }
-        PersistentDataContainer pdc = chunk.getPersistentDataContainer();
-        for (int i = -63; i <= 61; ++i) {
-            pdc.set(key[i + 64], PersistentDataType.LONG_ARRAY, toxicData);
-        }
-
-    }
-
-
-    @EventHandler
-    public void toxicizeChunk(ChunkPopulateEvent event) {
-        if (!plugin.getWorldManager().isSkyWorld(event.getWorld())) {
-            return;
-        }
-        toxicizeChunk(event.getChunk());
-    }
 }
