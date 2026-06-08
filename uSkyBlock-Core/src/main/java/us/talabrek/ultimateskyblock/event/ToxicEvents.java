@@ -316,7 +316,7 @@ public class ToxicEvents implements Listener {
     }
 
     // 防止毒水中自然生成生物
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void preventAcidCreature(CreatureSpawnEvent event) {
         Entity e = event.getEntity();
         Block b = e.getLocation().getBlock();
