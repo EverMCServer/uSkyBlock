@@ -37,9 +37,8 @@ public class NullPlayer implements OfflinePlayer {
         return PlayerDB.UNKNOWN_PLAYER_UUID;
     }
 
-    @NotNull
     @Override
-    public PlayerProfile getPlayerProfile() {
+    public com.destroystokyo.paper.profile.PlayerProfile getPlayerProfile() {
         return null;
     }
 
@@ -224,5 +223,28 @@ public class NullPlayer implements OfflinePlayer {
 
     }
 
+    @Override
+    public io.papermc.paper.persistence.PersistentDataContainerView getPersistentDataContainer() {
+        return null;
+    }
 
+    @Override
+    public Location getRespawnLocation(boolean loadLocationAndValidate) {
+        return null;
+    }
+
+    @Override
+    public boolean isConnected() {
+        return false;
+    }
+
+    @Override
+    public long getLastLogin() {
+        return 0;
+    }
+
+    @Override
+    public long getLastSeen() {
+        return 0;
+    }
 }

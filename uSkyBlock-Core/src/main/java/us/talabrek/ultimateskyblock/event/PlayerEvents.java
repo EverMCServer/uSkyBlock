@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import jdk.jfr.Timestamp;
-import net.kyori.adventure.text.BlockNBTComponent;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
@@ -51,34 +50,6 @@ import java.util.*;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 import static org.bukkit.Bukkit.getServer;
-
-class VaultRefresh implements Runnable {
-    private final uSkyBlock plugin;
-    private final Location location;
-
-    public VaultRefresh(uSkyBlock plugin, Location location) {
-        this.plugin = plugin;
-        this.location = location;
-    }
-
-    @Override
-    public void run() {
-        Block block = location.getBlock();
-        if (block.getType() != Material.VAULT) {
-            return; // Only refresh if the block is still a vault
-        }
-
-        if (block.getBlockData() instanceof Vault vault) {
-            plugin.getLogger().info(vault.toString());
-            String command_str = String.format("execute in %s run data modify block %d %d %d server_data set value {}",
-                block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
-
-            plugin.getLogger().info("Refreshing Vault: " + location);
-            plugin.getLogger().info("CMD = " + command_str);
-            getServer().dispatchCommand(getServer().getConsoleSender(), command_str);
-        }
-    }
-}
 
 class SuspiciousConversion implements Runnable {
     private final uSkyBlock plugin;
@@ -202,25 +173,22 @@ class SuspiciousConversion implements Runnable {
             return;
         }
 
-        String blocktype = self_type == Material.SAND ? "suspicious_sand" : "suspicious_gravel";
-        String loottype = pickLoot(switch (up_type) {
+        Material blocktype = self_type == Material.SAND ? Material.SUSPICIOUS_SAND : Material.SUSPICIOUS_GRAVEL;
+        Material loottype = pickLoot(switch (up_type) {
             case MUD_BRICKS -> RUINS_LOOT;
             case MOSSY_COBBLESTONE -> MOSS_LOOT;
             case SANDSTONE -> SAND_LOOT;
             case SEAGRASS -> self_type == Material.SAND ? OCEAN_SAND_LOOT : OCEAN_GRAVEL_LOOT;
             case WAXED_COPPER_BLOCK -> TRIAL_LOOT;
             default -> RUINS_LOOT;
-        }).toString().toLowerCase();
+        });
 
-        String data_str = String.format("minecraft:%s{item:{id:\"minecraft:%s\",count:1}}",
-            blocktype,loottype);
-
-        String command_str = String.format("execute in %s run setblock %d %d %d %s replace",
-            block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), data_str);
-
+        BlockData newBlockData = Bukkit.createBlockData(blocktype);
+        BrushableBlock brushable = (BrushableBlock) newBlockData.createBlockState().copy(block.getLocation());
+        brushable.setItem(new ItemStack(loottype));
+        block.setBlockData(brushable.getBlockData());
+        brushable.update();
         block.getWorld().playEffect(block.getLocation(), Effect.OXIDISED_COPPER_SCRAPE, 0);
-        plugin.getLogger().info("Converting suspicious block: " + data_str);
-        getServer().dispatchCommand(getServer().getConsoleSender(), command_str);
     }
 }
 
@@ -472,7 +440,11 @@ public class PlayerEvents implements Listener {
 
     private void RefreshVault(Block b, Player player, ItemStack item) {
         Location loc = b.getLocation();
-        Bukkit.getScheduler().runTaskLater(plugin, new VaultRefresh(plugin, loc), 1L);
+        org.bukkit.block.Vault vault = (org.bukkit.block.Vault) b.getState();
+        for (var uuid : vault.getRewardedPlayers()) {
+            vault.removeRewardedPlayer(uuid);
+        }
+        vault.update();
         if (player.getGameMode() != GameMode.CREATIVE) {
             item.setAmount(item.getAmount() - 1);
             if (item.getAmount() <= 0) {
@@ -494,7 +466,7 @@ public class PlayerEvents implements Listener {
             if (!vault.isOminous()) {
                 // 普通宝库使用一个金锭刷新
                 if (item.getType() == Material.GOLD_INGOT) {
-                    if (vault.getTrialSpawnerState() == Vault.State.INACTIVE) {
+                    if (vault.getVaultState() == Vault.State.INACTIVE) {
                         RefreshVault(block, player, item);
                     }
                 }
@@ -502,7 +474,7 @@ public class PlayerEvents implements Listener {
                 long timestamp = System.currentTimeMillis() / 1000;
                 // 不祥宝库使用一个钻石刷新，且以此法刷新有160h的cd
                 if (item.getType() == Material.DIAMOND) {
-                    if (vault.getTrialSpawnerState() == Vault.State.INACTIVE) {
+                    if (vault.getVaultState() == Vault.State.INACTIVE) {
                         PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
                         NamespacedKey key = getKeyVaultLastRefreshed(block);
                         Long last_refresh = pdc.getOrDefault(key, PersistentDataType.LONG, (long) -1);
