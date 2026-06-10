@@ -1,9 +1,11 @@
 package us.talabrek.ultimateskyblock.event;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,13 +14,30 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
 import org.bukkit.block.Dropper;
 import org.bukkit.block.data.Directional;
-import org.bukkit.entity.*;
-import org.bukkit.entity.minecart.HopperMinecart;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.ExperienceOrb;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Firework;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.Wither;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockDispenseArmorEvent;
+import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.block.BlockFertilizeEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
@@ -32,28 +51,31 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.wargamer2010.signshop.events.SSCreatedEvent;
+import org.wargamer2010.signshop.events.SSPreTransactionEvent;
 import org.wargamer2010.signshop.player.SignShopPlayer;
+
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+
+import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.addDropInfo;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.clearDropInfo;
+import static us.talabrek.ultimateskyblock.event.ItemDropEvents.isForIsland;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
-import org.wargamer2010.signshop.events.SSCreatedEvent;
-import org.wargamer2010.signshop.events.SSPreTransactionEvent;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
-import static us.talabrek.ultimateskyblock.event.ItemDropEvents.*;
-
 @Singleton
 public class IslandBorderEvent implements Listener {
     private static uSkyBlock plugin = null;
-    private Cache<UUID, Location> origin;
+    private final Map<UUID, Location> lastPosition = new HashMap<>();
 
     public static boolean denyCrossBorder(Entity e) {
         return !(e instanceof Player) &&
             (e instanceof Item
+            || e instanceof ArmorStand
+            || e instanceof ExperienceOrb
             || e instanceof InventoryHolder
             || e instanceof FallingBlock
             || e instanceof Mob
@@ -63,30 +85,32 @@ public class IslandBorderEvent implements Listener {
     @Inject
     public IslandBorderEvent(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
-        this.origin = CacheBuilder.newBuilder()
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build();
 
-        // prevent mobs leave the island
+        // prevent mobs leave the island — track last position to bounce at border
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             List<Entity> entities = plugin.getWorldManager().getWorld().getEntities();
             entities.addAll(plugin.getWorldManager().getNetherWorld().getEntities());
             for (Entity e : entities) {
                 if (denyCrossBorder(e)) {
-                    Location last_loc = origin.getIfPresent(e.getUniqueId());
-                    Location now_loc = e.getLocation();
-                    if (last_loc == null || isBothTrusted(plugin.getIslandInfo(last_loc), plugin.getIslandInfo(now_loc))) {
-                        origin.put(e.getUniqueId(), e.getLocation());
+                    Location last = lastPosition.get(e.getUniqueId());
+                    Location now = e.getLocation();
+                    if (last == null || isBothTrusted(plugin.getIslandInfo(last), plugin.getIslandInfo(now))) {
+                        lastPosition.put(e.getUniqueId(), now);
                         continue;
                     }
-                    e.teleport(last_loc);
-                    origin.put(e.getUniqueId(), last_loc);
+                    e.teleport(last);
+                    lastPosition.put(e.getUniqueId(), last);
                     Vector vel = e.getVelocity();
                     vel.setX(-vel.getX()).setZ(-vel.getZ());
                     e.setVelocity(vel);
                 }
             }
         }, 10, 1);
+
+        // 定期清理已不存在实体的缓存条目，防止内存泄漏
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            lastPosition.keySet().removeIf(uuid -> Bukkit.getEntity(uuid) == null);
+        }, 100, 100); // 每5秒清理一次
     }
 
     @EventHandler
@@ -99,7 +123,6 @@ public class IslandBorderEvent implements Listener {
         }
 
         Location loc = entity.getLocation();
-        origin.put(entity.getUniqueId(), loc);
         if (entity.getType() == EntityType.ITEM) {
             IslandInfo ii = plugin.getIslandInfo(loc);
             if (ii == null) {
@@ -134,7 +157,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         IslandInfo target = plugin.getIslandInfo(event.getEgg().getLocation());
-        IslandInfo source = plugin.getIslandInfo(origin.getIfPresent(event.getEgg().getUniqueId()));
+        IslandInfo source = plugin.getIslandInfo(event.getEgg().getOrigin());
         if (!isBothTrusted(target, source)) {
             event.setHatching(false);
         }
@@ -172,7 +195,7 @@ public class IslandBorderEvent implements Listener {
                 event.setCancelled(true);
             }
         } else { //对面部诗人
-            Location ori = origin.getIfPresent(event.getTargetEntity().getUniqueId());
+            Location ori = event.getTargetEntity().getOrigin();
             IslandInfo islandInfo1 = plugin.getIslandInfo(ori);
             if (!isBothTrusted(islandInfo, islandInfo1)) {
                 event.setCancelled(true);
@@ -193,10 +216,10 @@ public class IslandBorderEvent implements Listener {
         event.setCancelled(!isBothTrusted(ii, ii2));
         if (!event.isCancelled()) {
             if (event.getDestination().getHolder() instanceof Entity entity) {
-                ii2 = plugin.getIslandInfo(origin.getIfPresent(entity.getUniqueId()));
+                ii2 = plugin.getIslandInfo(entity.getOrigin());
                 event.setCancelled(!isBothTrusted(ii, ii2));
             } else if (event.getSource().getHolder() instanceof Entity entity) {
-                ii = plugin.getIslandInfo(origin.getIfPresent(entity.getUniqueId()));
+                ii = plugin.getIslandInfo(entity.getOrigin());
                 event.setCancelled(!isBothTrusted(ii, ii2));
             }
         }
@@ -210,14 +233,14 @@ public class IslandBorderEvent implements Listener {
         }
         if (inv.getHolder() instanceof Entity entity) {
             IslandInfo ii = plugin.getIslandInfo(inv.getLocation());
-            IslandInfo ii2 = plugin.getIslandInfo(origin.getIfPresent(entity.getUniqueId()));
+            IslandInfo ii2 = plugin.getIslandInfo(entity.getOrigin());
             if (!isBothTrusted(ii, ii2)) {
                 event.setCancelled(true);
                 return;
             }
         }
         IslandInfo ii = plugin.getIslandInfo(inv.getLocation());
-        IslandInfo ii2 = plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId()));
+        IslandInfo ii2 = plugin.getIslandInfo(event.getItem().getOrigin());
         if (isBothTrusted(ii, ii2)) {
             clearDropInfo(event.getItem());
         } else {
@@ -234,8 +257,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         Vehicle v = event.getVehicle();
-        if (origin.getIfPresent(v.getUniqueId()) == null) {
-            origin.put(v.getUniqueId(), v.getLocation());
+        if (v.getOrigin() == null) {
             return;
         }
         Location from = event.getFrom();
@@ -307,7 +329,7 @@ public class IslandBorderEvent implements Listener {
             return;
         }
         Block b = event.getIgnitingBlock();
-        IslandInfo ii = plugin.getIslandInfo(origin.getIfPresent(e.getUniqueId()));
+        IslandInfo ii = plugin.getIslandInfo(e.getOrigin());
         IslandInfo ii2;
         if (b == null) {
             ii2 = plugin.getIslandInfo(e.getLocation());
@@ -346,7 +368,7 @@ public class IslandBorderEvent implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onWitherChangeBlock(EntityChangeBlockEvent event) { //凋零破坏
         if (event.getEntity() instanceof Wither && event.getTo() == Material.AIR) {
-            IslandInfo a = plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId()));
+            IslandInfo a = plugin.getIslandInfo(event.getEntity().getOrigin());
             IslandInfo b = plugin.getIslandInfo(event.getBlock().getLocation());
             if (!a.equals(b)) {
                 event.setCancelled(true);
@@ -363,7 +385,7 @@ public class IslandBorderEvent implements Listener {
         if (event.getEntity() instanceof Player player) { //对玩家
             if (isForIsland(plugin.getIslandInfo(player), event) ||
                 player.hasPermission("usb.mod.bypassprotection") ||
-                IslandBorderEvent.isBothTrusted(plugin.getIslandInfo(player), plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId())))
+                IslandBorderEvent.isBothTrusted(plugin.getIslandInfo(player), plugin.getIslandInfo(event.getItem().getOrigin()))
             ) {
                 clearDropInfo(event.getItem());
             } else {
@@ -371,10 +393,10 @@ public class IslandBorderEvent implements Listener {
                 plugin.notifyPlayer(player, tr("You cannot pick up other players' loot when you are a visitor!"));
             }
         } else { //对实体
-            if (isForIsland(plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId())), event) ||
+            if (isForIsland(plugin.getIslandInfo(event.getEntity().getOrigin()), event) ||
                 IslandBorderEvent.isBothTrusted(
-                    plugin.getIslandInfo(origin.getIfPresent(event.getEntity().getUniqueId())),
-                    plugin.getIslandInfo(origin.getIfPresent(event.getItem().getUniqueId()))
+                    plugin.getIslandInfo(event.getEntity().getOrigin()),
+                    plugin.getIslandInfo(event.getItem().getOrigin())
                 )
             ) {
                 clearDropInfo(event.getItem());
@@ -390,7 +412,7 @@ public class IslandBorderEvent implements Listener {
         if (!plugin.getWorldManager().isSkyAssociatedWorld(event.getPlayer().getLocation().getWorld())) {
             return;
         }
-        if (isBothTrusted(plugin.getIslandInfo(event.getPlayer()), plugin.getIslandInfo(origin.getIfPresent(event.getArrow().getUniqueId())))) {
+        if (isBothTrusted(plugin.getIslandInfo(event.getPlayer()), plugin.getIslandInfo(event.getArrow().getOrigin()))) {
             event.setCancelled(false);
         }
     }
