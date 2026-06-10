@@ -4,7 +4,7 @@
 
 dependencies {
     implementation(project(":po-utils"))
-    implementation("org.spigotmc:spigot-api:1.20.6-R0.1-SNAPSHOT")
+    implementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     testImplementation("org.hamcrest:hamcrest-core:1.3")
     testImplementation("org.hamcrest:hamcrest-library:1.3")
     testImplementation("junit:junit:4.13.2")
