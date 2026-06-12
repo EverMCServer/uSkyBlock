@@ -34,7 +34,7 @@ dependencies {
     compileOnly("org.apache.httpcomponents:httpclient:4.5.14")
     compileOnly("org.apache.maven:maven-artifact:3.8.6")
 
-    compileOnly(files("libs/SignShop-5.0.0-dev.jar"))
+    compileOnly(files("libs/SignShop-5.2.2.jar"))
 }
 
 description = "uSkyBlock-Core"
