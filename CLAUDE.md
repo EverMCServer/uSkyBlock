@@ -4,7 +4,7 @@
 
 ## 项目概况
 
-这是在开源插件 [uSkyBlock](https://github.com/rlf/uSkyBlock) 基础上深度定制的 Minecraft 海岛生存服务端插件，运行于 **Paper 1.21.11**（`everisland` 分支）。项目在原始空岛玩法上增加了大量扩展特性：毒水系统、祭坛系统、下界改造、试炼刷怪笼转换、实体跨边界保护等。
+这是在开源插件 [uSkyBlock](https://github.com/rlf/uSkyBlock) 基础上深度定制的 Minecraft 海岛生存服务端插件，运行于 **Paper 26.1.2**（`everisland` 分支）。项目在原始空岛玩法上增加了大量扩展特性：毒水系统、祭坛系统、下界改造、试炼刷怪笼转换、实体跨边界保护等。
 
 - **原始仓库:** `https://github.com/rlf/uSkyBlock`
 - **组 ID:** `ovh.uskyblock`
@@ -130,9 +130,9 @@ public class XxxEvents implements Listener {
 
 ### 硬依赖与软依赖
 
-**硬依赖:** Vault ≥ 1.7.1、WorldEdit ≥ 7.2.12、WorldGuard ≥ 7.0.8、FastAsyncWorldEdit ≥ 2.4.3、Multiverse-Core ≥ 4.3.1
+**硬依赖:** Vault ≥ 1.7.1、WorldEdit ≥ 7.2.12、WorldGuard ≥ 7.0.8、FastAsyncWorldEdit ≥ 2.4.3、Multiverse-Core ≥ 5.7.0（MVPlugins 社区维护版，包名 `org.mvplugins.multiverse`，vavr 已 relocate 到 `org.mvplugins.multiverse.external.vavr`）
 
-**软依赖:** ActionBarAPI、Multiverse-Inventories、MVdWPlaceholderAPI、SignShop
+**软依赖:** ActionBarAPI、Multiverse-Inventories ≥ 5.3.4（MVPlugins 版）、MVdWPlaceholderAPI、SignShop
 
 ### 关键资源文件
 
@@ -151,7 +151,8 @@ public class XxxEvents implements Listener {
 ## 当前分支 `everisland` 的改动方向
 
 从最近提交记录可知，当前分支专注于：
-- 适配 Paper 1.21.11 API（减少 `dispatchCommand`，优先使用原生 API）
+- 适配 Paper 26.1.2 API（减少 `dispatchCommand`，优先使用原生 API）
+- **Multiverse 依赖迁移到 MVPlugins v5：** 原版 `com.onarandombox` 已停止维护，改为社区 Fork `org.mvplugins.multiverse`。API 有重大变化：入口从 `PluginManager.getPlugin()` 改为 `MultiverseCoreApi.get()`，世界注册从 `addWorld()` 改为 `importWorld(ImportWorldOptions)`，vavr 类型 relocated 到 `org.mvplugins.multiverse.external.vavr`
 - **毒水系统 (ToxicEvents):** 酸性水体的扩散、伤害、使用 PDC 持久化，重置岛屿时清除 PDC 记录
 - **试炼刷怪笼 (SpawnEvents):** 试炼刷怪笼的检测和转换逻辑
 - **祭坛系统 (AltarEvents):** 收获祭坛提示优化
@@ -166,3 +167,4 @@ public class XxxEvents implements Listener {
 - 插件内定时任务使用 `BukkitRunnable` 或 `Scheduler.runTaskTimer()`
 - 岛屿世界由 `WorldManager.isSkyWorld()` / `isSkyAssociatedWorld()` 判断
 - Java 21 编译目标，使用 Kotlin 2.1.10 作为 Gradle 脚本语言
+- Multiverse-Core v5 API 入口为 `MultiverseCoreApi.get()`（`org.mvplugins.multiverse.core`），世界操作用 `WorldManager.importWorld(ImportWorldOptions)` / `getWorld(name).getOrNull()`。vavr 类型在 `org.mvplugins.multiverse.external.vavr` 包下

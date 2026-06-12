@@ -2,5 +2,6 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "java.project.referencedLibraries": [
         "uSkyBlock-Core/build/classes/kotlin/main"
-    ]
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
