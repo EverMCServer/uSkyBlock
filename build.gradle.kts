@@ -8,12 +8,7 @@ plugins {
 }
 
 subprojects {
-    apply(plugin = "kotlin")
-    dependencies {
-        api(rootProject)
-        api(kotlin("script-runtime"))
-        kotlinScriptDef(rootProject)
-    }
+    apply(plugin = "java")
 }
 
 allprojects {
@@ -38,9 +33,10 @@ allprojects {
         maven("https://repo.maven.apache.org/maven2/")
     }
 
-    java.sourceCompatibility = JavaVersion.VERSION_25
-    java.targetCompatibility = JavaVersion.VERSION_25
-    kotlin.jvmToolchain(25)
+    java {
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
+    }
 
     tasks.withType<Test>().configureEach {
         enabled = false
