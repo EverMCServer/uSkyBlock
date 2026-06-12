@@ -14,7 +14,6 @@ public class PlaceholderModule {
     private final ChatReplaceListener chatReplaceListener;
     private final ServerCommandReplaceListener serverCommandListener;
     private final TextPlaceholder textPlaceholder;
-    private final Provider<MVdWPlaceholderAPI> mvdwPlaceholderProvider;
 
     @Inject
     public PlaceholderModule(
@@ -22,15 +21,14 @@ public class PlaceholderModule {
         @NotNull PluginConfig config,
         @NotNull ChatReplaceListener chatReplaceListener,
         @NotNull ServerCommandReplaceListener serverCommandListener,
-        @NotNull TextPlaceholder textPlaceholder,
-        @NotNull Provider<MVdWPlaceholderAPI> mvdwPlaceholderProvider
+        @NotNull TextPlaceholder textPlaceholder
     ) {
         this.placeholderHandler = placeholderHandler;
         this.config = config;
         this.chatReplaceListener = chatReplaceListener;
         this.serverCommandListener = serverCommandListener;
         this.textPlaceholder = textPlaceholder;
-        this.mvdwPlaceholderProvider = mvdwPlaceholderProvider;
+        //this.mvdwPlaceholderProvider = mvdwPlaceholderProvider;
     }
 
     public void startup(uSkyBlock plugin) {
@@ -41,12 +39,6 @@ public class PlaceholderModule {
             plugin.getServer().getPluginManager().registerEvents(serverCommandListener, plugin);
         }
 
-        if (config.getYamlConfig().getBoolean("placeholder.mvdwplaceholderapi", false)
-            && Bukkit.getPluginManager().getPlugin("MVdWPlaceholderAPI") != null) {
-            MVdWPlaceholderAPI mvdwPlaceholder = mvdwPlaceholderProvider.get();
-            mvdwPlaceholder.setup(plugin);
-            placeholderHandler.registerPlaceholders(mvdwPlaceholder);
-        }
         placeholderHandler.registerPlaceholders(textPlaceholder);
     }
 }

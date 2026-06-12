@@ -26,7 +26,6 @@ allprojects {
         maven("https://maven.enginehub.org/repo/")
         maven("https://oss.sonatype.org/content/repositories/snapshots/")
         maven("https://repo.codemc.org/repository/maven-public")
-        maven("https://repo.mvdw-software.com/content/groups/public/")
         maven("https://www.uskyblock.ovh/maven/dependencies/")
         maven("https://www.uskyblock.ovh/maven/uskyblock/")
         maven("https://repo.maven.apache.org/maven2/")

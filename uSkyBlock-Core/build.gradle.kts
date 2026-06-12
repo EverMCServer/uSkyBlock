@@ -27,9 +27,6 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("com.google.guava:guava:33.1.0-jre")
     compileOnly("com.google.code.gson:gson:2.10.1")
-    compileOnly("be.maximvdw:MVdWPlaceholderAPI:3.0.1-SNAPSHOT") {
-        exclude("*", "*")
-    }
     compileOnly("net.kyori:adventure-api:4.16.0")
     compileOnly("net.kyori:adventure-platform-bukkit:4.3.2")
     compileOnly("org.apache.commons:commons-lang3:3.14.0")
