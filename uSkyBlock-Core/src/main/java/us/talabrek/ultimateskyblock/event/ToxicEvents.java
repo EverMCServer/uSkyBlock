@@ -304,7 +304,7 @@ public class ToxicEvents implements Listener {
     public void preventAcidStone(BlockFromToEvent event) {
         Block from = event.getBlock();
         Block to = event.getToBlock();
-        if (!plugin.getWorldManager().isSkyAssociatedWorld(from.getWorld()) || !isWater(from)) {
+        if (!plugin.getWorldManager().isSkyAssociatedWorld(from.getWorld())) {
             return;
         }
         // 当岩浆流进水（只能是从上往下流进），会生成石头。我们取消这个事件，让它不能生成

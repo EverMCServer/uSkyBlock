@@ -91,7 +91,7 @@ public interface IslandInfo {
      */
     @Deprecated(since="3.1.0")
     default String getBiome() {
-        return getIslandBiome().name().toUpperCase(Locale.ROOT);
+        return getIslandBiome().toString().toUpperCase(Locale.ROOT);
     }
 
     /**
