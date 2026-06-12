@@ -38,9 +38,9 @@ allprojects {
         maven("https://repo.maven.apache.org/maven2/")
     }
 
-    java.sourceCompatibility = JavaVersion.VERSION_21
-    java.targetCompatibility = JavaVersion.VERSION_21
-    kotlin.jvmToolchain(21)
+    java.sourceCompatibility = JavaVersion.VERSION_25
+    java.targetCompatibility = JavaVersion.VERSION_25
+    kotlin.jvmToolchain(25)
 
     tasks.withType<Test>().configureEach {
         enabled = false
