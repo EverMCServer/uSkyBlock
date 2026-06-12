@@ -83,7 +83,7 @@ public class TranslationUtil {
     private void fetchLanguageAssets(JavaPlugin plugin) {
         try {
             JsonParser parser = new JsonParser();
-            String version = Bukkit.getBukkitVersion().split("-")[0];
+            String version = Bukkit.getMinecraftVersion();
             String versionManifestJson = readUrl("https://launchermeta.mojang.com/mc/game/version_manifest.json");
             JsonArray versionsManifest = parser.parse(versionManifestJson).getAsJsonObject().getAsJsonArray("versions");
 
