@@ -136,8 +136,7 @@ public class ToxicEvents implements Listener {
 
     private void checkToxicRain(Server server) {
         server.getOnlinePlayers().forEach((player) -> {
-            // TODO: 目前Bukkit API没有提供玩家是否在雨中这个信息，升级后再实现
-            if (false /* player.isInRain() */ ) {
+            if (player.isInRain()) {
                 triggerToxicDamageTick(player);
             }
         });
