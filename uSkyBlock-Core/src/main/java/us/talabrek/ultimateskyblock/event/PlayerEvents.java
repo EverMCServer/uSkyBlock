@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import jdk.jfr.Timestamp;
 import org.bukkit.*;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
@@ -691,7 +692,7 @@ public class PlayerEvents implements Listener {
         if (isFirstCompletion){
             event.setCancelled(true);
             if (rateLimiter.tryAcquire()) {
-                player.sendMessage("\u00a7c地狱门已被禁用");
+                player.sendMessage("\u00a7c你需要完成海岛入门任务，才能进入下界！");
             }
         } else {
             plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_nether");
