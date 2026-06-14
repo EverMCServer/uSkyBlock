@@ -48,6 +48,10 @@ commands:
     description: 'talk to your island party'
     aliases: [ptalk, ptk]
     permission: usb.party.talk
+  slime:
+    description: 'check slime chunks around you'
+    aliases: [slimechunk]
+    permission: usb.island.slime
   usb:
     description: 'Ultimate SkyBlock Admin'
 
@@ -69,6 +73,7 @@ permissions:
       usb.island.perm: true
       usb.island.restart: true
       usb.island.sethome: true
+      usb.island.slime: true
       usb.island.signs.place: true
       usb.island.signs.use: true
       usb.island.spawn: true
@@ -223,6 +228,7 @@ permissions:
       usb.island.sethome: true
       usb.island.setwarp: true
       usb.island.signs: true
+      usb.island.slime: true
       usb.island.signs.place: true
       usb.island.signs.use: true
       usb.island.spawn: true
@@ -562,6 +568,9 @@ permissions:
 
   usb.island.sethome:
     description: 'Grants access to /island sethome - set the island-home'
+
+  usb.island.slime:
+    description: 'Grants access to /slime - check slime chunks around you'
 
   usb.island.setwarp:
     description: 'Grants access to /island setwarp - set your islands warp location'
