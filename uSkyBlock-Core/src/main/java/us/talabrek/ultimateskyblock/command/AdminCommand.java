@@ -11,6 +11,7 @@ import us.talabrek.ultimateskyblock.command.admin.AdminIslandCommand;
 import us.talabrek.ultimateskyblock.command.admin.ChunkCommand;
 import us.talabrek.ultimateskyblock.command.admin.CooldownCommand;
 import us.talabrek.ultimateskyblock.command.admin.DebugCommand;
+import us.talabrek.ultimateskyblock.command.admin.DetoxCommand;
 import us.talabrek.ultimateskyblock.command.admin.FlatlandFixCommand;
 import us.talabrek.ultimateskyblock.command.admin.FlushCommand;
 import us.talabrek.ultimateskyblock.command.admin.GenTopTenCommand;
@@ -27,6 +28,7 @@ import us.talabrek.ultimateskyblock.command.admin.PurgeCommand;
 import us.talabrek.ultimateskyblock.command.admin.RegionCommand;
 import us.talabrek.ultimateskyblock.command.admin.ReloadCommand;
 import us.talabrek.ultimateskyblock.command.admin.SetMaintenanceCommand;
+import us.talabrek.ultimateskyblock.command.admin.ToxicCommand;
 import us.talabrek.ultimateskyblock.command.admin.VersionCommand;
 import us.talabrek.ultimateskyblock.command.admin.WGCommand;
 import us.talabrek.ultimateskyblock.command.completion.AllPlayerTabCompleter;
@@ -80,7 +82,9 @@ public class AdminCommand extends BaseCommandExecutor {
         @NotNull SetMaintenanceCommand setMaintenanceCommand,
         @NotNull ItemInfoCommand itemInfoCommand,
         @NotNull ProtectAllCommand protectAllCommand,
-        @NotNull ChunkCommand chunkCommand
+        @NotNull ChunkCommand chunkCommand,
+        @NotNull ToxicCommand toxicCommand,
+        @NotNull DetoxCommand detoxCommand
 
     ) {
         super("usb", null, marktr("Ultimate SkyBlock Admin"));
@@ -117,5 +121,7 @@ public class AdminCommand extends BaseCommandExecutor {
         add(itemInfoCommand);
         add(protectAllCommand);
         add(chunkCommand);
+        add(toxicCommand);
+        add(detoxCommand);
     }
 }

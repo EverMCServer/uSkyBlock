@@ -2621,3 +2621,64 @@ msgstr "§c{0}"
 #, java-format
 msgid "§7{0}: §a{1}§7 (max. {2})"
 msgstr "§7{0}：§a{1}§7（最多{2}）"
+
+msgid "check slime chunks around you"
+msgstr "检测你周围的史莱姆区块"
+
+msgid "§6§l=== §aSlime Chunk Scan (5×5) §6§l==="
+msgstr "§6§l=== §a史莱姆区块扫描（5×5） §6§l==="
+
+#, java-format
+msgid "§7Your chunk: §e[{0}, {1}]§7 — {2}"
+msgstr "§7你所在的区块：§e[{0}，{1}]§7 — {2}"
+
+msgid "§a§lSLIME CHUNK §e§l✨"
+msgstr "§a§l史莱姆区块 §e§l✨"
+
+msgid "§cnot a slime chunk"
+msgstr "§c不是史莱姆区块"
+
+msgid "§cNo slime chunks found in the 5×5 area."
+msgstr "§c在5×5区域内未发现史莱姆区块。"
+
+msgid "§aSlime chunks: "
+msgstr "§a史莱姆区块："
+
+#, java-format
+msgid "§7Found §a{0}§7 slime chunk(s) out of 25 scanned."
+msgstr "§7在扫描的25个区块中发现了§a{0}§7个史莱姆区块。"
+
+msgid "mark WE selection as toxic water"
+msgstr "将 WorldEdit 选区标记为毒水"
+
+msgid "remove toxic mark from WE selection"
+msgstr "移除 WorldEdit 选区的毒水标记"
+
+msgid "§cWorldEdit is not available."
+msgstr "§cWorldEdit 不可用。"
+
+msgid "§cFailed to get WorldEdit selection."
+msgstr "§c无法获取 WorldEdit 选区。"
+
+msgid "§cYou don't have a WorldEdit selection. Use §e//wand§c to select an area first."
+msgstr "§c你没有 WorldEdit 选区。请先用 §e//wand§c 选择一个区域。"
+
+#, java-format
+msgid "§cSelection too large: §e{0}§c blocks. Maximum is §e{1}§c blocks."
+msgstr "§c选区过大：§e{0}§c 个方块。最大允许 §e{1}§c 个方块。"
+
+#, java-format
+msgid "§aMarking §e{0}§a blocks as toxic water..."
+msgstr "§a正在将 §e{0}§a 个方块标记为毒水……"
+
+#, java-format
+msgid "§aDone! §e{0}§a blocks marked as toxic water."
+msgstr "§a完成！已将 §e{0}§a 个方块标记为毒水。"
+
+#, java-format
+msgid "§aRemoving toxic mark from §e{0}§a blocks..."
+msgstr "§a正在移除 §e{0}§a 个方块的毒水标记……"
+
+#, java-format
+msgid "§aDone! §e{0}§a blocks cleared of toxic mark."
+msgstr "§a完成！已清除 §e{0}§a 个方块的毒水标记。"
