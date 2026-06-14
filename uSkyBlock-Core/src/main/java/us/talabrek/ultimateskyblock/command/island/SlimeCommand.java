@@ -77,7 +77,7 @@ public class SlimeCommand extends RequirePlayerCommand {
                 boolean isCenter = (dx == 0 && dz == 0);
 
                 if (isCenter) {
-                    row = row.append(Component.text("@", NamedTextColor.YELLOW));
+                    row = row.append(Component.text("@", isSlime ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
                 } else if (isSlime) {
                     row = row.append(Component.text("x", NamedTextColor.GREEN));
                 } else {
