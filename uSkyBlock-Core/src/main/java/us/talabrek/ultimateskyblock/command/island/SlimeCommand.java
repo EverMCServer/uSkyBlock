@@ -74,9 +74,9 @@ public class SlimeCommand extends RequirePlayerCommand {
             // Left border; center row has W embedded
             if (dz == 0) {
                 row = row.append(Component.text("W", LABEL));
+            } else {
+                row = row.append(Component.text("I", BORDER));
             }
-            row = row.append(Component.text("|", BORDER));
-
             // 7 cells, no spacing
             for (int dx = -3; dx <= 3; dx++) {
                 int colIdx = dx + 3;
@@ -93,9 +93,11 @@ public class SlimeCommand extends RequirePlayerCommand {
             }
 
             // Right border; center row has E embedded
-            row = row.append(Component.text("|", BORDER));
+           
             if (dz == 0) {
                 row = row.append(Component.text("E", LABEL));
+            } else {
+                row = row.append(Component.text("I", BORDER));
             }
 
             player.sendMessage(row);
