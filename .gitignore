@@ -21,3 +21,8 @@ bin
 gradle.properties
 dependency-reduced-pom.xml
 deploy_rsa
+
+# GJ local workspace
+uSkyBlock/
+acidisland-recipes
+acidisland-advancements

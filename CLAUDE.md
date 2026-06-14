@@ -148,6 +148,38 @@ public class XxxEvents implements Listener {
 - **岛屿数据:** 通过 WorldGuard 区域 + 元数据存储
 - **PDC (PersistentDataContainer):** 毒水系统使用区块 PDC 存储水体毒性数据（key 格式: `T<y+64>`），凋零标记也使用 PDC
 
+## 服务器运行配置参照
+
+工作区内有两个参照目录（已被 `.gitignore` 忽略），存放服务器上正在使用的插件配置和数据包。需要时可一并修改。
+
+### `uSkyBlock/` — 插件运行配置
+
+服务器 `plugins/uSkyBlock/` 目录的完整快照，独立 git 仓库管理：
+
+| 文件/目录 | 用途 |
+|-----------|------|
+| `config.yml` (11KB) | 插件运行时主配置 |
+| `biomes.yml` (4KB) | 生物群系配置 |
+| `challenges.yml` (95KB) | 挑战/任务定义 |
+| `levelConfig.yml` (25KB) | 岛屿等级计算配置 |
+| `i18n/zh_CN.po` | 中文本地化文件 |
+| `schematics/` | 岛屿蓝图：`acidIsland.schem`、`acidIslandNether.schem`、`skySMP.schematic`、`spawn.schem` |
+
+### `acidisland-recipes/` — 自定义数据包
+
+服务器 `world/datapacks/acidisland-recipes/` 的完整快照，提供自定义配方和附魔：
+
+- **`data/acidisland/recipe/`** (40 个配方) — 自定义合成/转化配方，包括：
+  - 矿石类（煤炭、铜、铁、金、钻石、绿宝石、青金石、红石及其深层变种）
+  - 下界资源类（远古残骸、烈焰棒、下界金矿、下界石英矿、镶金黑石）
+  - 珊瑚块（脑纹、气泡、火、鹿角、管珊瑚块）
+  - 特殊方块（ budding amethyst、方解石、绯红/诡异菌岩）
+  - 试炼相关（`trial_spawner.json`、`vault.json`、`ominous_vault.json`）
+  - 辅助配方（解毒 `detoxification.json`、黑色染料转化等）
+- **`data/acidwater/enchantment/`** — 自定义附魔：`acid.json`（酸蚀）、`anti_acid.json`（抗酸）
+- **`data/minecraft/tags/enchantment/curse.json`** — 诅咒附魔标签
+- **`pack.mcmeta`** — 数据包元数据（格式版本）
+
 ## 当前分支 `everisland` 的改动方向
 
 从最近提交记录可知，当前分支专注于：
