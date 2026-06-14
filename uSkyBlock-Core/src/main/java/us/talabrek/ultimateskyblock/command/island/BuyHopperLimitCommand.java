@@ -1,6 +1,9 @@
 package us.talabrek.ultimateskyblock.command.island;
 
 import com.google.inject.Inject;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
@@ -58,7 +61,9 @@ public class BuyHopperLimitCommand extends RequireIslandCommand {
         }
         player.sendMessage(tr("\u00a7bCurrent Extra Limit is {0}", islandInfo.getHopperLimit()));
         player.sendMessage(tr("\u00a7bPrice to buy another hopper limit is {0}", calcPrice(islandInfo.getHopperLimit())));
-        plugin.execCommand(player, "console:tellraw " + player.getName() + " [{\"text\":\"click to buy hopper\",\"color\":\"green\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/is hopper buy\"}}]", false);
+        final Component clickToBuy = Component.text("click to buy hopper", NamedTextColor.GREEN)
+            .clickEvent(ClickEvent.runCommand("/is hopper buy"));
+        player.sendMessage(clickToBuy);
         return true;
     }
 }
