@@ -61,13 +61,11 @@ public class SlimeCommand extends RequirePlayerCommand {
         final NamedTextColor BORDER = NamedTextColor.GRAY;
         final NamedTextColor LABEL = NamedTextColor.YELLOW;
 
-        // Top border: ┌───N───┐
+        // Top border: ----N----
         player.sendMessage(Component.empty()
-            .append(Component.text("┌", BORDER))
-            .append(Component.text("───", BORDER))
+            .append(Component.text("----", BORDER))
             .append(Component.text("N", LABEL))
-            .append(Component.text("───", BORDER))
-            .append(Component.text("┐", BORDER)));
+            .append(Component.text("----", BORDER)));
 
         for (int dz = -3; dz <= 3; dz++) {
             int rowIdx = dz + 3;
@@ -77,7 +75,7 @@ public class SlimeCommand extends RequirePlayerCommand {
             if (dz == 0) {
                 row = row.append(Component.text("W", LABEL));
             }
-            row = row.append(Component.text("│", BORDER));
+            row = row.append(Component.text("|", BORDER));
 
             // 7 cells, no spacing
             for (int dx = -3; dx <= 3; dx++) {
@@ -95,7 +93,7 @@ public class SlimeCommand extends RequirePlayerCommand {
             }
 
             // Right border; center row has E embedded
-            row = row.append(Component.text("│", BORDER));
+            row = row.append(Component.text("|", BORDER));
             if (dz == 0) {
                 row = row.append(Component.text("E", LABEL));
             }
@@ -103,13 +101,11 @@ public class SlimeCommand extends RequirePlayerCommand {
             player.sendMessage(row);
         }
 
-        // Bottom border: └───S───┘
+        // Bottom border: ----S----
         player.sendMessage(Component.empty()
-            .append(Component.text("└", BORDER))
-            .append(Component.text("───", BORDER))
+            .append(Component.text("----", BORDER))
             .append(Component.text("S", LABEL))
-            .append(Component.text("───", BORDER))
-            .append(Component.text("┘", BORDER)));
+            .append(Component.text("----", BORDER)));
 
         player.sendMessage(tr("§7x§8=normal  §ao§7=slime  §a@§7=you(slime)  §e@§7=you"));
         player.sendMessage(tr("§7Found §a{0}§7 slime chunk(s) out of 49 scanned.", slimeCount));
