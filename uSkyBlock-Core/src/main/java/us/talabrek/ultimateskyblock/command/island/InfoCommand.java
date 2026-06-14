@@ -89,9 +89,16 @@ public class InfoCommand extends RequireIslandCommand {
                     if (cmd.equalsIgnoreCase("info") && getState() != null) {
                         player.sendMessage(tr("Score Count Block"));
                         for (BlockScore score : getState().getTop((currentPage - 1) * 10, 10)) {
-                            player.sendMessage(score.getState().getColor() + tr("{0,number,00.00}  {1,number,#} {2}",
-                                score.getScore(), score.getCount(),
-                                ItemStackUtil.getBlockName(score.getBlockData())));
+                            if (score.getMarginalScore() != 0) {
+                                String sign = score.getMarginalScore() > 0 ? "+" : "";
+                                player.sendMessage(score.getState().getColor() + tr("{0,number,00.00} \u00a77({1}{2,number,0.00}\u00a77)  {3,number,#} {4}",
+                                    score.getScore(), sign, Math.abs(score.getMarginalScore()), score.getCount(),
+                                    ItemStackUtil.getBlockName(score.getBlockData())));
+                            } else {
+                                player.sendMessage(score.getState().getColor() + tr("{0,number,00.00}  {1,number,#} {2}",
+                                    score.getScore(), score.getCount(),
+                                    ItemStackUtil.getBlockName(score.getBlockData())));
+                            }
                         }
                         player.sendMessage(tr("\u00a7aIsland level is {0,number,###.##}", getState().getScore()));
                     }

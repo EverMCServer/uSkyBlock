@@ -71,6 +71,17 @@ public interface BlockScore {
     String getName();
 
     /**
+     * The score contribution of adding one more block of this type.
+     * Returns 0 if the hard limit has been reached.
+     *
+     * @return score contribution of the next block.
+     * @since v3.2.0
+     */
+    default double getMarginalScore() {
+        return 0;
+    }
+
+    /**
      * The possible states of a BlockScore.
      * <br>
      * <dl>

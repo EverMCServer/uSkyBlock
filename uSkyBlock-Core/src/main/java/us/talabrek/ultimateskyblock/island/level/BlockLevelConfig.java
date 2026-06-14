@@ -60,7 +60,30 @@ public class BlockLevelConfig {
             adjustedCount = dReturns(adjustedCount, diminishingReturns);
         }
         double blockScore = adjustedCount * scorePerBlock;
-        return new BlockScoreImpl(baseBlock.getType().createBlockData(), count, blockScore/pointsPerLevel, state);
+
+        // Compute marginal score for adding one more block
+        double nextAdjustedCount = computeAdjustedCount(count + 1);
+        double nextBlockScore = nextAdjustedCount * scorePerBlock;
+        double marginalScore = (nextBlockScore - blockScore) / pointsPerLevel;
+
+        return new BlockScoreImpl(baseBlock.getType().createBlockData(), count, blockScore/pointsPerLevel, state, marginalScore);
+    }
+
+    /**
+     * Computes the adjusted count after applying negative returns, limit, and diminishing returns.
+     */
+    private double computeAdjustedCount(int count) {
+        double adjusted = count;
+        if (negativeReturns >= 0 && adjusted > negativeReturns) {
+            adjusted = 2 * negativeReturns - adjusted;
+        }
+        if (adjusted >= limit && limit != -1) {
+            adjusted = limit;
+        }
+        if (diminishingReturns > 0 && adjusted > diminishingReturns) {
+            adjusted = dReturns(adjusted, diminishingReturns);
+        }
+        return adjusted;
     }
 
     private double dReturns(final double val, final double scale) {

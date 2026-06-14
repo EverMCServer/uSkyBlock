@@ -43,7 +43,8 @@ public class IslandScore implements us.talabrek.ultimateskyblock.api.model.Islan
         }
         return new BlockScoreImpl(existing.getBlockData(),
                 score.getCount() + existing.getCount(),
-                score.getScore() + existing.getScore(), state, score.getName());
+                score.getScore() + existing.getScore(), state, score.getName(),
+                score.getMarginalScore() + existing.getMarginalScore());
     }
 
     @Override

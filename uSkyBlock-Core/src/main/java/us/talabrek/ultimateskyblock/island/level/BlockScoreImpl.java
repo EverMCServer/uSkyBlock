@@ -10,17 +10,27 @@ public class BlockScoreImpl implements us.talabrek.ultimateskyblock.api.model.Bl
     private final double score;
     private final State state;
     private final String name;
+    private final double marginalScore;
 
     public BlockScoreImpl(BlockData block, int count, double score, State state) {
-        this(block, count, score, state, null);
+        this(block, count, score, state, null, 0);
+    }
+
+    public BlockScoreImpl(BlockData block, int count, double score, State state, double marginalScore) {
+        this(block, count, score, state, null, marginalScore);
     }
 
     public BlockScoreImpl(BlockData block, int count, double score, State state, String name) {
+        this(block, count, score, state, name, 0);
+    }
+
+    public BlockScoreImpl(BlockData block, int count, double score, State state, String name, double marginalScore) {
         this.block = block;
         this.count = count;
         this.score = score;
         this.state = state;
         this.name = name != null ? name : ItemStackUtil.getBlockName(getBlockData());
+        this.marginalScore = marginalScore;
     }
 
     @Override
@@ -61,5 +71,10 @@ public class BlockScoreImpl implements us.talabrek.ultimateskyblock.api.model.Bl
     @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public double getMarginalScore() {
+        return marginalScore;
     }
 }
