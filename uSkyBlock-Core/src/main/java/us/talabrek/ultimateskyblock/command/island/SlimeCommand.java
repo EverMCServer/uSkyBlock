@@ -56,49 +56,62 @@ public class SlimeCommand extends RequirePlayerCommand {
                           : tr("§cnot a slime chunk")
         ));
 
-        // ── 7×7 grid:   N=top (z-3), S=bottom (z+3), W=left (x-3), E=right (x+3)
-        player.sendMessage(Component.text("            N", NamedTextColor.YELLOW));
+        // ── 7×7 grid:   N embedded in top border, S in bottom, W/E on center row
+        //   x=non-slime (dark gray),  o=slime (green),  @=player
+        final NamedTextColor BORDER = NamedTextColor.GRAY;
+        final NamedTextColor LABEL = NamedTextColor.YELLOW;
+
+        // Top border: ┌───N───┐
+        player.sendMessage(Component.empty()
+            .append(Component.text("┌", BORDER))
+            .append(Component.text("───", BORDER))
+            .append(Component.text("N", LABEL))
+            .append(Component.text("───", BORDER))
+            .append(Component.text("┐", BORDER)));
 
         for (int dz = -3; dz <= 3; dz++) {
             int rowIdx = dz + 3;
             Component row = Component.empty();
 
-            // W/E labels only on the center row (dz == 0)
+            // Left border; center row has W embedded
             if (dz == 0) {
-                row = row.append(Component.text("W ", NamedTextColor.YELLOW));
-            } else {
-                row = row.append(Component.text("  "));
+                row = row.append(Component.text("W", LABEL));
             }
+            row = row.append(Component.text("│", BORDER));
 
-            // 7 columns: x-3 (west) to x+3 (east)
+            // 7 cells, no spacing
             for (int dx = -3; dx <= 3; dx++) {
                 int colIdx = dx + 3;
                 boolean isSlime = grid[rowIdx][colIdx];
                 boolean isCenter = (dx == 0 && dz == 0);
 
                 if (isCenter) {
-                    row = row.append(Component.text("@", isSlime ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
+                    row = row.append(Component.text("@", isSlime ? NamedTextColor.GREEN : LABEL));
                 } else if (isSlime) {
-                    row = row.append(Component.text("x", NamedTextColor.GREEN));
+                    row = row.append(Component.text("o", NamedTextColor.GREEN));
                 } else {
-                    row = row.append(Component.text(".", NamedTextColor.DARK_GRAY));
-                }
-
-                if (dx < 3) {
-                    row = row.append(Component.space());
+                    row = row.append(Component.text("x", NamedTextColor.DARK_GRAY));
                 }
             }
 
-            // E label only on center row
+            // Right border; center row has E embedded
+            row = row.append(Component.text("│", BORDER));
             if (dz == 0) {
-                row = row.append(Component.text(" E", NamedTextColor.YELLOW));
+                row = row.append(Component.text("E", LABEL));
             }
 
             player.sendMessage(row);
         }
 
-        player.sendMessage(Component.text("            S", NamedTextColor.YELLOW));
+        // Bottom border: └───S───┘
+        player.sendMessage(Component.empty()
+            .append(Component.text("└", BORDER))
+            .append(Component.text("───", BORDER))
+            .append(Component.text("S", LABEL))
+            .append(Component.text("───", BORDER))
+            .append(Component.text("┘", BORDER)));
 
+        player.sendMessage(tr("§7x§8=normal  §ao§7=slime  §a@§7=you(slime)  §e@§7=you"));
         player.sendMessage(tr("§7Found §a{0}§7 slime chunk(s) out of 49 scanned.", slimeCount));
         return true;
     }
