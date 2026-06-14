@@ -9,7 +9,6 @@ import us.talabrek.ultimateskyblock.chat.PartyTalkCommand;
 import us.talabrek.ultimateskyblock.command.AdminCommand;
 import us.talabrek.ultimateskyblock.command.ChallengeCommand;
 import us.talabrek.ultimateskyblock.command.IslandCommand;
-import us.talabrek.ultimateskyblock.command.SlimeCommand;
 
 import static java.util.Objects.requireNonNull;
 
@@ -21,7 +20,6 @@ public class Commands {
     private final AdminCommand adminCommand;
     private final IslandTalkCommand islandTalkCommand;
     private final PartyTalkCommand partyTalkCommand;
-    private final SlimeCommand slimeCommand;
 
     @Inject
     public Commands(
@@ -29,15 +27,13 @@ public class Commands {
         @NotNull ChallengeCommand challengeCommand,
         @NotNull AdminCommand adminCommand,
         @NotNull IslandTalkCommand islandTalkCommand,
-        @NotNull PartyTalkCommand partyTalkCommand,
-        @NotNull SlimeCommand slimeCommand
+        @NotNull PartyTalkCommand partyTalkCommand
     ) {
         this.islandCommand = islandCommand;
         this.challengeCommand = challengeCommand;
         this.adminCommand = adminCommand;
         this.islandTalkCommand = islandTalkCommand;
         this.partyTalkCommand = partyTalkCommand;
-        this.slimeCommand = slimeCommand;
     }
 
     public void registerCommands(JavaPlugin plugin) {
@@ -46,6 +42,5 @@ public class Commands {
         requireNonNull(plugin.getCommand("usb")).setExecutor(adminCommand);
         requireNonNull(plugin.getCommand("islandtalk")).setExecutor(islandTalkCommand);
         requireNonNull(plugin.getCommand("partytalk")).setExecutor(partyTalkCommand);
-        requireNonNull(plugin.getCommand("slime")).setExecutor(slimeCommand);
     }
 }

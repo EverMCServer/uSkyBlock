@@ -1,12 +1,12 @@
-package us.talabrek.ultimateskyblock.command;
+package us.talabrek.ultimateskyblock.command.island;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import dk.lockfuglsang.minecraft.command.BaseCommandExecutor;
 import org.bukkit.Chunk;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import us.talabrek.ultimateskyblock.uSkyBlock;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,24 +15,19 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.marktr;
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
 /**
- * /slime command — checks the 5×5 chunk area around the player
+ * /is slime — checks the 5×5 chunk area around the player
  * and reports which chunks are slime chunks.
  */
 @Singleton
-public class SlimeCommand extends BaseCommandExecutor {
+public class SlimeCommand extends RequirePlayerCommand {
 
     @Inject
-    public SlimeCommand() {
-        super("slime|slimechunk", "usb.island.slime", marktr("check slime chunks around you"));
+    public SlimeCommand(uSkyBlock plugin) {
+        super("slime", "usb.island.slime", marktr("check slime chunks around you"));
     }
 
     @Override
-    public boolean execute(CommandSender sender, String alias, Map<String, Object> data, String... args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(tr("§4This command can only be executed by a player"));
-            return true;
-        }
-
+    protected boolean doExecute(String alias, Player player, Map<String, Object> data, String... args) {
         Chunk center = player.getLocation().getChunk();
         int cx = center.getX();
         int cz = center.getZ();
