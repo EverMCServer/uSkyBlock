@@ -15,6 +15,8 @@ import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -53,12 +55,31 @@ public class ChallengeCompletionLogic {
 
     private void saveToFile(String id, Map<String, ChallengeCompletion> map) {
         File configFile = new File(storageFolder, id + ".yml");
+        if (map == null || map.isEmpty()) {
+            // Don't write empty files — they would be loaded as empty maps and perpetuate data loss.
+            // Delete any stale empty file to break the cycle.
+            if (configFile.exists()) {
+                configFile.delete();
+            }
+            return;
+        }
         FileConfiguration fileConfiguration = new YamlConfiguration();
         saveToConfiguration(fileConfiguration, map);
+        // Write to a temp file first, then rename atomically. This prevents a partial
+        // write (e.g. due to disk full, crash, or concurrent read) from corrupting
+        // the existing valid file by truncating it.
+        File tempFile = new File(storageFolder, "." + id + ".yml.tmp");
         try {
-            fileConfiguration.save(configFile);
+            fileConfiguration.save(tempFile);
+            // Atomic move: replaces the target file only after the temp file is fully written
+            Files.move(tempFile.toPath(), configFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             plugin.getLogger().log(Level.WARNING, "Unable to store challenge-completion to " + configFile, e);
+            // Clean up orphaned temp file
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
         }
     }
 
@@ -86,14 +107,58 @@ public class ChallengeCompletionLogic {
                 }
             }
         }
-        if (configFile.exists()) {
-            FileConfiguration fileConfiguration = new YamlConfiguration();
-            FileUtil.readConfig(fileConfiguration, configFile);
-            if (fileConfiguration.getRoot() != null) {
-                return loadFromConfiguration(fileConfiguration.getRoot());
+        // Try to load the main file
+        Map<String, ChallengeCompletion> result = tryLoadFile(configFile);
+        if (result != null) {
+            return result;
+        }
+        // Main file is missing or corrupt — try to recover from a temp file
+        // (which may have been fully written but not renamed due to a crash)
+        File tempFile = new File(storageFolder, "." + id + ".yml.tmp");
+        result = tryLoadFile(tempFile);
+        if (result != null) {
+            plugin.getLogger().log(Level.WARNING,
+                "Recovered challenge completion data from temp file: {0}", tempFile.getAbsolutePath());
+            // Rename the recovered temp file to the proper location
+            try {
+                Files.move(tempFile.toPath(), configFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.WARNING, "Failed to rename recovered temp file: " + tempFile, e);
+            }
+            return result;
+        }
+        // No recoverable data found — return an empty map.
+        // Note: this empty map will not be persisted since saveToFile skips empty maps.
+        return new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Attempts to load a challenge completion map from the given file.
+     * Returns null if the file does not exist, is empty, or cannot be parsed.
+     */
+    private Map<String, ChallengeCompletion> tryLoadFile(File configFile) {
+        if (!configFile.exists()) {
+            return null;
+        }
+        if (configFile.length() == 0) {
+            // Zero-byte file — treat as corrupt/missing
+            return null;
+        }
+        FileConfiguration fileConfiguration = new YamlConfiguration();
+        FileUtil.readConfig(fileConfiguration, configFile);
+        if (fileConfiguration.getRoot() != null) {
+            Map<String, ChallengeCompletion> map = loadFromConfiguration(fileConfiguration.getRoot());
+            if (!map.isEmpty()) {
+                return map;
             }
         }
-        return new ConcurrentHashMap<>();
+        // File exists but produced no valid data — log a warning
+        plugin.getLogger().log(Level.WARNING,
+            "Completion file {0} exists (size={1}) but has no valid data. " +
+            "Check for a .err backup file created by FileUtil.",
+            new Object[]{configFile.getAbsolutePath(), configFile.length()});
+        return null;
     }
 
     private Map<String, ChallengeCompletion> loadFromConfiguration(ConfigurationSection root) {
