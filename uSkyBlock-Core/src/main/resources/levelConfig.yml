@@ -196,6 +196,36 @@ blocks:
       - INFESTED_CHISELED_STONE_BRICKS
     score: 12.0
     diminishingReturns: 10000
+  CINNABAR:
+    score: 100.0
+    diminishingReturns: 5000
+  CINNABAR_BRICK_SLAB:
+    score: 75.0
+    diminishingReturns: 10000
+  CINNABAR_BRICK_STAIRS:
+    score: 225.0
+    diminishingReturns: 5000
+  CINNABAR_BRICK_WALL:
+    score: 150.0
+    diminishingReturns: 5000
+  CINNABAR_BRICKS:
+    score: 150.0
+    diminishingReturns: 5000
+  CINNABAR_SLAB:
+    score: 50.0
+    diminishingReturns: 10000
+  CINNABAR_STAIRS:
+    score: 150.0
+    diminishingReturns: 5000
+  CINNABAR_WALL:
+    score: 100.0
+    diminishingReturns: 5000
+  CHISELED_CINNABAR:
+    score: 125.0
+    diminishingReturns: 5000
+  CHISELED_SULFUR:
+    score: 17.5
+    diminishingReturns: 10000
   CLAY:
     score: 50.0
   COAL_BLOCK:
@@ -798,6 +828,30 @@ blocks:
   POLISHED_BLACKSTONE_WALL:
     score: 12.0
     diminishingReturns: 5000
+  POLISHED_CINNABAR:
+    score: 125.0
+    diminishingReturns: 5000
+  POLISHED_CINNABAR_SLAB:
+    score: 62.5
+    diminishingReturns: 10000
+  POLISHED_CINNABAR_STAIRS:
+    score: 175.0
+    diminishingReturns: 5000
+  POLISHED_CINNABAR_WALL:
+    score: 125.0
+    diminishingReturns: 5000
+  POLISHED_SULFUR:
+    score: 17.5
+    diminishingReturns: 10000
+  POLISHED_SULFUR_SLAB:
+    score: 8.5
+    diminishingReturns: 10000
+  POLISHED_SULFUR_STAIRS:
+    score: 20.0
+    diminishingReturns: 5000
+  POLISHED_SULFUR_WALL:
+    score: 15.0
+    diminishingReturns: 5000
   POLISHED_DEEPSLATE:
     score: 17.5
     diminishingReturns: 10000
@@ -832,6 +886,9 @@ blocks:
     diminishingReturns: 100
   POTATOES:
     score: 0.0
+  POTENT_SULFUR:
+    score: 40.0
+    diminishingReturns: 2000
   POWERED_RAIL:
     score: 20.0
   PRISMARINE:
@@ -1100,6 +1157,33 @@ blocks:
     limit: 250
   SUGAR_CANE:
     score: 0.0
+  SULFUR:
+    score: 15.0
+    diminishingReturns: 10000
+  SULFUR_BRICK_SLAB:
+    score: 12.5
+    diminishingReturns: 10000
+  SULFUR_BRICK_STAIRS:
+    score: 37.5
+    diminishingReturns: 5000
+  SULFUR_BRICK_WALL:
+    score: 25.0
+    diminishingReturns: 5000
+  SULFUR_BRICKS:
+    score: 25.0
+    diminishingReturns: 10000
+  SULFUR_SLAB:
+    score: 7.5
+    diminishingReturns: 10000
+  SULFUR_SPIKE:
+    score: 10.0
+    diminishingReturns: 10000
+  SULFUR_STAIRS:
+    score: 15.0
+    diminishingReturns: 5000
+  SULFUR_WALL:
+    score: 12.5
+    diminishingReturns: 5000
   SUNFLOWER:
     diminishingReturns: 100
   SWEET_BERRY_BUSH:
