@@ -197,31 +197,31 @@ blocks:
     score: 12.0
     diminishingReturns: 10000
   CINNABAR:
-    score: 100.0
+    score: 200.0
     diminishingReturns: 5000
   CINNABAR_BRICK_SLAB:
-    score: 75.0
+    score: 150.0
     diminishingReturns: 10000
   CINNABAR_BRICK_STAIRS:
-    score: 225.0
+    score: 450.0
     diminishingReturns: 5000
   CINNABAR_BRICK_WALL:
-    score: 150.0
+    score: 300.0
     diminishingReturns: 5000
   CINNABAR_BRICKS:
-    score: 150.0
+    score: 300.0
     diminishingReturns: 5000
   CINNABAR_SLAB:
-    score: 50.0
+    score: 100.0
     diminishingReturns: 10000
   CINNABAR_STAIRS:
-    score: 150.0
+    score: 300.0
     diminishingReturns: 5000
   CINNABAR_WALL:
-    score: 100.0
+    score: 200.0
     diminishingReturns: 5000
   CHISELED_CINNABAR:
-    score: 125.0
+    score: 250.0
     diminishingReturns: 5000
   CHISELED_SULFUR:
     score: 35.0
@@ -829,16 +829,16 @@ blocks:
     score: 12.0
     diminishingReturns: 5000
   POLISHED_CINNABAR:
-    score: 125.0
+    score: 250.0
     diminishingReturns: 5000
   POLISHED_CINNABAR_SLAB:
-    score: 62.5
+    score: 125.0
     diminishingReturns: 10000
   POLISHED_CINNABAR_STAIRS:
-    score: 175.0
+    score: 350.0
     diminishingReturns: 5000
   POLISHED_CINNABAR_WALL:
-    score: 125.0
+    score: 250.0
     diminishingReturns: 5000
   POLISHED_SULFUR:
     score: 35.0
@@ -888,7 +888,7 @@ blocks:
     score: 0.0
   POTENT_SULFUR:
     score: 80.0
-    diminishingReturns: 2000
+    diminishingReturns: 10000
   POWERED_RAIL:
     score: 20.0
   PRISMARINE:
