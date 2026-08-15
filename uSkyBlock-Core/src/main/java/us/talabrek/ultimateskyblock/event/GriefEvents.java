@@ -121,7 +121,8 @@ public class GriefEvents implements Listener {
         if (killAnimalsEnabled && event.getEntity() instanceof Animals) {
             event.setCancelled(true);
         } else if (killMonstersEnabled && (event.getEntity() instanceof Monster
-            || event.getEntity() instanceof Shulker)) {
+            || event.getEntity() instanceof Shulker
+            || event.getEntity() instanceof SulfurCube)) {
             event.setCancelled(true);
         }
     }

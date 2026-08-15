@@ -32,6 +32,7 @@ public class Listeners {
     private final IslandBorderEvent islandBorderEvent;
     private final SpawnEvents spawnEvents;
     private final ToxicEvents toxicEvents;
+    private final SulfurEvents sulfurEvents;
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
     private final ToolMenuEvents toolMenuEvents;
@@ -55,6 +56,7 @@ public class Listeners {
         @NotNull IslandBorderEvent islandBorderEvent,
         @NotNull SpawnEvents spawnEvents,
         @NotNull ToxicEvents toxicEvents,
+        @NotNull SulfurEvents sulfurEvents,
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
@@ -76,6 +78,7 @@ public class Listeners {
         this.islandBorderEvent = islandBorderEvent;
         this.spawnEvents = spawnEvents;
         this.toxicEvents = toxicEvents;
+        this.sulfurEvents = sulfurEvents;
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
         this.toolMenuEvents = toolMenuEvents;
@@ -125,6 +128,7 @@ public class Listeners {
         }
 
         manager.registerEvents(toxicEvents, plugin);
+        manager.registerEvents(sulfurEvents, plugin);
     }
 
     public void unregisterListeners(Plugin plugin) {

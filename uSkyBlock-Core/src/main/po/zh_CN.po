@@ -2682,3 +2682,12 @@ msgstr "§a正在移除 §e{0}§a 个方块的毒水标记……"
 #, java-format
 msgid "§aDone! §e{0}§a blocks cleared of toxic mark."
 msgstr "§a完成！已清除 §e{0}§a 个方块的毒水标记。"
+
+msgid "§eYou can only convert slimes on your own island."
+msgstr "§e您只能在自己的岛上转化史莱姆。"
+
+msgid "§eYou turned the slime into a sulfur cube!"
+msgstr "§e你把史莱姆变成了硫方怪！"
+
+msgid "§7The water bubbles strangely around the redstone block..."
+msgstr "§7红石块周围的水开始古怪地冒泡……"

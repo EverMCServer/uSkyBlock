@@ -120,6 +120,10 @@ options:
     # turn their lava into obsidian with a bad cobblestone generator design. Will only work on the player's island and if there are no other obsidian blocks nearby (so can't be used on portals).
     obsidianToLava: true
 
+    # [true/false] If true, redstone blocks placed inside a functioning potent-sulfur geyser water column
+    # are transmuted into cinnabar after 10-20 seconds. (Minecraft 26.2 content)
+    geyserCinnabar: true
+
   # Contains flags for enabling PROTECTION of various mechanics.
   protection:
 
