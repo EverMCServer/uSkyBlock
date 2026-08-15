@@ -224,7 +224,7 @@ blocks:
     score: 125.0
     diminishingReturns: 5000
   CHISELED_SULFUR:
-    score: 17.5
+    score: 35.0
     diminishingReturns: 10000
   CLAY:
     score: 50.0
@@ -841,16 +841,16 @@ blocks:
     score: 125.0
     diminishingReturns: 5000
   POLISHED_SULFUR:
-    score: 17.5
+    score: 35.0
     diminishingReturns: 10000
   POLISHED_SULFUR_SLAB:
-    score: 8.5
+    score: 17.0
     diminishingReturns: 10000
   POLISHED_SULFUR_STAIRS:
-    score: 20.0
+    score: 40.0
     diminishingReturns: 5000
   POLISHED_SULFUR_WALL:
-    score: 15.0
+    score: 30.0
     diminishingReturns: 5000
   POLISHED_DEEPSLATE:
     score: 17.5
@@ -887,7 +887,7 @@ blocks:
   POTATOES:
     score: 0.0
   POTENT_SULFUR:
-    score: 40.0
+    score: 80.0
     diminishingReturns: 2000
   POWERED_RAIL:
     score: 20.0
@@ -1158,31 +1158,31 @@ blocks:
   SUGAR_CANE:
     score: 0.0
   SULFUR:
-    score: 15.0
+    score: 30.0
     diminishingReturns: 10000
   SULFUR_BRICK_SLAB:
-    score: 12.5
+    score: 25.0
     diminishingReturns: 10000
   SULFUR_BRICK_STAIRS:
-    score: 37.5
+    score: 75.0
     diminishingReturns: 5000
   SULFUR_BRICK_WALL:
-    score: 25.0
+    score: 50.0
     diminishingReturns: 5000
   SULFUR_BRICKS:
-    score: 25.0
+    score: 50.0
     diminishingReturns: 10000
   SULFUR_SLAB:
-    score: 7.5
+    score: 15.0
     diminishingReturns: 10000
   SULFUR_SPIKE:
-    score: 10.0
+    score: 20.0
     diminishingReturns: 10000
   SULFUR_STAIRS:
-    score: 15.0
+    score: 30.0
     diminishingReturns: 5000
   SULFUR_WALL:
-    score: 12.5
+    score: 25.0
     diminishingReturns: 5000
   SUNFLOWER:
     diminishingReturns: 100
