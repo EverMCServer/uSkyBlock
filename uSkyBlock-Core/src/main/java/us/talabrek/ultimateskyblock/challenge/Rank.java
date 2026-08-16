@@ -76,7 +76,7 @@ public class Rank {
         List<String> missing = new ArrayList<>();
         ConfigurationSection requires = config.getConfigurationSection("requires");
         if (requires != null) {
-            if (previousRank != null) {
+            if (defaults.requiresPreviousRank && previousRank != null) {
                 int leeway = previousRank.getLeeway(playerInfo);
                 int rankLeeway = requires.getInt("rankLeeway", defaults.rankLeeway);
                 if (leeway > rankLeeway) {

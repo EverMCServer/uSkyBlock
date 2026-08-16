@@ -30,6 +30,7 @@ public class PlayerProgress {
     private final UUID playerUUID;
     private final File progressFile;
     private final Logger logger;
+    private final ProgressResolver resolver;
 
     private final Map<String, Double> progress = new TreeMap<>();
     private final Map<String, Double> totalProgress = new TreeMap<>();
@@ -37,9 +38,15 @@ public class PlayerProgress {
     private final YamlConfiguration progressConfig;
 
     public PlayerProgress(@NotNull UUID playerUUID, @NotNull File progressFile, @NotNull Logger logger) {
+        this(playerUUID, progressFile, logger, null);
+    }
+
+    public PlayerProgress(@NotNull UUID playerUUID, @NotNull File progressFile, @NotNull Logger logger,
+                          ProgressResolver resolver) {
         this.playerUUID = playerUUID;
         this.progressFile = progressFile;
         this.logger = logger;
+        this.resolver = resolver;
         this.progressConfig = YamlConfiguration.loadConfiguration(progressFile);
         fetch();
     }
@@ -100,44 +107,59 @@ public class PlayerProgress {
     /**
      * Sets the current progress for the given key.
      * <p>The total progress is never touched by this method — challenge completions
-     * consume via {@link #setProgress(String, double)}.
+     * consume via {@link #setProgress(String, double)}. Virtual keys are read-only.
      *
      * @param key   The key for the progress to track.
      * @param value The value of the progress.
      */
     public void setProgress(String key, double value) {
+        if (resolver != null && resolver.isVirtual(key)) {
+            return; // 虚拟进度只读
+        }
         progress.put(key, value);
         dirty = true;
     }
 
     /**
      * Returns the current progress for the given key. Defaults to 0 if the key does not exist.
+     * Virtual keys are computed on demand by the resolver.
      *
      * @param key The key for the progress to retrieve.
      * @return The current progress for the given key.
      */
     public double getProgress(String key) {
+        if (resolver != null && resolver.isVirtual(key)) {
+            return resolver.resolve(playerUUID, key);
+        }
         return progress.getOrDefault(key, 0.0);
     }
 
     /**
      * Returns the lifetime total progress for the given key. Defaults to 0 if the key does not exist.
+     * Virtual keys have no stored history — their total equals their current value.
      *
      * @param key The key for the progress to retrieve.
      * @return The total progress for the given key.
      */
     public double getTotalProgress(String key) {
+        if (resolver != null && resolver.isVirtual(key)) {
+            return resolver.resolve(playerUUID, key);
+        }
         return totalProgress.getOrDefault(key, 0.0);
     }
 
     /**
      * Adds the given value to both the current and the total progress for the given key.
+     * Virtual keys are read-only.
      *
      * @param key   The key for the progress to modify.
      * @param value The value to add to the progress.
      * @return The new current value of the progress.
      */
     public double addToProgress(String key, double value) {
+        if (resolver != null && resolver.isVirtual(key)) {
+            return getProgress(key); // 虚拟进度只读
+        }
         double newValue = getProgress(key) + value;
         double newTotal = getTotalProgress(key) + value;
         progress.put(key, newValue);

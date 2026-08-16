@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 /**
@@ -26,7 +27,7 @@ import java.util.logging.Logger;
  * Writes are batched — entries are flushed periodically and on shutdown/quit.
  */
 @Singleton
-public class ProgressLogic {
+public class ProgressLogic implements ProgressResolver {
 
     private static final String PROGRESS_DIR = "progress";
 
@@ -34,6 +35,7 @@ public class ProgressLogic {
     private final Logger logger;
     private final File progressDir;
     private final Map<UUID, PlayerProgress> cache = new HashMap<>();
+    private final Map<String, Function<UUID, Double>> virtualProviders = new HashMap<>();
 
     @Inject
     public ProgressLogic(@NotNull uSkyBlock plugin, @NotNull Logger logger, @NotNull Scheduler scheduler) {
@@ -45,6 +47,29 @@ public class ProgressLogic {
         }
         long saveEverySeconds = Math.max(1, plugin.getConfig().getLong("options.advanced.progress.saveEvery", 60L));
         scheduler.sync(this::flushDirty, Duration.ofSeconds(saveEverySeconds), Duration.ofSeconds(saveEverySeconds));
+    }
+
+    /**
+     * Registers a virtual progress key: its value is computed on demand by the
+     * given provider instead of being stored. Virtual keys are read-only — they
+     * are never persisted, added to or consumed.
+     *
+     * @param key      The progress key to register.
+     * @param provider Computes the current value for the island of the given player UUID.
+     */
+    public void registerVirtualProgress(@NotNull String key, @NotNull Function<UUID, Double> provider) {
+        virtualProviders.put(key, provider);
+    }
+
+    @Override
+    public boolean isVirtual(@NotNull String key) {
+        return virtualProviders.containsKey(key);
+    }
+
+    @Override
+    public double resolve(@NotNull UUID playerUUID, @NotNull String key) {
+        Function<UUID, Double> provider = virtualProviders.get(key);
+        return provider != null ? provider.apply(playerUUID) : 0.0;
     }
 
     /**
@@ -78,7 +103,7 @@ public class ProgressLogic {
             }
         }
         return cache.computeIfAbsent(playerUUID,
-            uuid -> new PlayerProgress(uuid, new File(progressDir, uuid + ".yml"), logger));
+            uuid -> new PlayerProgress(uuid, new File(progressDir, uuid + ".yml"), logger, this));
     }
 
     /**

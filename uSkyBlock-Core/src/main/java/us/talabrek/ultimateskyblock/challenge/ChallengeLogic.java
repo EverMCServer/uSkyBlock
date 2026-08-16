@@ -12,6 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
@@ -87,6 +88,7 @@ public class ChallengeLogic implements Listener {
         this.defaults = ChallengeFactory.createDefaults(config.getRoot());
         ranks = ChallengeFactory.createRankMap(config.getConfigurationSection("ranks"), defaults);
         completionLogic = new ChallengeCompletionLogic(plugin, config);
+        registerVirtualProgress();
         String displayItemForLocked = config.getString("lockedDisplayItem", null);
         if (displayItemForLocked != null) {
             lockedItem = ItemStackUtil.createItemStack(displayItemForLocked);
@@ -104,6 +106,65 @@ public class ChallengeLogic implements Listener {
         if (completionLogic.isIslandSharing()) {
             Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
         }
+    }
+
+    /**
+     * Registers virtual progress keys from the top-level {@code virtualProgress}
+     * section of challenges.yml ({@code key: rankName}). The value of such a key is
+     * computed on demand as the number of challenges of that rank which the player's
+     * island has completed at least once (repeat completions do not add extra).
+     */
+    private void registerVirtualProgress() {
+        ConfigurationSection virtualSection = config.getConfigurationSection("virtualProgress");
+        if (virtualSection == null) {
+            return;
+        }
+        for (String key : virtualSection.getKeys(false)) {
+            String rankName = virtualSection.getString(key);
+            if (rankName == null || !ranks.containsKey(rankName)) {
+                logger.log(Level.WARNING, "virtualProgress key '" + key + "' references unknown rank '" + rankName + "'");
+                continue;
+            }
+            progressLogic.registerVirtualProgress(key, uuid -> computeVirtualProgress(uuid, rankName));
+        }
+        // 虚拟 key 只读, 不适用于消耗进度的可重复挑战
+        for (Rank rank : ranks.values()) {
+            for (Challenge challenge : rank.getChallenges()) {
+                if (challenge.isRepeatable() && challenge.getRequiredProgress().stream()
+                    .anyMatch(req -> progressLogic.isVirtual(req.key()))) {
+                    logger.log(Level.WARNING, "Challenge '" + challenge.getName()
+                        + "' is repeatable but uses a virtual progress key; virtual keys are read-only and cannot be consumed.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Computes a virtual progress value: the number of challenges in the given rank
+     * that the player's island has completed at least once.
+     *
+     * @param playerUUID The player whose island the progress belongs to.
+     * @param rankName   The rank whose first-completions are counted.
+     * @return The number of completed challenges in the rank.
+     */
+    private double computeVirtualProgress(UUID playerUUID, String rankName) {
+        PlayerInfo playerInfo = plugin.getPlayerInfo(playerUUID);
+        if (playerInfo == null || !playerInfo.getHasIsland()) {
+            return 0;
+        }
+        Rank rank = ranks.get(rankName);
+        if (rank == null) {
+            return 0;
+        }
+        Map<String, ChallengeCompletion> completions = completionLogic.getChallenges(playerInfo);
+        int completed = 0;
+        for (Challenge challenge : rank.getChallenges()) {
+            ChallengeCompletion completion = completions.get(challenge.getName());
+            if (completion != null && completion.getTimesCompleted() > 0) {
+                completed++;
+            }
+        }
+        return completed;
     }
 
     public boolean isEnabled() {
