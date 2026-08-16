@@ -277,7 +277,9 @@ public class Challenge {
         } else if (type == Challenge.Type.ISLAND) {
             lores.add(tr("\u00a7eMust be within {0} meters.", getRadius()));
         } else if (type == Challenge.Type.PROGRESS) {
-            lores.add(tr("\u00a7eProgress is consumed when the challenge is completed."));
+            lores.add(isRepeatable()
+                ? tr("\u00a7eProgress is consumed when the challenge is completed.")
+                : tr("\u00a7eProgress is not consumed when the challenge is completed."));
         }
         List<String> lines = wordWrap("\u00a7a" + reward.getRewardText(), 20, MAX_LINE);
         lores.add(tr("\u00a76Item Reward: \u00a7a") + lines.getFirst());

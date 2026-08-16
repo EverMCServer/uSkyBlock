@@ -699,17 +699,6 @@ public class PlayerEvents implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onPlayerMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
-        IslandInfo ii = plugin.getIslandInfo(event.getTo());
-        if (ii != null && !ii.getMemberUUIDs().contains(player.getUniqueId())) { // player is visitor
-            plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "visit_1");
-            plugin.getChallengeLogic().completeLocationChallengeIfNotDone(event.getTo(), "visited_1");
-        }
-    }
-
     /**
      * budding amethyst is allowed to drop its item when broken.
      * @param event

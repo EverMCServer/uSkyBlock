@@ -396,8 +396,10 @@ public class ChallengeLogic implements Listener {
     /**
      * Tries to complete a PROGRESS-type challenge for the given player.
      * <p>Requires every requiredProgress key to have at least the (repetition-scaled)
-     * required amount of current progress. On success the required amount is consumed
-     * from each key (excess carries over) and the reward is handed out.
+     * required amount of current progress. On success the reward is handed out; the
+     * required amount is consumed from each key (excess carries over) only for
+     * repeatable challenges. Non-repeatable challenges never consume, so several
+     * challenges can share one cumulative key at different amounts (e.g. visit:1/20/100).
      * <p>Callers must have passed the generic challenge gates (rank available, repeatable,
      * cooldown/repeat-limit) beforehand.
      *
@@ -431,9 +433,13 @@ public class ChallengeLogic implements Listener {
             player.sendMessage(tr("§eYou are short on progress:{0}", sb.toString()));
             return false;
         }
-        // Consume exactly the required amount per key; excess carries over.
-        for (Map.Entry<String, Double> required : requiredAmounts.entrySet()) {
-            progress.setProgress(required.getKey(), progress.getProgress(required.getKey()) - required.getValue());
+        // Repeatable challenges consume exactly the required amount per key (excess
+        // carries over); non-repeatable ones never consume, keeping the counter
+        // cumulative for all challenges sharing the key (e.g. visit:1/20/100).
+        if (challenge.isRepeatable()) {
+            for (Map.Entry<String, Double> required : requiredAmounts.entrySet()) {
+                progress.setProgress(required.getKey(), progress.getProgress(required.getKey()) - required.getValue());
+            }
         }
         return giveReward(player, challenge);
     }
