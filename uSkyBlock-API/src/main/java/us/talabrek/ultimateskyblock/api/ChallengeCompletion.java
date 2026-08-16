@@ -78,9 +78,11 @@ public interface ChallengeCompletion {
     int getTimesCompleted();
 
     /**
-     * Number of times the challenge has been completed within this cooldown.
+     * Number of times the challenge has been completed within the current cooldown.
+     * Returns 0 when the challenge is not currently on cooldown (i.e. requirement
+     * scaling resets to the base value once the cooldown expires).
      *
-     * @return Number of times the challenge has been completed within this cooldown.
+     * @return Number of times the challenge has been completed within the current cooldown.
      * @since 2.7.0
      */
     int getTimesCompletedInCooldown();

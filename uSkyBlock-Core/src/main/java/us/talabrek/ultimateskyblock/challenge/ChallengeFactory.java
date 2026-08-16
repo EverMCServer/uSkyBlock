@@ -76,6 +76,9 @@ public class ChallengeFactory {
         }
         List<String> requiredChallenges = section.getStringList("requiredChallenges");
         List<ProgressRequirement> requiredProgress = createProgressRequirements(section.getStringList("requiredProgress"));
+        if (type == Challenge.Type.PROGRESS && requiredProgress.isEmpty()) {
+            log.warning("Challenge '" + name + "' has type 'progress' but no requiredProgress entries; it can never be completed.");
+        }
         int offset = section.getInt("offset", 0);
         int repeatLimit = section.getInt("repeatLimit", 0);
         return new Challenge(name, displayName, description, type,

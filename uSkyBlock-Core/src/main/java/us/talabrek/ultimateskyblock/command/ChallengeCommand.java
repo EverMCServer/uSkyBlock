@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import us.talabrek.ultimateskyblock.challenge.ChallengeLogic;
 import us.talabrek.ultimateskyblock.command.challenge.ChallengeCompleteCommand;
 import us.talabrek.ultimateskyblock.command.challenge.ChallengeInfoCommand;
+import us.talabrek.ultimateskyblock.command.challenge.ChallengeProgressCommand;
 import us.talabrek.ultimateskyblock.command.completion.AvailableChallengeTabCompleter;
 import us.talabrek.ultimateskyblock.menu.SkyBlockMenu;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
@@ -37,6 +38,7 @@ public class ChallengeCommand extends BaseCommandExecutor {
         @NotNull ChallengeCompleteCommand challengeCompleteCommand,
         @NotNull AvailableChallengeTabCompleter availableChallengeTabCompleter,
         @NotNull ChallengeInfoCommand challengeInfoCommand,
+        @NotNull ChallengeProgressCommand challengeProgressCommand,
         @NotNull ChallengeLogic challengeLogic,
         @NotNull WorldManager worldManager,
         @NotNull PlayerLogic playerLogic,
@@ -51,6 +53,7 @@ public class ChallengeCommand extends BaseCommandExecutor {
         addTab("challenge", availableChallengeTabCompleter);
         add(challengeCompleteCommand);
         add(challengeInfoCommand);
+        add(challengeProgressCommand);
     }
 
     @Override

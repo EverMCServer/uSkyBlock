@@ -49,8 +49,9 @@ public class ChallengeCompletion implements us.talabrek.ultimateskyblock.api.Cha
         return this.timesCompleted;
     }
 
+    @Override
     public int getTimesCompletedInCooldown() {
-        return isOnCooldown() ? this.timesCompletedInCooldown : timesCompleted > 0 ? 1 : 0;
+        return isOnCooldown() ? this.timesCompletedInCooldown : 0;
     }
 
     public void setCooldownUntil(@Nullable Instant newCooldown) {

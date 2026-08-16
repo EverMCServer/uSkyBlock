@@ -16,7 +16,7 @@ dependencies {
     testImplementation("org.hamcrest:hamcrest-library:2.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.junit.vintage:junit-vintage-engine:5.9.0")
-    testImplementation("org.mockito:mockito-core:5.14.2")
+    testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
     testImplementation("com.sk89q.worldedit:worldedit-bukkit:7.2.19")
     compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.20")

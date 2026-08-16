@@ -34,7 +34,7 @@
 ./gradlew clean
 ```
 
-**注意:** 根 `build.gradle.kts` 中 `tasks.withType<Test>().configureEach { enabled = false }` 默认禁用了测试，测试仅在 `:uSkyBlock-Core` 子模块中显式配置（JUnit 4 + Mockito + Hamcrest）。
+**注意:** 根 `build.gradle.kts` 中 `tasks.withType<Test>().configureEach { enabled = false }` 默认禁用了**所有**测试任务（包括 `:uSkyBlock-Core`）。要运行测试，需临时移除根构建脚本中的那 3 行（或使用 init script 重新启用），跑完再恢复。测试依赖（JUnit 4 + Mockito + Hamcrest）仅在 `:uSkyBlock-Core` 子模块中配置。
 
 ## 项目架构
 

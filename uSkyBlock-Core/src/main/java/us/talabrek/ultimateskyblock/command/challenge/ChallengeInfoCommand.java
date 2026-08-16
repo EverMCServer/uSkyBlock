@@ -12,6 +12,7 @@ import us.talabrek.ultimateskyblock.challenge.ChallengeCompletion;
 import us.talabrek.ultimateskyblock.challenge.ChallengeLogic;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.player.PlayerLogic;
+import us.talabrek.ultimateskyblock.progress.ProgressLogic;
 
 import java.util.Map;
 
@@ -25,15 +26,18 @@ public class ChallengeInfoCommand extends AbstractCommand {
 
     private final ChallengeLogic challengeLogic;
     private final PlayerLogic playerLogic;
+    private final ProgressLogic progressLogic;
 
     @Inject
     public ChallengeInfoCommand(
         @NotNull ChallengeLogic challengeLogic,
-        @NotNull PlayerLogic playerLogic
+        @NotNull PlayerLogic playerLogic,
+        @NotNull ProgressLogic progressLogic
     ) {
         super("info|i", null, "challenge", marktr("show information about the challenge"));
         this.challengeLogic = challengeLogic;
         this.playerLogic = playerLogic;
+        this.progressLogic = progressLogic;
     }
 
     @Override
@@ -54,7 +58,8 @@ public class ChallengeInfoCommand extends AbstractCommand {
             if (completion.getTimesCompleted() > 0 && !challenge.isRepeatable()) {
                 player.sendMessage(tr("\u00a74This Challenge is not repeatable!"));
             }
-            ItemStack item = challenge.getDisplayItem(completion, challengeLogic.defaults.enableEconomyPlugin);
+            ItemStack item = challenge.getDisplayItem(completion, challengeLogic.defaults.enableEconomyPlugin,
+                progressLogic.getProgress(playerInfo.getUniqueId()));
             for (String lore : item.getItemMeta().getLore()) {
                 if (lore != null && !lore.trim().isEmpty()) {
                     player.sendMessage(lore);

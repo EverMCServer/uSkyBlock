@@ -23,6 +23,7 @@ public class Listeners {
     private final GuiListener guiListener;
     private final InternalEvents internalEvents;
     private final PlayerEvents playerEvents;
+    private final ProgressEvents progressEvents;
     private final AltarEvents alterEvents;
     private final MenuEvents menuEvents;
     private final ExploitEvents exploitEvents;
@@ -47,6 +48,7 @@ public class Listeners {
         @NotNull GuiListener guiListener,
         @NotNull InternalEvents internalEvents,
         @NotNull PlayerEvents playerEvents,
+        @NotNull ProgressEvents progressEvents,
         @NotNull AltarEvents alterEvents,
         @NotNull MenuEvents menuEvents,
         @NotNull ExploitEvents exploitEvents,
@@ -69,6 +71,7 @@ public class Listeners {
         this.guiListener = guiListener;
         this.internalEvents = internalEvents;
         this.playerEvents = playerEvents;
+        this.progressEvents = progressEvents;
         this.alterEvents = alterEvents;
         this.menuEvents = menuEvents;
         this.exploitEvents = exploitEvents;
@@ -129,6 +132,7 @@ public class Listeners {
 
         manager.registerEvents(toxicEvents, plugin);
         manager.registerEvents(sulfurEvents, plugin);
+        manager.registerEvents(progressEvents, plugin);
     }
 
     public void unregisterListeners(Plugin plugin) {

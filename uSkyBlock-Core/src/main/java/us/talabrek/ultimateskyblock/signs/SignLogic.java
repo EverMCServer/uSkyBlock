@@ -205,7 +205,7 @@ public class SignLogic {
         if (challengeLogic.isIslandSharing()) {
             final ChallengeCompletion completion = challengeLogic.getIslandCompletion(islandName, challengeName);
             if (completion != null) {
-                requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
+                requiredItems = challenge.getRequiredItems(challenge.getEffectiveRepetitions(completion));
             }
         }
         IslandInfo islandInfo = plugin.getIslandInfo(islandName);
@@ -335,7 +335,7 @@ public class SignLogic {
             return;
         }
         ChallengeCompletion completion = challengeLogic.getChallenge(playerInfo, challenge.getName());
-        Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
+        Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(challenge.getEffectiveRepetitions(completion));
         int missing = 0;
         for (Map.Entry<ItemStack, Integer> required : requiredItems.entrySet()) {
             ItemStack requiredType = required.getKey();

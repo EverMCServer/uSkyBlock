@@ -7,7 +7,9 @@ import dk.lockfuglsang.minecraft.util.ItemStackUtil;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
+import us.talabrek.ultimateskyblock.progress.PlayerProgress;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.TranslationUtil;
 
@@ -30,13 +32,15 @@ public class Challenge {
     public static final int MAX_LINE = 30;
 
     public enum Type {
-        PLAYER, ISLAND, ISLAND_LEVEL;
+        PLAYER, ISLAND, ISLAND_LEVEL, PROGRESS;
 
         static Type from(String s) {
             if (s == null || s.trim().isEmpty() || s.trim().equalsIgnoreCase("onplayer")) {
                 return PLAYER;
             } else if (s.equalsIgnoreCase("islandlevel")) {
                 return ISLAND_LEVEL;
+            } else if (s.equalsIgnoreCase("progress")) {
+                return PROGRESS;
             }
             return ISLAND;
         }
@@ -128,6 +132,22 @@ public class Challenge {
         ));
     }
 
+    /**
+     * Number of repetitions used to scale requirements (unified rule).
+     * <p>On cooldown: completions within the current cooldown window.
+     * Off cooldown: 0 when resetDuration is positive (requirements reset to the base value),
+     * or the lifetime total when there is no reset window (resetInHours: 0).
+     *
+     * @param completion The completion state of the challenge.
+     * @return The number of repetitions to scale requirements with.
+     */
+    public int getEffectiveRepetitions(ChallengeCompletion completion) {
+        if (completion.isOnCooldown()) {
+            return completion.getTimesCompletedInCooldown();
+        }
+        return resetDuration.isPositive() ? 0 : completion.getTimesCompleted();
+    }
+
     @NotNull
     public List<BlockRequirement> getRequiredBlocks() {
         return requiredBlocks;
@@ -153,8 +173,9 @@ public class Challenge {
         return resetDuration;
     }
 
-    public ItemStack getDisplayItem(ChallengeCompletion completion, boolean withCurrency) {
+    public ItemStack getDisplayItem(ChallengeCompletion completion, boolean withCurrency, @Nullable PlayerProgress progress) {
         int timesCompleted = completion.getTimesCompletedInCooldown();
+        int effectiveRepetitions = getEffectiveRepetitions(completion);
         ItemStack currentChallengeItem = getDisplayItem();
         ItemMeta meta = currentChallengeItem.getItemMeta();
         List<String> lores = new ArrayList<>(prefix(wordWrap(getDescription(), MAX_LINE), "\u00a77"));
@@ -187,7 +208,7 @@ public class Challenge {
             }
             reward = getRepeatReward();
         }
-        Map<ItemStack, Integer> requiredItemsForChallenge = getRequiredItems(timesCompleted);
+        Map<ItemStack, Integer> requiredItemsForChallenge = getRequiredItems(effectiveRepetitions);
         if (!requiredItemsForChallenge.isEmpty() || !requiredBlocks.isEmpty()
             || (requiredEntities != null && !requiredEntities.isEmpty()) || !getRequiredProgress().isEmpty()) {
             lores.add(tr("\u00a7eThis challenge requires:"));
@@ -202,8 +223,14 @@ public class Challenge {
                     details.add(tr("\u00a77and more..."));
                     break;
                 }
-                double requiredAmount = progressReq.amountForRepetitions(timesCompleted);
-                details.add(tr("\u00a7f{0}: {1}", progressReq.key(), requiredAmount));
+                double requiredAmount = progressReq.amountForRepetitions(effectiveRepetitions);
+                if (type == Challenge.Type.PROGRESS && progress != null) {
+                    details.add(tr("\u00a7f{0}: \u00a7a{1}\u00a7f/\u00a77{2}",
+                        progressReq.key(), progress.getProgress(progressReq.key()), requiredAmount));
+                    details.add(tr("\u00a77Total progress: \u00a7f{0}", progress.getTotalProgress(progressReq.key())));
+                } else {
+                    details.add(tr("\u00a7f{0}: {1}", progressReq.key(), requiredAmount));
+                }
             }
         }
 
@@ -249,6 +276,8 @@ public class Challenge {
             }
         } else if (type == Challenge.Type.ISLAND) {
             lores.add(tr("\u00a7eMust be within {0} meters.", getRadius()));
+        } else if (type == Challenge.Type.PROGRESS) {
+            lores.add(tr("\u00a7eProgress is consumed when the challenge is completed."));
         }
         List<String> lines = wordWrap("\u00a7a" + reward.getRewardText(), 20, MAX_LINE);
         lores.add(tr("\u00a76Item Reward: \u00a7a") + lines.getFirst());

@@ -31,6 +31,8 @@ import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PerkLogic;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
+import us.talabrek.ultimateskyblock.progress.PlayerProgress;
+import us.talabrek.ultimateskyblock.progress.ProgressLogic;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.TranslationUtil;
 
@@ -59,6 +61,7 @@ public class ChallengeLogic implements Listener {
     private final uSkyBlock plugin;
     private final PerkLogic perkLogic;
     private final HookManager hookManager;
+    private final ProgressLogic progressLogic;
 
     private final Map<String, Rank> ranks;
 
@@ -72,11 +75,13 @@ public class ChallengeLogic implements Listener {
         @NotNull Logger logger,
         @NotNull uSkyBlock plugin,
         @NotNull PerkLogic perkLogic,
-        @NotNull HookManager hookManager
+        @NotNull HookManager hookManager,
+        @NotNull ProgressLogic progressLogic
     ) {
         this.logger = logger;
         this.perkLogic = perkLogic;
         this.hookManager = hookManager;
+        this.progressLogic = progressLogic;
         this.config = FileUtil.getYmlConfiguration("challenges.yml");
         this.plugin = plugin;
         this.defaults = ChallengeFactory.createDefaults(config.getRoot());
@@ -178,6 +183,10 @@ public class ChallengeLogic implements Listener {
         } else if (challenge.getType() == Challenge.Type.ISLAND_LEVEL) {
             if (!tryCompleteIslandLevel(player, challenge)) {
                 player.sendMessage(tr("\u00a74Your island must be level {0} to complete this challenge!", challenge.getRequiredLevel()));
+            }
+        } else if (challenge.getType() == Challenge.Type.PROGRESS) {
+            if (!tryCompleteProgress(player, challenge)) {
+                player.sendMessage(tr("\u00a74Progress is insufficient to complete this challenge."));
             }
         }
     }
@@ -322,9 +331,9 @@ public class ChallengeLogic implements Listener {
             // Check progress requirements
             List<ProgressRequirement> requiredProgress = challenge.getRequiredProgress();
             if (!requiredProgress.isEmpty()) {
-                us.talabrek.ultimateskyblock.progress.Progress progress = us.talabrek.ultimateskyblock.progress.Progress.getProgress(player);
+                PlayerProgress progress = progressLogic.getProgress(player);
                 for (ProgressRequirement progressRequirement : requiredProgress) {
-                    double requiredAmount = progressRequirement.amountForRepetitions(completion.getTimesCompletedInCooldown());
+                    double requiredAmount = progressRequirement.amountForRepetitions(challenge.getEffectiveRepetitions(completion));
                     double currentProgress = progress.getProgress(progressRequirement.key());
                     if (currentProgress < requiredAmount) {
                         sb.append(tr(" \u00a74{0}: {1}/{2}", progressRequirement.key(), currentProgress, requiredAmount));
@@ -333,7 +342,7 @@ public class ChallengeLogic implements Listener {
                 }
             }
 
-            Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(completion.getTimesCompletedInCooldown());
+            Map<ItemStack, Integer> requiredItems = challenge.getRequiredItems(challenge.getEffectiveRepetitions(completion));
             for (Map.Entry<ItemStack, Integer> required : requiredItems.entrySet()) {
                 ItemStack requiredItem = required.getKey();
                 int requiredAmount = required.getValue();
@@ -382,6 +391,51 @@ public class ChallengeLogic implements Listener {
             }
         }
         return false;
+    }
+
+    /**
+     * Tries to complete a PROGRESS-type challenge for the given player.
+     * <p>Requires every requiredProgress key to have at least the (repetition-scaled)
+     * required amount of current progress. On success the required amount is consumed
+     * from each key (excess carries over) and the reward is handed out.
+     * <p>Callers must have passed the generic challenge gates (rank available, repeatable,
+     * cooldown/repeat-limit) beforehand.
+     *
+     * @param player    Player to complete the challenge for.
+     * @param challenge Challenge to complete.
+     * @return True if the challenge was completed successfully, false otherwise.
+     */
+    private boolean tryCompleteProgress(Player player, Challenge challenge) {
+        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+        ChallengeCompletion completion = playerInfo.getChallenge(challenge.getName());
+        if (completion == null) {
+            return false;
+        }
+        PlayerProgress progress = progressLogic.getProgress(player);
+        // Compute the scaled requirements BEFORE giveReward updates the completion counters.
+        int repetitions = challenge.getEffectiveRepetitions(completion);
+        Map<String, Double> requiredAmounts = new LinkedHashMap<>();
+        for (ProgressRequirement progressRequirement : challenge.getRequiredProgress()) {
+            requiredAmounts.put(progressRequirement.key(), progressRequirement.amountForRepetitions(repetitions));
+        }
+        StringBuilder sb = new StringBuilder();
+        boolean hasAll = true;
+        for (Map.Entry<String, Double> required : requiredAmounts.entrySet()) {
+            double currentProgress = progress.getProgress(required.getKey());
+            if (currentProgress < required.getValue()) {
+                sb.append(tr(" §4{0}: {1}/{2}", required.getKey(), currentProgress, required.getValue()));
+                hasAll = false;
+            }
+        }
+        if (!hasAll) {
+            player.sendMessage(tr("§eYou are short on progress:{0}", sb.toString()));
+            return false;
+        }
+        // Consume exactly the required amount per key; excess carries over.
+        for (Map.Entry<String, Double> required : requiredAmounts.entrySet()) {
+            progress.setProgress(required.getKey(), progress.getProgress(required.getKey()) - required.getValue());
+        }
+        return giveReward(player, challenge);
     }
 
     public int getCountOf(Inventory inventory, ItemStack required) {
@@ -471,7 +525,8 @@ public class ChallengeLogic implements Listener {
     public ItemStack getItemStack(PlayerInfo playerInfo, String challengeName) {
         Challenge challenge = getChallenge(challengeName);
         ChallengeCompletion completion = playerInfo.getChallenge(challengeName);
-        ItemStack currentChallengeItem = challenge.getDisplayItem(completion, defaults.enableEconomyPlugin);
+        PlayerProgress progress = progressLogic.getProgress(playerInfo.getUniqueId());
+        ItemStack currentChallengeItem = challenge.getDisplayItem(completion, defaults.enableEconomyPlugin, progress);
         ItemMeta meta = currentChallengeItem.getItemMeta();
         List<String> lores = meta.getLore();
         if (challenge.isRepeatable() || completion.getTimesCompleted() == 0) {

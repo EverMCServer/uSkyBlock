@@ -68,7 +68,6 @@ import us.talabrek.ultimateskyblock.player.PlayerLogic;
 import us.talabrek.ultimateskyblock.player.PlayerNotifier;
 import us.talabrek.ultimateskyblock.player.PlayerPerk;
 import us.talabrek.ultimateskyblock.player.TeleportLogic;
-import us.talabrek.ultimateskyblock.progress.Progress;
 import us.talabrek.ultimateskyblock.util.*;
 import us.talabrek.ultimateskyblock.util.IslandUtil;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
@@ -650,8 +649,6 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
         this.skyBlock = injector.getInstance(SkyblockApp.class);
         injector.injectMembers(this);
         this.skyBlock.startup(this);
-
-        Progress.init(this);
     }
 
     private void delayedEnable() {
