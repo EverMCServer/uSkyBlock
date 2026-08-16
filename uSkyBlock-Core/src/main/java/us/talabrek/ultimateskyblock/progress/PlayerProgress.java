@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -178,6 +180,32 @@ public class PlayerProgress {
         other.progress.forEach(this::setProgress);
         other.totalProgress.forEach((key, value) -> totalProgress.merge(key, value, Double::sum));
         dirty = true;
+    }
+
+    /**
+     * Removes the current and total progress for the given key.
+     * Virtual keys are read-only and can not be removed.
+     *
+     * @param key The key for the progress to remove.
+     */
+    public void removeProgress(String key) {
+        if (resolver != null && resolver.isVirtual(key)) {
+            return; // 虚拟进度只读
+        }
+        progress.remove(key);
+        totalProgress.remove(key);
+        dirty = true;
+    }
+
+    /**
+     * Returns the union of all stored (non-virtual) progress keys, sorted.
+     *
+     * @return The stored progress keys.
+     */
+    public Set<String> getKeys() {
+        Set<String> keys = new TreeSet<>(progress.keySet());
+        keys.addAll(totalProgress.keySet());
+        return keys;
     }
 
     /**

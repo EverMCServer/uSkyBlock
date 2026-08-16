@@ -20,6 +20,7 @@ import us.talabrek.ultimateskyblock.command.admin.ImportCommand;
 import us.talabrek.ultimateskyblock.command.admin.ItemInfoCommand;
 import us.talabrek.ultimateskyblock.command.admin.JobsCommand;
 import us.talabrek.ultimateskyblock.command.admin.LanguageCommand;
+import us.talabrek.ultimateskyblock.command.admin.AdminProgressCommand;
 import us.talabrek.ultimateskyblock.command.admin.OrphanCommand;
 import us.talabrek.ultimateskyblock.command.admin.PerkCommand;
 import us.talabrek.ultimateskyblock.command.admin.PlayerInfoCommand;
@@ -84,7 +85,8 @@ public class AdminCommand extends BaseCommandExecutor {
         @NotNull ProtectAllCommand protectAllCommand,
         @NotNull ChunkCommand chunkCommand,
         @NotNull ToxicCommand toxicCommand,
-        @NotNull DetoxCommand detoxCommand
+        @NotNull DetoxCommand detoxCommand,
+        @NotNull AdminProgressCommand adminProgressCommand
 
     ) {
         super("usb", null, marktr("Ultimate SkyBlock Admin"));
@@ -123,5 +125,6 @@ public class AdminCommand extends BaseCommandExecutor {
         add(chunkCommand);
         add(toxicCommand);
         add(detoxCommand);
+        add(adminProgressCommand);
     }
 }

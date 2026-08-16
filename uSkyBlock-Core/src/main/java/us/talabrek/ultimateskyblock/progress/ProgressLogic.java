@@ -13,6 +13,8 @@ import java.io.File;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -64,6 +66,15 @@ public class ProgressLogic implements ProgressResolver {
     @Override
     public boolean isVirtual(@NotNull String key) {
         return virtualProviders.containsKey(key);
+    }
+
+    /**
+     * Returns the names of all registered virtual progress keys, sorted.
+     *
+     * @return The virtual progress keys.
+     */
+    public Set<String> getVirtualKeys() {
+        return new TreeSet<>(virtualProviders.keySet());
     }
 
     @Override

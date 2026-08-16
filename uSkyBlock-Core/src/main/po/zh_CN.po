@@ -2709,3 +2709,65 @@ msgstr "§7硫方怪已经在听音乐了……"
 
 msgid "§dThe sulfur cube drops a music disc!"
 msgstr "§d硫方怪掉落了一张唱片！"
+
+msgid "Manage progress for a player"
+msgstr "管理玩家的进度"
+
+msgid "add progress for the player"
+msgstr "为玩家增加进度"
+
+msgid "set progress for the player"
+msgstr "设置玩家的进度"
+
+msgid "reset progress key for the player"
+msgstr "重置玩家的某个进度"
+
+msgid "reset all progress for the player"
+msgstr "重置玩家的全部进度"
+
+msgid "show progress for the player"
+msgstr "查看玩家的进度"
+
+#, java-format
+msgid "§eUsage: §f/usb progress <player> {0} {1}"
+msgstr "§e用法: §f/usb progress <玩家> {0} {1}"
+
+#, java-format
+msgid "§4Invalid amount: {0}"
+msgstr "§4无效的数量: {0}"
+
+#, java-format
+msgid "§c{0} is a virtual progress key and is read-only."
+msgstr "§c{0} 是虚拟进度，只读不可修改。"
+
+#, java-format
+msgid "§eProgress §a{0}§e for §a{1}§e: §a{2}§e (total §a{3}§e)"
+msgstr "§e进度 §a{0}§e（§a{1}§e）: §a{2}§e（总计 §a{3}§e）"
+
+#, java-format
+msgid "§eProgress §a{0}§e for §a{1}§e: §a{2}§e §7(virtual)"
+msgstr "§e进度 §a{0}§e（§a{1}§e）: §a{2}§e §7（虚拟进度）"
+
+#, java-format
+msgid "§eProgress of §a{0}§e:"
+msgstr "§e§a{0}§e 的进度:"
+
+#, java-format
+msgid "§e{0}§e: §a{1}§e (total §a{2}§e)"
+msgstr "§e{0}§e: §a{1}§e（总计 §a{2}§e）"
+
+#, java-format
+msgid "§e{0}§e: §a{1}§e §7(virtual)"
+msgstr "§e{0}§e: §a{1}§e §7（虚拟进度）"
+
+#, java-format
+msgid "§eProgress key §a{0}§e has been reset for §a{1}§e."
+msgstr "§e已重置 §a{1}§e 的进度 §a{0}§e。"
+
+#, java-format
+msgid "§eAll progress has been reset for §a{0}§e."
+msgstr "§e已重置 §a{0}§e 的全部进度。"
+
+#, java-format
+msgid "§7No progress recorded for §a{0}§e."
+msgstr "§7§a{0}§e 还没有任何进度记录。"
