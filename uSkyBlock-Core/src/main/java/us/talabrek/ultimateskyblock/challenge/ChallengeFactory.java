@@ -37,7 +37,7 @@ public class ChallengeFactory {
     public static ChallengeDefaults createDefaults(ConfigurationSection section) {
         return new ChallengeDefaults(
             Duration.ofHours(section.getLong("defaultResetInHours", 144L)),
-            section.getBoolean("requiresPreviousRank", true),
+            section.getBoolean("requirePreviousRank", true),
             normalize(section.getString("repeatableColor", "&a")),
             normalize(section.getString("finishedColor", "&2")),
             normalize(section.getString("challengeColor", "&e")),

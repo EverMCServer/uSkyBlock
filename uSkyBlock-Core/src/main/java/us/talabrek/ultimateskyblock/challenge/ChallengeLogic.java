@@ -87,6 +87,8 @@ public class ChallengeLogic implements Listener {
         this.plugin = plugin;
         this.defaults = ChallengeFactory.createDefaults(config.getRoot());
         ranks = ChallengeFactory.createRankMap(config.getConfigurationSection("ranks"), defaults);
+        logger.log(Level.INFO, String.format("Loaded %d challenge ranks (requirePreviousRank=%s)",
+            ranks.size(), defaults.requirePreviousRank));
         completionLogic = new ChallengeCompletionLogic(plugin, config);
         registerVirtualProgress();
         String displayItemForLocked = config.getString("lockedDisplayItem", null);

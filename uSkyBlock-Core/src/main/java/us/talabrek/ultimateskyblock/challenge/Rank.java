@@ -76,7 +76,7 @@ public class Rank {
         List<String> missing = new ArrayList<>();
         ConfigurationSection requires = config.getConfigurationSection("requires");
         if (requires != null) {
-            if (defaults.requiresPreviousRank && previousRank != null) {
+            if (defaults.requirePreviousRank && previousRank != null) {
                 int leeway = previousRank.getLeeway(playerInfo);
                 int rankLeeway = requires.getInt("rankLeeway", defaults.rankLeeway);
                 if (leeway > rankLeeway) {
@@ -90,7 +90,7 @@ public class Rank {
             if (!missing.isEmpty()) {
                 missing.add("\u00a77" + tr("to unlock this rank"));
             }
-        } else if (defaults.requiresPreviousRank) {
+        } else if (defaults.requirePreviousRank) {
             if (previousRank != null) {
                 int leeway = previousRank.getLeeway(playerInfo);
                 if (leeway > defaults.rankLeeway) {
