@@ -2710,6 +2710,12 @@ msgstr "§7硫方怪已经在听音乐了……"
 msgid "§dThe sulfur cube drops a music disc!"
 msgstr "§d硫方怪掉落了一张唱片！"
 
+msgid "§7This sulfur cube loves music, but it hasn't swallowed a jukebox yet."
+msgstr "§7这只硫方怪热爱音乐，但它还没有吞过唱片机。"
+
+msgid "§7The sulfur cube lost its jukebox — the music stops abruptly."
+msgstr "§7硫方怪失去了唱片机——音乐戛然而止。"
+
 msgid "Manage progress for a player"
 msgstr "管理玩家的进度"
 
