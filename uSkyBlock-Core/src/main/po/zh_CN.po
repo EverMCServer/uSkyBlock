@@ -2691,3 +2691,21 @@ msgstr "§e你把史莱姆变成了硫方怪！"
 
 msgid "§7The water bubbles strangely around the redstone block..."
 msgstr "§7红石块周围的水开始古怪地冒泡……"
+
+msgid "§7The sulfur cube swallows the jukebox, but doesn't seem to like music at all. Some rare sulfur cubes love it, though!"
+msgstr "§7硫方怪吞下唱片机，却对音乐毫无兴趣。不过据说极少数硫方怪热爱音乐！"
+
+msgid "§dThe sulfur cube joyfully swallows the jukebox — it loves music! Try hitting it."
+msgstr "§d硫方怪开心地吞下唱片机——它热爱音乐！试着敲打它一下。"
+
+msgid "§7This sulfur cube is too small to swallow a jukebox."
+msgstr "§7这个硫方怪还太小，吞不下唱片机。"
+
+msgid "§dThe sulfur cube starts grooving to the music!"
+msgstr "§d硫方怪随着音乐摇摆起来！"
+
+msgid "§7The sulfur cube is already listening to music..."
+msgstr "§7硫方怪已经在听音乐了……"
+
+msgid "§dThe sulfur cube drops a music disc!"
+msgstr "§d硫方怪掉落了一张唱片！"

@@ -124,6 +124,13 @@ options:
     # are transmuted into cinnabar after 10-20 seconds. (Minecraft 26.2 content)
     geyserCinnabar: true
 
+    # [true/false] If true, sulfur cubes have a 5% chance to spawn as "music lovers" that emit note particles,
+    # play a random creeper-drop music disc (all 12 of them) or the new bounce disc (2% chance) when hit,
+    # and drop the played disc once the playback finishes. Jukeboxes can be fed to adult sulfur cubes -
+    # requires the acidisland-recipes datapack, which adds jukebox to #minecraft:sulfur_cube_swallowable.
+    # (Minecraft 26.2 content)
+    musicSulfurCube: true
+
   # Contains flags for enabling PROTECTION of various mechanics.
   protection:
 
