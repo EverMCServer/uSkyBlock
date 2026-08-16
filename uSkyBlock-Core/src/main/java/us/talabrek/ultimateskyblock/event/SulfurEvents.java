@@ -33,8 +33,9 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 /**
  * Minecraft 26.2 "Chaos Cubed" 内容机制:
  * <ul>
- *     <li>史莱姆转化: 手持硫磺方块右键史莱姆, 消耗 1 硫磺将其转化为大型硫方怪
- *         (李芒果式生物转化; 之后依靠原版机制自我繁殖: 死亡分裂、黏液球喂养成长)</li>
+ *     <li>史莱姆转化: 手持硫磺方块右键史莱姆或岩浆怪, 消耗 1 硫磺将其转化为大型硫方怪
+ *         (李芒果式生物转化; 之后依靠原版机制自我繁殖: 死亡分裂、黏液球喂养成长;
+ *         硫方怪同为 Slime 子类, 转化时排除以免二次转化)</li>
  *     <li>间歇泉转化朱砂: 放入由烈性硫磺驱动的间歇泉水柱中的红石块,
  *         10-20 秒后被转化为朱砂 (替代合成配方, 结合新版本间歇泉玩法)</li>
  * </ul>
@@ -64,7 +65,8 @@ public class SulfurEvents implements Listener {
             return; // 仅主手
         }
         Entity clicked = event.getRightClicked();
-        if (!(clicked instanceof Slime slime)) {
+        // Slime 家族 (史莱姆/岩浆怪) 均可转化, 但硫方怪同为 Slime 子类, 需排除以免二次转化
+        if (!(clicked instanceof Slime slime) || clicked instanceof SulfurCube) {
             return;
         }
         ItemStack item = player.getInventory().getItemInMainHand();
