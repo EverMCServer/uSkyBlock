@@ -19,7 +19,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.14.2")
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
     testImplementation("com.sk89q.worldedit:worldedit-bukkit:7.2.19")
-    compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.10")
+    compileOnly("net.milkbowl.vault:VaultUnlockedAPI:2.20")
     compileOnly("io.papermc.paper:paper-api:26.2.build.+")
     compileOnly("org.mvplugins.multiverse.core:multiverse-core:5.7.0")
     compileOnly("org.mvplugins.multiverse.inventories:multiverse-inventories:5.3.4")

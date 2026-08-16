@@ -130,7 +130,7 @@ public class XxxEvents implements Listener {
 
 ### 硬依赖与软依赖
 
-**硬依赖:** Vault ≥ 1.7.1、WorldEdit ≥ 7.2.12、WorldGuard ≥ 7.0.8、FastAsyncWorldEdit ≥ 2.4.3、Multiverse-Core ≥ 5.7.0（MVPlugins 社区维护版，包名 `org.mvplugins.multiverse`，vavr 已 relocate 到 `org.mvplugins.multiverse.external.vavr`）
+**硬依赖:** VaultUnlocked ≥ 2.10（服务器运行 VaultUnlocked 2.20.2；编译依赖 `VaultUnlockedAPI:2.20`，注意 vault2 命名空间 2.10→2.20 间把 `vault2.permission.Permission` 重命名为 `PermissionUnlocked`，代码走传统 `net.milkbowl.vault.*` API）、WorldEdit ≥ 7.2.12、WorldGuard ≥ 7.0.8、FastAsyncWorldEdit ≥ 2.4.3、Multiverse-Core ≥ 5.7.0（MVPlugins 社区维护版，包名 `org.mvplugins.multiverse`，vavr 已 relocate 到 `org.mvplugins.multiverse.external.vavr`）
 
 **软依赖:** ActionBarAPI、Multiverse-Inventories ≥ 5.3.4（MVPlugins 版）、MVdWPlaceholderAPI、SignShop
 
