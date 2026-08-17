@@ -35,9 +35,11 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import io.papermc.paper.event.entity.SulfurCubeSwallowItemEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
+import us.talabrek.ultimateskyblock.progress.ProgressLogic;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
@@ -53,7 +55,9 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
  *     <li>唱片机喂食与音乐爱好者: 硫方怪生成时 5% 概率成为音乐爱好者 (持续音符粒子),
  *         可被喂入唱片机 (数据包将唱片机加入 #minecraft:sulfur_cube_swallowable,
  *         利用原版成年怪吞方块机制, 插件不消耗物品), 被击打时播放随机唱片
- *         (全部 12 张苦力怕唱片, 或低概率 bounce), 播放完成后掉落所播唱片。
+ *         (全部 12 张苦力怕唱片, 或低概率 bounce), 播放完成后掉落所播唱片,
+ *         并为触发播放的玩家累计 progress 键 {@code sulfur_cube_disc}
+ *         (岛屿挑战"硫方怪打碟"的内容触发器)。
  *         音乐爱好者必须先吞过唱片机才能触发播放 — 以 BODY 装备槽为准
  *         (玩家喂食/自主吞食/发射器装备全路径通用, 不维护插件侧标记);
  *         播放中若被击杀或失去唱片机 (被其它方块顶替/被剪刀剪下),
@@ -90,21 +94,28 @@ public class SulfurEvents implements Listener {
             new Disc(JukeboxSong.WAIT, Material.MUSIC_DISC_WAIT));
     private static final Disc BOUNCE_DISC = new Disc(JukeboxSong.BOUNCE, Material.MUSIC_DISC_BOUNCE);
 
+    /** 唱片 progress 键: 播放完成掉落唱片时 +1, 归属触发播放的玩家所在岛 */
+    private static final String DISC_PROGRESS_KEY = "sulfur_cube_disc";
+
     private final uSkyBlock plugin;
+    private final ProgressLogic progressLogic;
     private final boolean geyserCinnabarEnabled;
     private final boolean musicSulfurCubeEnabled;
     private final NamespacedKey musicLoverKey;
     private final NamespacedKey playingSongKey;
     private final NamespacedKey playTicksLeftKey;
+    private final NamespacedKey playTriggerKey;
 
     @Inject
-    public SulfurEvents(@NotNull uSkyBlock plugin) {
+    public SulfurEvents(@NotNull uSkyBlock plugin, @NotNull ProgressLogic progressLogic) {
         this.plugin = plugin;
+        this.progressLogic = progressLogic;
         this.geyserCinnabarEnabled = plugin.getConfig().getBoolean("options.extras.geyserCinnabar", true);
         this.musicSulfurCubeEnabled = plugin.getConfig().getBoolean("options.extras.musicSulfurCube", true);
         this.musicLoverKey = new NamespacedKey(plugin, "music_lover");
         this.playingSongKey = new NamespacedKey(plugin, "playing_song");
         this.playTicksLeftKey = new NamespacedKey(plugin, "play_ticks_left");
+        this.playTriggerKey = new NamespacedKey(plugin, "play_trigger");
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickMusicCubes, 20L, TICK_PERIOD);
     }
 
@@ -194,6 +205,7 @@ public class SulfurEvents implements Listener {
         Disc disc = rollDisc();
         pdc.set(playingSongKey, PersistentDataType.STRING, disc.item().name());
         pdc.set(playTicksLeftKey, PersistentDataType.INTEGER, Math.round(disc.song().getLengthInSeconds() * 20));
+        pdc.set(playTriggerKey, PersistentDataType.STRING, attacker.getUniqueId().toString());
         // 实体绑定播放: 声源跟随硫方怪, 被击杀时声音随实体消失
         cube.getWorld().playSound(cube, disc.song().getSound(), SoundCategory.RECORDS, MUSIC_VOLUME, 1f);
         plugin.notifyPlayer(attacker, tr("§dThe sulfur cube starts grooving to the music!"));
@@ -315,8 +327,10 @@ public class SulfurEvents implements Listener {
 
     private void finishPlay(World world, SulfurCube cube, PersistentDataContainer pdc) {
         String songName = pdc.get(playingSongKey, PersistentDataType.STRING);
+        String triggerUUIDString = pdc.get(playTriggerKey, PersistentDataType.STRING);
         pdc.remove(playingSongKey);
         pdc.remove(playTicksLeftKey);
+        pdc.remove(playTriggerKey);
         Disc played = songName == null ? null : findDisc(Material.matchMaterial(songName));
         if (played == null) {
             return;
@@ -327,6 +341,25 @@ public class SulfurEvents implements Listener {
                 plugin.notifyPlayer(player, tr("§dThe sulfur cube drops a music disc!"));
             }
         }
+        creditDiscProgress(triggerUUIDString);
+    }
+
+    /**
+     * 唱片 progress 计数: 播放完成掉落唱片时给触发播放的玩家 +1 (挑战"硫方怪打碟")。
+     * 归属玩家所在岛 — getProgress(UUID) 自动解析到岛主条目, 触发者中途离线也可累积;
+     * 无岛 (管理员绕过归属) 时回落玩家自身条目, 无害。
+     */
+    private void creditDiscProgress(String triggerUUIDString) {
+        if (triggerUUIDString == null) {
+            return;
+        }
+        UUID triggerUUID;
+        try {
+            triggerUUID = UUID.fromString(triggerUUIDString);
+        } catch (IllegalArgumentException e) {
+            return; // PDC 里的字符串不合法 (理论上不可能)
+        }
+        progressLogic.getProgress(triggerUUID).addToProgress(DISC_PROGRESS_KEY, 1);
     }
 
     /**
@@ -339,6 +372,7 @@ public class SulfurEvents implements Listener {
         String songName = pdc.get(playingSongKey, PersistentDataType.STRING);
         pdc.remove(playingSongKey);
         pdc.remove(playTicksLeftKey);
+        pdc.remove(playTriggerKey); // 终止播放不落唱片, 也不计 progress
         Disc played = songName == null ? null : findDisc(Material.matchMaterial(songName));
         if (played == null) {
             return;
