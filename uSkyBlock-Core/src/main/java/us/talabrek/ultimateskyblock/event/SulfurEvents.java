@@ -26,6 +26,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -53,7 +54,7 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
  *         利用原版成年怪吞方块机制, 插件不消耗物品), 被击打时播放随机唱片
  *         (全部 12 张苦力怕唱片, 或低概率 bounce), 播放完成后掉落所播唱片。
  *         音乐爱好者必须先吞过唱片机 (SwallowItemEvent 标记) 才能触发播放;
- *         播放中若被击杀或失去唱片机 (被其它方块顶替), 立即终止播放且不落唱片</li>
+ *         播放中若被击杀或失去唱片机 (被其它方块顶替/被剪刀剪下), 立即终止播放且不落唱片</li>
  * </ul>
  */
 @Singleton
@@ -64,6 +65,9 @@ public class SulfurEvents implements Listener {
     private static final double BOUNCE_CHANCE = 0.02; // bounce 唱片概率较低, 取 2%
     private static final float MUSIC_VOLUME = 4.0f;   // 与原版唱片机播放音量一致
     private static final double NOTIFY_RADIUS = 16.0;
+    /** 停声半径: 音量 4.0 的可闻距离上限 max(volume,1)*16=64, 且覆盖默认怪物追踪范围 48
+     *  (实体声源包只发给追踪该实体的玩家, 顶替/剪毛时实体存活需主动停声) */
+    private static final double SOUND_STOP_RADIUS = 64.0;
 
     private record Disc(JukeboxSong song, Material item) {}
 
@@ -215,15 +219,42 @@ public class SulfurEvents implements Listener {
         ItemStack oldItem = event.getOldItem();
         if (oldItem != null && oldItem.getType() == Material.JUKEBOX
                 && Boolean.TRUE.equals(pdc.get(ateJukeboxKey, PersistentDataType.BOOLEAN))) {
-            pdc.remove(ateJukeboxKey);
-            if (isPlaying(pdc)) {
-                stopPlay(cube, pdc);
-                for (Entity nearby : cube.getWorld().getNearbyEntities(cube.getLocation(),
-                        NOTIFY_RADIUS, NOTIFY_RADIUS, NOTIFY_RADIUS)) {
-                    if (nearby instanceof Player player) {
-                        plugin.notifyPlayer(player, tr("§7The sulfur cube lost its jukebox — the music stops abruptly."));
-                    }
-                }
+            loseJukebox(cube, pdc);
+        }
+    }
+
+    /**
+     * 剪毛取出吞下的方块: 硫方怪为 Shearable (26.2 原版机制), 玩家用剪刀剪下时
+     * 原版会将其吞下的方块作为剪毛掉落取出 — 该路径不经过 SwallowItemEvent,
+     * 必须在此同步清除 ate_jukebox 标记; 播放中被剪则立即终止且不落唱片。
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSulfurCubeShear(PlayerShearEntityEvent event) {
+        if (!musicSulfurCubeEnabled
+                || !(event.getEntity() instanceof SulfurCube cube)
+                || !plugin.getWorldManager().isSkyAssociatedWorld(cube.getWorld())) {
+            return;
+        }
+        PersistentDataContainer pdc = cube.getPersistentDataContainer();
+        if (Boolean.TRUE.equals(pdc.get(ateJukeboxKey, PersistentDataType.BOOLEAN))) {
+            loseJukebox(cube, pdc);
+        }
+    }
+
+    /**
+     * 唱片机被取出 (被其它方块顶替/被剪刀剪下): 清除 ate_jukebox 标记;
+     * 若正在播放则立即终止 (停声+提示), 不经过 finishPlay 故不落唱片。
+     */
+    private void loseJukebox(SulfurCube cube, PersistentDataContainer pdc) {
+        pdc.remove(ateJukeboxKey);
+        if (!isPlaying(pdc)) {
+            return;
+        }
+        stopPlay(cube, pdc);
+        for (Entity nearby : cube.getWorld().getNearbyEntities(cube.getLocation(),
+                NOTIFY_RADIUS, NOTIFY_RADIUS, NOTIFY_RADIUS)) {
+            if (nearby instanceof Player player) {
+                plugin.notifyPlayer(player, tr("§7The sulfur cube lost its jukebox — the music stops abruptly."));
             }
         }
     }
@@ -300,6 +331,8 @@ public class SulfurEvents implements Listener {
     /**
      * 终止播放: 清除播放状态并对附近玩家停掉唱片声。
      * 被击杀或失去唱片机时调用, 不经过 finishPlay, 因此不会掉落唱片。
+     * 停声半径取 SOUND_STOP_RADIUS: 实体声源包发给所有追踪该实体的玩家,
+     * 顶替/剪毛时实体存活, 客户端不会自动停声, 必须覆盖完整可闻范围。
      */
     private void stopPlay(SulfurCube cube, PersistentDataContainer pdc) {
         String songName = pdc.get(playingSongKey, PersistentDataType.STRING);
@@ -310,7 +343,7 @@ public class SulfurEvents implements Listener {
             return;
         }
         for (Entity nearby : cube.getWorld().getNearbyEntities(cube.getLocation(),
-                NOTIFY_RADIUS, NOTIFY_RADIUS, NOTIFY_RADIUS)) {
+                SOUND_STOP_RADIUS, SOUND_STOP_RADIUS, SOUND_STOP_RADIUS)) {
             if (nearby instanceof Player player) {
                 player.stopSound(played.song().getSound(), SoundCategory.RECORDS);
             }
