@@ -27,6 +27,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -53,8 +54,10 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
  *         可被喂入唱片机 (数据包将唱片机加入 #minecraft:sulfur_cube_swallowable,
  *         利用原版成年怪吞方块机制, 插件不消耗物品), 被击打时播放随机唱片
  *         (全部 12 张苦力怕唱片, 或低概率 bounce), 播放完成后掉落所播唱片。
- *         音乐爱好者必须先吞过唱片机 (SwallowItemEvent 标记) 才能触发播放;
- *         播放中若被击杀或失去唱片机 (被其它方块顶替/被剪刀剪下), 立即终止播放且不落唱片</li>
+ *         音乐爱好者必须先吞过唱片机才能触发播放 — 以 BODY 装备槽为准
+ *         (玩家喂食/自主吞食/发射器装备全路径通用, 不维护插件侧标记);
+ *         播放中若被击杀或失去唱片机 (被其它方块顶替/被剪刀剪下),
+ *         立即终止播放且不落唱片</li>
  * </ul>
  */
 @Singleton
@@ -91,7 +94,6 @@ public class SulfurEvents implements Listener {
     private final boolean geyserCinnabarEnabled;
     private final boolean musicSulfurCubeEnabled;
     private final NamespacedKey musicLoverKey;
-    private final NamespacedKey ateJukeboxKey;
     private final NamespacedKey playingSongKey;
     private final NamespacedKey playTicksLeftKey;
 
@@ -101,7 +103,6 @@ public class SulfurEvents implements Listener {
         this.geyserCinnabarEnabled = plugin.getConfig().getBoolean("options.extras.geyserCinnabar", true);
         this.musicSulfurCubeEnabled = plugin.getConfig().getBoolean("options.extras.musicSulfurCube", true);
         this.musicLoverKey = new NamespacedKey(plugin, "music_lover");
-        this.ateJukeboxKey = new NamespacedKey(plugin, "ate_jukebox");
         this.playingSongKey = new NamespacedKey(plugin, "playing_song");
         this.playTicksLeftKey = new NamespacedKey(plugin, "play_ticks_left");
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickMusicCubes, 20L, TICK_PERIOD);
@@ -161,7 +162,7 @@ public class SulfurEvents implements Listener {
      * 因为吞了方块的硫方怪免疫近战/弹射物伤害 (#sulfur_cube_with_block_immune_to), 伤害事件
      * 不一定能到达; 该攻击事件对免疫实体同样触发。与史莱姆转化相同的岛屿归属限制,
      * 访客击打静默忽略; 播放期间不可重复触发, 播放完成后由 tickMusicCubes 掉落唱片。
-     * 音乐爱好者必须先吞过唱片机 (ate_jukebox 标记) 才能触发播放。
+     * 音乐爱好者必须先吞过唱片机才能触发播放, 是否吞有唱片机以 BODY 装备槽为准。
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMusicCubeAttack(PrePlayerAttackEntityEvent event) {
@@ -182,12 +183,12 @@ public class SulfurEvents implements Listener {
         if (!Boolean.TRUE.equals(pdc.get(musicLoverKey, PersistentDataType.BOOLEAN))) {
             return;
         }
-        if (!Boolean.TRUE.equals(pdc.get(ateJukeboxKey, PersistentDataType.BOOLEAN))) {
-            plugin.notifyPlayer(attacker, tr("§7This sulfur cube loves music, but it hasn't swallowed a jukebox yet."));
-            return;
-        }
         if (isPlaying(pdc)) {
             plugin.notifyPlayer(attacker, tr("§7The sulfur cube is already listening to music..."));
+            return;
+        }
+        if (!hasSwallowedJukebox(cube)) {
+            plugin.notifyPlayer(attacker, tr("§7This sulfur cube loves music, but it hasn't swallowed a jukebox yet."));
             return;
         }
         Disc disc = rollDisc();
@@ -199,9 +200,9 @@ public class SulfurEvents implements Listener {
     }
 
     /**
-     * 吞唱片机标记: 原版成年怪吞方块机制触发 Paper 的 SwallowItemEvent。
-     * 吞下唱片机即打上 ate_jukebox 标记 (播放/掉落交互的前提); 若播放中吞下
-     * 非唱片机方块顶掉旧唱片机, 则清除标记并立即终止播放 (不落唱片)。
+     * 播放中吞方块顶替唱片机: SwallowItemEvent 只在玩家喂食路径触发
+     * (自主吞食/发射器装备不经过此处, 由 tickMusicCubes 对账兜底)。
+     * 若播放中吞下非唱片机方块顶掉旧唱片机, 则立即终止播放 (不落唱片)。
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSulfurCubeSwallow(SulfurCubeSwallowItemEvent event) {
@@ -210,23 +211,21 @@ public class SulfurEvents implements Listener {
             return;
         }
         SulfurCube cube = event.getEntity();
-        PersistentDataContainer pdc = cube.getPersistentDataContainer();
         ItemStack newItem = event.getNewItem();
         if (newItem != null && newItem.getType() == Material.JUKEBOX) {
-            pdc.set(ateJukeboxKey, PersistentDataType.BOOLEAN, true);
-            return;
+            return; // 顶掉后仍是唱片机
         }
         ItemStack oldItem = event.getOldItem();
-        if (oldItem != null && oldItem.getType() == Material.JUKEBOX
-                && Boolean.TRUE.equals(pdc.get(ateJukeboxKey, PersistentDataType.BOOLEAN))) {
-            loseJukebox(cube, pdc);
+        PersistentDataContainer pdc = cube.getPersistentDataContainer();
+        if (oldItem != null && oldItem.getType() == Material.JUKEBOX && isPlaying(pdc)) {
+            stopPlayAndNotify(cube, pdc);
         }
     }
 
     /**
      * 剪毛取出吞下的方块: 硫方怪为 Shearable (26.2 原版机制), 玩家用剪刀剪下时
-     * 原版会将其吞下的方块作为剪毛掉落取出 — 该路径不经过 SwallowItemEvent,
-     * 必须在此同步清除 ate_jukebox 标记; 播放中被剪则立即终止且不落唱片。
+     * 原版会将其吞下的方块作为剪毛掉落取出 — 该路径不经过 SwallowItemEvent。
+     * 播放中被剪则立即终止且不落唱片 (播放中吞的必然是唱片机)。
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSulfurCubeShear(PlayerShearEntityEvent event) {
@@ -236,20 +235,16 @@ public class SulfurEvents implements Listener {
             return;
         }
         PersistentDataContainer pdc = cube.getPersistentDataContainer();
-        if (Boolean.TRUE.equals(pdc.get(ateJukeboxKey, PersistentDataType.BOOLEAN))) {
-            loseJukebox(cube, pdc);
+        if (isPlaying(pdc)) {
+            stopPlayAndNotify(cube, pdc);
         }
     }
 
     /**
-     * 唱片机被取出 (被其它方块顶替/被剪刀剪下): 清除 ate_jukebox 标记;
-     * 若正在播放则立即终止 (停声+提示), 不经过 finishPlay 故不落唱片。
+     * 播放中失去唱片机 (被其它方块顶替/被剪刀剪下/对账发现): 停声+提示。
+     * 调用方需先确认 isPlaying; 不经过 finishPlay, 因此不会掉落唱片。
      */
-    private void loseJukebox(SulfurCube cube, PersistentDataContainer pdc) {
-        pdc.remove(ateJukeboxKey);
-        if (!isPlaying(pdc)) {
-            return;
-        }
+    private void stopPlayAndNotify(SulfurCube cube, PersistentDataContainer pdc) {
         stopPlay(cube, pdc);
         for (Entity nearby : cube.getWorld().getNearbyEntities(cube.getLocation(),
                 NOTIFY_RADIUS, NOTIFY_RADIUS, NOTIFY_RADIUS)) {
@@ -294,7 +289,13 @@ public class SulfurEvents implements Listener {
                 if (!Boolean.TRUE.equals(pdc.get(musicLoverKey, PersistentDataType.BOOLEAN))) {
                     continue;
                 }
+                // 对账: 播放中失去唱片机 (自主吞食顶替/发射器装备等非事件路径)
+                // 立即终止 (stopPlayAndNotify, 不落唱片)
                 boolean playing = isPlaying(pdc);
+                if (playing && !hasSwallowedJukebox(cube)) {
+                    stopPlayAndNotify(cube, pdc);
+                    playing = false;
+                }
                 Integer ticksLeft = pdc.get(playTicksLeftKey, PersistentDataType.INTEGER);
                 Location loc = cube.getLocation().add(0, cube.getHeight() / 2.0, 0);
                 // 26.2 的 NOTE 粒子不携带数据, data 必须传 null (传 Note 会抛 IllegalArgumentException)
@@ -353,6 +354,20 @@ public class SulfurEvents implements Listener {
     private boolean isPlaying(PersistentDataContainer pdc) {
         Integer ticksLeft = pdc.get(playTicksLeftKey, PersistentDataType.INTEGER);
         return ticksLeft != null && ticksLeft > 0;
+    }
+
+    /**
+     * 当前是否吞有唱片机: 以 BODY 装备槽 (原版吞下方块的实际存储位) 为准读取,
+     * 不维护插件侧标记。覆盖全部吞食路径: 玩家喂食 (SwallowItemEvent)、
+     * 原版自主吞食、发射器装备等。
+     */
+    private boolean hasSwallowedJukebox(SulfurCube cube) {
+        EntityEquipment equipment = cube.getEquipment();
+        if (equipment == null) {
+            return false;
+        }
+        ItemStack body = equipment.getItem(EquipmentSlot.BODY);
+        return body != null && body.getType() == Material.JUKEBOX;
     }
 
     private static Disc findDisc(Material item) {
