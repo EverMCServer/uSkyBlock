@@ -4,7 +4,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
-import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -12,6 +11,10 @@ import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import dk.lockfuglsang.minecraft.file.FileUtil;
 import dk.lockfuglsang.minecraft.util.TimeUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -48,9 +51,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -271,13 +272,11 @@ public class IslandLogic {
                 String message = String.format(tr("\u00a7a#%2d \u00a77(%5.2f): \u00a7e%s \u00a77%s"),
                     place, level.getScore(), level.getLeaderName(), members);
                 if (sender instanceof Player target) {
-                    String warpString = getJsonWarpString(
-                        message,
-                        tr("Click to warp to the island!"),
-                        String.format("/is w %s", level.getLeaderName())
-                    );
-                    uSkyBlock.getInstance().execCommand(target, "console:tellraw " +
-                        target.getName() + " " + warpString, false);
+                    Component line = LegacyComponentSerializer.legacySection().deserialize(message)
+                        .hoverEvent(HoverEvent.showText(LegacyComponentSerializer.legacySection()
+                            .deserialize(tr("Click to warp to the island!"))))
+                        .clickEvent(ClickEvent.runCommand(String.format("/is w %s", level.getLeaderName())));
+                    target.sendMessage(line);
                 } else {
                     sender.sendMessage(message);
                 }
@@ -290,23 +289,6 @@ public class IslandLogic {
             }
         }
 
-    }
-
-    private String getJsonWarpString(String text, String hoverText, String command) {
-        Map<String, Object> hoverEvent = new HashMap<>();
-        hoverEvent.put("action", "show_text");
-        hoverEvent.put("value", hoverText);
-
-        Map<String, Object> clickEvent = new HashMap<>();
-        clickEvent.put("action", "run_command");
-        clickEvent.put("value", command);
-
-        Map<String, Object> rootMap = new HashMap<>();
-        rootMap.put("text", text);
-        rootMap.put("hoverEvent", hoverEvent);
-        rootMap.put("clickEvent", clickEvent);
-
-        return new GsonBuilder().create().toJson(rootMap);
     }
 
     public void showTopTen(final CommandSender sender, final int page) {

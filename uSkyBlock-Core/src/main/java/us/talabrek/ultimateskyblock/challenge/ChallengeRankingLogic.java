@@ -1,9 +1,12 @@
 package us.talabrek.ultimateskyblock.challenge;
 
-import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import dk.lockfuglsang.minecraft.file.FileUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -16,7 +19,6 @@ import us.talabrek.ultimateskyblock.util.IslandUtil;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -163,13 +165,11 @@ public class ChallengeRankingLogic {
             String message = String.format(tr("§a#%2d §7(%d): §e%s §7(%s)"),
                 place, rank.count, leader, rank.islandName);
             if (sender instanceof Player target) {
-                String warpString = getJsonWarpString(
-                    message,
-                    tr("Click to warp to the island!"),
-                    String.format("/is w %s", leader)
-                );
-                plugin.execCommand(target, "console:tellraw " +
-                    target.getName() + " " + warpString, false);
+                Component line = LegacyComponentSerializer.legacySection().deserialize(message)
+                    .hoverEvent(HoverEvent.showText(LegacyComponentSerializer.legacySection()
+                        .deserialize(tr("Click to warp to the island!"))))
+                    .clickEvent(ClickEvent.runCommand(String.format("/is w %s", leader)));
+                target.sendMessage(line);
             } else {
                 sender.sendMessage(message);
             }
@@ -248,23 +248,6 @@ public class ChallengeRankingLogic {
             return islandInfo.getLeader();
         }
         return islandName;
-    }
-
-    private String getJsonWarpString(String text, String hoverText, String command) {
-        Map<String, Object> hoverEvent = new HashMap<>();
-        hoverEvent.put("action", "show_text");
-        hoverEvent.put("value", hoverText);
-
-        Map<String, Object> clickEvent = new HashMap<>();
-        clickEvent.put("action", "run_command");
-        clickEvent.put("value", command);
-
-        Map<String, Object> rootMap = new HashMap<>();
-        rootMap.put("text", text);
-        rootMap.put("hoverEvent", hoverEvent);
-        rootMap.put("clickEvent", clickEvent);
-
-        return new GsonBuilder().create().toJson(rootMap);
     }
 
     /**
