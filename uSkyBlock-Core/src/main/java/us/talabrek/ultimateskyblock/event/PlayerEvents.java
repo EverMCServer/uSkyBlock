@@ -439,9 +439,12 @@ public class PlayerEvents implements Listener {
         return new NamespacedKey(plugin, String.format("vault_last_refreshed_%d_%d_%d", b.getX(), b.getY(), b.getZ()));
     }
 
-    private void RefreshVault(Block b, Player player, ItemStack item) {
-        Location loc = b.getLocation();
+    private boolean RefreshVault(Block b, Player player, ItemStack item) {
         org.bukkit.block.Vault vault = (org.bukkit.block.Vault) b.getState();
+        // \u5df2\u7ecf\u5237\u65b0\u8fc7\uff08\u65e0\u5df2\u8bb0\u5f55\u73a9\u5bb6\uff09\u5219\u4e0d\u505a\u4efb\u4f55\u4e8b\uff0c\u907f\u514d\u767d\u6263\u91d1\u952d/\u94bb\u77f3
+        if (vault.getRewardedPlayers().isEmpty()) {
+            return false;
+        }
         for (var uuid : vault.getRewardedPlayers()) {
             vault.removeRewardedPlayer(uuid);
         }
@@ -455,6 +458,7 @@ public class PlayerEvents implements Listener {
             }
         }
         player.sendMessage(tr("\u00a7eVault refreshed!"));
+        return true;
     }
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onRefreshVaults(final PlayerInteractEvent event) {
@@ -480,8 +484,9 @@ public class PlayerEvents implements Listener {
                         NamespacedKey key = getKeyVaultLastRefreshed(block);
                         Long last_refresh = pdc.getOrDefault(key, PersistentDataType.LONG, (long) -1);
                         if (last_refresh == -1 || last_refresh + 576000 < timestamp) {
-                            RefreshVault(block, player, item);
-                            pdc.set(key, PersistentDataType.LONG, timestamp);
+                            if (RefreshVault(block, player, item)) {
+                                pdc.set(key, PersistentDataType.LONG, timestamp);
+                            }
                         } else {
                             long seconds_left = (last_refresh + 576000 - timestamp);
                             long hours = seconds_left / 3600;
