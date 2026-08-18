@@ -40,6 +40,7 @@ import us.talabrek.ultimateskyblock.api.uSkyBlockAPI;
 import us.talabrek.ultimateskyblock.bootstrap.SkyblockApp;
 import us.talabrek.ultimateskyblock.bootstrap.SkyblockModule;
 import us.talabrek.ultimateskyblock.challenge.ChallengeLogic;
+import us.talabrek.ultimateskyblock.challenge.ChallengeRankingLogic;
 import us.talabrek.ultimateskyblock.command.AdminCommand;
 import us.talabrek.ultimateskyblock.command.admin.SetMaintenanceCommand;
 import us.talabrek.ultimateskyblock.handler.ConfirmHandler;
@@ -111,6 +112,8 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
     private SkyBlockMenu menu;
     @Inject
     private ChallengeLogic challengeLogic;
+    @Inject
+    private ChallengeRankingLogic challengeRankingLogic;
     @Inject
     private EventLogic eventLogic;
     @Inject
@@ -601,6 +604,10 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
 
     public ChallengeLogic getChallengeLogic() {
         return challengeLogic;
+    }
+
+    public ChallengeRankingLogic getChallengeRankingLogic() {
+        return challengeRankingLogic;
     }
 
     public LevelLogic getLevelLogic() {

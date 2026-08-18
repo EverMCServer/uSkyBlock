@@ -2549,6 +2549,27 @@ msgstr "点击以传送到岛上！"
 msgid "§eYour rank is: §f{0}"
 msgstr "§e你的排名是: §f{0}"
 
+#, java-format
+msgid "§eCHALLENGE TOP (page {0} of {1}):"
+msgstr "§e挑战排行 (页数 {0} - {1}):"
+
+msgid "§4Challenge top list is empty! No island has completed any challenges yet."
+msgstr "§4挑战排行列表为空！还没有岛屿完成过挑战。"
+
+#, java-printf-format
+msgid "§a#%2d §7(%d): §e%s §7(%s)"
+msgstr "§a#%2d §7(%d): §e%s §7(%s)"
+
+#, java-format
+msgid "§eYour challenge count is: §f{0}"
+msgstr "§e你的挑战完成数量: §f{0}"
+
+msgid "display the top of challenge completions"
+msgstr "显示挑战完成排行榜"
+
+msgid "enables user to force re-calculation of the challenge top list"
+msgstr "允许管理员强制重建挑战排行榜（不使用缓存）"
+
 msgid "§9Creating an island at your location"
 msgstr "§9在您的位置创建一个岛屿"
 

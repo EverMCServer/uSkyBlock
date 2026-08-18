@@ -77,7 +77,8 @@ public class ChallengeLogic implements Listener {
         @NotNull uSkyBlock plugin,
         @NotNull PerkLogic perkLogic,
         @NotNull HookManager hookManager,
-        @NotNull ProgressLogic progressLogic
+        @NotNull ProgressLogic progressLogic,
+        @NotNull ChallengeRankingLogic rankingLogic
     ) {
         this.logger = logger;
         this.perkLogic = perkLogic;
@@ -89,7 +90,7 @@ public class ChallengeLogic implements Listener {
         ranks = ChallengeFactory.createRankMap(config.getConfigurationSection("ranks"), defaults);
         logger.log(Level.INFO, String.format("Loaded %d challenge ranks (requirePreviousRank=%s)",
             ranks.size(), defaults.requirePreviousRank));
-        completionLogic = new ChallengeCompletionLogic(plugin, config);
+        completionLogic = new ChallengeCompletionLogic(plugin, config, rankingLogic);
         registerVirtualProgress();
         String displayItemForLocked = config.getString("lockedDisplayItem", null);
         if (displayItemForLocked != null) {

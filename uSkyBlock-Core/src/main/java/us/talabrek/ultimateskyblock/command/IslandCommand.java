@@ -65,6 +65,7 @@ public class IslandCommand extends BaseCommandExecutor {
         @NotNull BanCommand banCommand,
         @NotNull LockUnlockCommand lockUnlockCommand,
         @NotNull TopCommand topCommand,
+        @NotNull ChallengeTopCommand challengeTopCommand,
         @NotNull BiomeCommand biomeCommand,
         @NotNull GreetingCommand greetingCommand,
         @NotNull FarewellCommand farewellCommand,
@@ -102,6 +103,7 @@ public class IslandCommand extends BaseCommandExecutor {
         if (Settings.island_useTopTen) {
             add(topCommand);
         }
+        add(challengeTopCommand);
         add(biomeCommand);
         add(levelCommand);
         add(infoCommand);

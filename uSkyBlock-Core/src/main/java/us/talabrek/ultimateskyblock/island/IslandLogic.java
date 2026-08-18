@@ -25,6 +25,7 @@ import us.talabrek.ultimateskyblock.api.IslandLevel;
 import us.talabrek.ultimateskyblock.api.IslandRank;
 import us.talabrek.ultimateskyblock.api.event.uSkyBlockEvent;
 import us.talabrek.ultimateskyblock.bootstrap.PluginDataDir;
+import us.talabrek.ultimateskyblock.challenge.ChallengeRankingLogic;
 import us.talabrek.ultimateskyblock.handler.WorldEditHandler;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.handler.task.WorldEditClearFlatlandTask;
@@ -72,6 +73,7 @@ public class IslandLogic {
     private final Path directoryIslands;
     private final OrphanLogic orphanLogic;
     private final PlayerDB playerDB;
+    private final ChallengeRankingLogic rankingLogic;
 
     private final LoadingCache<String, IslandInfo> cache;
     private final boolean showMembers;
@@ -93,7 +95,8 @@ public class IslandLogic {
         @NotNull PluginConfig config,
         @NotNull @PluginDataDir Path dataPath,
         @NotNull OrphanLogic orphanLogic,
-        @NotNull PlayerDB playerDB
+        @NotNull PlayerDB playerDB,
+        @NotNull ChallengeRankingLogic rankingLogic
     ) {
         this.logger = logger;
         this.plugin = plugin;
@@ -102,6 +105,7 @@ public class IslandLogic {
         this.scheduler = scheduler;
         this.config = config;
         this.playerDB = playerDB;
+        this.rankingLogic = rankingLogic;
         Path islandDirectory = dataPath.resolve("islands");
         try {
             Files.createDirectories(islandDirectory);
@@ -391,6 +395,7 @@ public class IslandLogic {
                 islandInfo.delete();
             }
             cache.invalidate(location);
+            rankingLogic.removeIsland(location);
             orphanLogic.addOrphan(location);
         } catch (ExecutionException e) {
             throw new IllegalStateException("Unable to delete island " + location, e);

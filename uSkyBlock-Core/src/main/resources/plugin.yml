@@ -74,6 +74,7 @@ permissions:
       usb.island.signs.use: true
       usb.island.spawn: true
       usb.island.top: true
+      usb.island.ctop: true
       usb.biome.ocean: true
       usb.party.join: true
       usb.party.talk: true
@@ -137,6 +138,7 @@ permissions:
       usb.admin.remove: true
       usb.admin.setbiome: true
       usb.admin.topten: true
+      usb.admin.ctop: true
       usb.admin.toxic: true
       usb.admin.detox: true
       usb.admin.version: true
@@ -180,6 +182,7 @@ permissions:
       usb.admin.set: true
       usb.admin.setbiome: true
       usb.admin.topten: true
+      usb.admin.ctop: true
       usb.admin.toxic: true
       usb.admin.detox: true
       usb.admin.version: true
@@ -235,6 +238,7 @@ permissions:
       usb.island.talk: true
       usb.island.togglewarp: true
       usb.island.top: true
+      usb.island.ctop: true
       usb.island.trust: true
       usb.island.warp: true
 
@@ -387,6 +391,9 @@ permissions:
 
   usb.admin.topten:
     description: 'enables user to all-ways generate top-ten (no caching)'
+
+  usb.admin.ctop:
+    description: 'enables user to force re-calculation of the challenge top list'
 
   usb.admin.toxic:
     description: 'Grants access to /usb toxic - mark WE selection as toxic water'
@@ -598,6 +605,9 @@ permissions:
 
   usb.island.top:
     description: 'Grants access to /island top - display the top10 of islands'
+
+  usb.island.ctop:
+    description: 'Grants access to /island ctop - display the top of challenge completions'
 
   usb.island.trust:
     description: 'Grants access to /island trust - trust/untrust a player to help on your island.'

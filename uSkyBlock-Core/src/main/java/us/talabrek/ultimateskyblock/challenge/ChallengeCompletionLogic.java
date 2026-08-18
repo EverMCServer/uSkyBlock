@@ -32,10 +32,12 @@ public class ChallengeCompletionLogic {
     private final uSkyBlock plugin;
     private final File storageFolder;
     private final boolean storeOnIsland;
+    private final ChallengeRankingLogic rankingLogic;
     private final LoadingCache<String, Map<String, ChallengeCompletion>> completionCache;
 
-    public ChallengeCompletionLogic(uSkyBlock plugin, FileConfiguration config) {
+    public ChallengeCompletionLogic(uSkyBlock plugin, FileConfiguration config, ChallengeRankingLogic rankingLogic) {
         this.plugin = plugin;
+        this.rankingLogic = rankingLogic;
         storeOnIsland = config.getString("challengeSharing", "island").equalsIgnoreCase("island");
         completionCache = CacheBuilder
             .from(plugin.getConfig().getString("options.advanced.completionCache", "maximumSize=200,expireAfterWrite=15m,expireAfterAccess=10m"))
@@ -232,6 +234,7 @@ public class ChallengeCompletionLogic {
                 }
             }
             completion.addTimesCompleted();
+            updateRanking(playerInfo, challenges);
         }
     }
 
@@ -240,6 +243,7 @@ public class ChallengeCompletionLogic {
         if (challenges.containsKey(challenge)) {
             challenges.get(challenge).setTimesCompleted(0);
             challenges.get(challenge).setCooldownUntil(null);
+            updateRanking(playerInfo, challenges);
         }
     }
 
@@ -260,6 +264,13 @@ public class ChallengeCompletionLogic {
         Map<String, ChallengeCompletion> challengeMap = new ConcurrentHashMap<>();
         plugin.getChallengeLogic().populateChallenges(challengeMap);
         completionCache.put(getCacheId(playerInfo), challengeMap);
+        updateRanking(playerInfo, challengeMap);
+    }
+
+    private void updateRanking(PlayerInfo playerInfo, Map<String, ChallengeCompletion> challenges) {
+        if (storeOnIsland && playerInfo.getHasIsland()) {
+            rankingLogic.recordCompletion(playerInfo.locationForParty(), challenges);
+        }
     }
 
     public void shutdown() {
