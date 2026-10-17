@@ -80,6 +80,7 @@ public class SpawnEvents implements Listener {
 
     private boolean phantomsInOverworld;
     private boolean phantomsInNether;
+    private boolean phantomsInEnd;
 
     private static final Map<Location, Integer> conduits = new HashMap<>();
     private static final Random random = new Random();
@@ -89,6 +90,7 @@ public class SpawnEvents implements Listener {
         this.plugin = plugin;
         phantomsInOverworld = plugin.getConfig().getBoolean("options.spawning.phantoms.overworld", true);
         phantomsInNether = plugin.getConfig().getBoolean("options.spawning.phantoms.nether", false);
+        phantomsInEnd = plugin.getConfig().getBoolean("options.spawning.phantoms.end", false);
     }
 
     private static boolean isWaterBlock(Material material) {
@@ -356,6 +358,10 @@ public class SpawnEvents implements Listener {
         if (!phantomsInNether && plugin.getWorldManager().isSkyNether(spawnWorld)) {
             event.setCancelled(true);
         }
+
+        if (!phantomsInEnd && plugin.getWorldManager().isSkyEnd(spawnWorld)) {
+            event.setCancelled(true);
+        }
     }
 
     /**
@@ -374,5 +380,14 @@ public class SpawnEvents implements Listener {
      */
     void setPhantomsInNether(boolean state) {
         this.phantomsInNether = state;
+    }
+
+    /**
+     * Changes the setting that allows Phantoms to spawn in the end. Used for testing purposes.
+     *
+     * @param state True/enabled means spawning is allowed, false disallowed.
+     */
+    void setPhantomsInEnd(boolean state) {
+        this.phantomsInEnd = state;
     }
 }

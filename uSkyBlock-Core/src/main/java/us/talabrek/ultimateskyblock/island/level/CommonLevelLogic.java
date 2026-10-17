@@ -31,10 +31,23 @@ public abstract class CommonLevelLogic implements LevelLogic {
     }
 
     Location getNetherLocation(Location location) {
+        if (worldManager.getNetherWorld() == null) {
+            return null;
+        }
         Location netherLocation = location.clone();
         netherLocation.setWorld(worldManager.getNetherWorld());
         netherLocation.setY(Settings.nether_height);
         return netherLocation;
+    }
+
+    Location getEndLocation(Location location) {
+        if (worldManager.getEndWorld() == null) {
+            return null;
+        }
+        Location endLocation = location.clone();
+        endLocation.setWorld(worldManager.getEndWorld());
+        endLocation.setY(Settings.end_height);
+        return endLocation;
     }
 
     IslandScore createIslandScore(BlockCountCollection blockCollection) {

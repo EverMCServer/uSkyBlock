@@ -37,6 +37,7 @@ public class Settings {
     public static Duration general_biomeChange;
     public static Biome general_defaultBiome;
     public static Biome general_defaultNetherBiome;
+    public static Biome general_defaultEndBiome;
     public static boolean extras_sendToSpawn;
     public static boolean extras_respawnAtIsland;
     public static boolean extras_obsidianToLava;
@@ -47,6 +48,13 @@ public class Settings {
     public static boolean nether_enabled;
     public static int nether_lava_level;
     public static int nether_height;
+    public static boolean end_enabled;
+    public static int end_height;
+    public static int end_activateAtLevel;
+    public static String end_schematicName;
+    public static String end_chunkGenerator;
+    public static int end_fallbackX;
+    public static int end_fallbackZ;
 
     public static boolean loadPluginConfig(FileConfiguration config) {
         boolean changed = false;
@@ -93,6 +101,7 @@ public class Settings {
         }
         general_defaultBiome = loadBiome(config, "options.general.defaultBiome", Biome.OCEAN);
         general_defaultNetherBiome = loadBiome(config, "options.general.defaultNetherBiome", Biome.NETHER_WASTES);
+        general_defaultEndBiome = loadBiome(config, "options.general.defaultEndBiome", Biome.THE_END);
 
         try {
             general_cooldownRestart = Duration.ofSeconds(config.getInt("options.general.cooldownRestart"));
@@ -156,6 +165,22 @@ public class Settings {
         }
         nether_lava_level = config.getInt("nether.lava_level", config.getInt("nether.lava-level", 32));
         nether_height = config.getInt("nether.height", island_height / 2);
+        end_enabled = config.getBoolean("end.enabled", false);
+        if (end_enabled && !WorldEditHandler.isOuterPossible()) {
+            log.warning("The End DISABLED, since islands cannot be chunk-aligned!");
+            end_enabled = false;
+            changed = true;
+        }
+        end_height = config.getInt("end.height", island_height);
+        if (end_height < 20) {
+            end_height = 20;
+        }
+        end_activateAtLevel = config.getInt("end.activate-at.level", 100);
+        end_schematicName = config.getString("end.schematicName", "acidIslandEnd");
+        end_chunkGenerator = config.getString("end.chunk-generator",
+            "us.talabrek.ultimateskyblock.world.AcidEndChunkGenerator");
+        end_fallbackX = config.getInt("end.fallback.x", 0);
+        end_fallbackZ = config.getInt("end.fallback.z", 0);
         return changed;
     }
 

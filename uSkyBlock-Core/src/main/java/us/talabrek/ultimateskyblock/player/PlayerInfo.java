@@ -13,6 +13,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.challenge.Challenge;
 import us.talabrek.ultimateskyblock.challenge.ChallengeCompletion;
 import us.talabrek.ultimateskyblock.hook.permissions.PermissionsHook;
@@ -148,6 +149,20 @@ public class PlayerInfo implements Serializable, us.talabrek.ultimateskyblock.ap
         if (l != null) {
             l.setWorld(nether);
             l.setY(l.getY() / 2);
+        }
+        return l;
+    }
+
+    @Override
+    public Location getIslandEndLocation() {
+        Location l = getIslandLocation();
+        World end = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+        if (end == null) {
+            return null;
+        }
+        if (l != null) {
+            l.setWorld(end);
+            l.setY(Settings.end_height);
         }
         return l;
     }

@@ -24,6 +24,15 @@ public interface PlayerInfo {
 
     Location getIslandNetherLocation();
 
+    /**
+     * Gets the location of the player's island in the end world, or null if the player has no island or the end
+     * is disabled.
+     *
+     * @return Location of the island in the end world, or null.
+     * @since 3.2.0
+     */
+    Location getIslandEndLocation();
+
     Location getHomeLocation();
 
     String getDisplayName();

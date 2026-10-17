@@ -12,6 +12,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import us.talabrek.ultimateskyblock.PluginConfig;
+import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.async.Callback;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.island.task.ChunkSnapShotTask;
@@ -49,6 +50,15 @@ public class ChunkSnapshotLevelLogic extends CommonLevelLogic {
         this.logger = logger;
     }
 
+    /**
+     * Small functional interface used to keep the (deeply nested) snapshot tasks readable.
+     */
+    @FunctionalInterface
+    private interface SnapshotCallback {
+        void accept(ProtectedRegion region, List<ChunkSnapshot> overworld, ProtectedRegion netherRegion,
+                    List<ChunkSnapshot> nether, ProtectedRegion endRegion, List<ChunkSnapshot> end);
+    }
+
     @Override
     public void calculateScoreAsync(final Location l, final Callback<IslandScore> callback) {
         // TODO: 10/05/2015 - R4zorax: Ensure no overlapping calls to this one happen...
@@ -58,37 +68,91 @@ public class ChunkSnapshotLevelLogic extends CommonLevelLogic {
         if (region == null) {
             return;
         }
+        final Location netherLoc = getNetherLocation(l);
+        final Location endLoc = getEndLocation(l);
+        final ProtectedRegion netherRegion = WorldGuardHandler.getNetherRegionAt(netherLoc);
+        final ProtectedRegion endRegion = WorldGuardHandler.getEndRegionAt(endLoc);
+        final SnapshotCallback finalizer = (reg, overworld, nr, nether, er, end) ->
+            calculateAsync(reg, overworld, nr, nether, er, end, callback);
         new ChunkSnapShotTask(scheduler, pluginConfig, l, region, new Callback<>() {
             @Override
             public void run() {
-                final List<ChunkSnapshot> snapshotsOverworld = getState();
-                Location netherLoc = getNetherLocation(l);
-                final ProtectedRegion netherRegion = WorldGuardHandler.getNetherRegionAt(netherLoc);
+                snapshotNether(getState());
+            }
+
+            private void snapshotNether(List<ChunkSnapshot> snapshotsOverworld) {
+                if (netherLoc == null) {
+                    snapshotEnd(snapshotsOverworld, null);
+                    return;
+                }
                 new ChunkSnapShotTask(scheduler, pluginConfig, netherLoc, netherRegion, new Callback<>() {
                     @Override
                     public void run() {
-                        final List<ChunkSnapshot> snapshotsNether = getState();
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                calculateScoreAndCallback(region, snapshotsOverworld, netherRegion, snapshotsNether, callback);
-                            }
-                        }.runTaskAsynchronously(plugin);
+                        snapshotEnd(snapshotsOverworld, getState());
+                    }
+                }).runTask(plugin);
+            }
+
+            private void snapshotEnd(List<ChunkSnapshot> snapshotsOverworld, List<ChunkSnapshot> snapshotsNether) {
+                if (endLoc == null) {
+                    finalizer.accept(region, snapshotsOverworld, netherRegion, snapshotsNether, null, null);
+                    return;
+                }
+                new ChunkSnapShotTask(scheduler, pluginConfig, endLoc, endRegion, new Callback<>() {
+                    @Override
+                    public void run() {
+                        finalizer.accept(region, snapshotsOverworld, netherRegion, snapshotsNether, endRegion, getState());
                     }
                 }).runTask(plugin);
             }
         }).runTask(plugin);
     }
 
-    private void calculateScoreAndCallback(ProtectedRegion region, List<ChunkSnapshot> snapshotsOverworld, ProtectedRegion netherRegion, List<ChunkSnapshot> snapshotsNether, Callback<IslandScore> callback) {
-        IslandScore islandScore = calculateScore(region, snapshotsOverworld, netherRegion, snapshotsNether);
+    private void calculateAsync(ProtectedRegion region, List<ChunkSnapshot> snapshotsOverworld,
+                                ProtectedRegion netherRegion, List<ChunkSnapshot> snapshotsNether,
+                                ProtectedRegion endRegion, List<ChunkSnapshot> snapshotsEnd,
+                                Callback<IslandScore> callback) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                calculateScoreAndCallback(region, snapshotsOverworld, netherRegion, snapshotsNether, endRegion, snapshotsEnd, callback);
+            }
+        }.runTaskAsynchronously(plugin);
+    }
+
+    private void calculateScoreAndCallback(ProtectedRegion region, List<ChunkSnapshot> snapshotsOverworld, ProtectedRegion netherRegion, List<ChunkSnapshot> snapshotsNether, ProtectedRegion endRegion, List<ChunkSnapshot> snapshotsEnd, Callback<IslandScore> callback) {
+        IslandScore islandScore = calculateScore(region, snapshotsOverworld, netherRegion, snapshotsNether, endRegion, snapshotsEnd);
         callback.setState(islandScore);
         scheduler.sync(callback);
         logger.exiting(this.getClass().getName(), "calculateScoreAsync");
     }
 
-    private IslandScore calculateScore(ProtectedRegion region, List<ChunkSnapshot> snapshotsOverworld, ProtectedRegion netherRegion, List<ChunkSnapshot> snapshotsNether) {
+    private IslandScore calculateScore(ProtectedRegion region, List<ChunkSnapshot> snapshotsOverworld, ProtectedRegion netherRegion, List<ChunkSnapshot> snapshotsNether, ProtectedRegion endRegion, List<ChunkSnapshot> snapshotsEnd) {
         final BlockCountCollection counts = new BlockCountCollection(scoreMap);
+        addRegionBlocks(counts, region, snapshotsOverworld);
+        IslandScore islandScore = createIslandScore(counts);
+        if (islandScore.getScore() >= activateNetherAtLevel && netherRegion != null && snapshotsNether != null) {
+            // Add nether levels
+            addRegionBlocks(counts, netherRegion, snapshotsNether);
+            islandScore = createIslandScore(counts);
+        }
+        if (islandScore.getScore() >= Settings.end_activateAtLevel && endRegion != null && snapshotsEnd != null) {
+            // Add end levels
+            addRegionBlocks(counts, endRegion, snapshotsEnd);
+            islandScore = createIslandScore(counts);
+        }
+        return islandScore;
+    }
+
+    /**
+     * Adds all non-air blocks inside the given region to the block count collection, using the (already captured)
+     * chunk snapshots of the region's world.
+     *
+     * @param counts    Collection to add the blocks to.
+     * @param region    Region to scan.
+     * @param snapshots Chunk snapshots of the region's world.
+     */
+    private void addRegionBlocks(BlockCountCollection counts, ProtectedRegion region, List<ChunkSnapshot> snapshots) {
         int minX = region.getMinimumPoint().getBlockX();
         int maxX = region.getMaximumPoint().getBlockX();
         int minY = region.getMinimumPoint().getBlockY();
@@ -98,7 +162,7 @@ public class ChunkSnapshotLevelLogic extends CommonLevelLogic {
 
         for (int x = minX; x <= maxX; ++x) {
             for (int z = minZ; z <= maxZ; ++z) {
-                ChunkSnapshot chunk = getChunkSnapshot(x >> 4, z >> 4, snapshotsOverworld);
+                ChunkSnapshot chunk = getChunkSnapshot(x >> 4, z >> 4, snapshots);
                 if (chunk == null) {
                     // This should NOT happen!
                     logger.log(Level.WARNING, "Missing chunk in snapshot for x,z = " + x + "," + z);
@@ -115,35 +179,6 @@ public class ChunkSnapshotLevelLogic extends CommonLevelLogic {
                 }
             }
         }
-        IslandScore islandScore = createIslandScore(counts);
-        if (islandScore.getScore() >= activateNetherAtLevel && netherRegion != null && snapshotsNether != null) {
-            // Add nether levels
-            minX = netherRegion.getMinimumPoint().getBlockX();
-            maxX = netherRegion.getMaximumPoint().getBlockX();
-            minZ = netherRegion.getMinimumPoint().getBlockZ();
-            maxZ = netherRegion.getMaximumPoint().getBlockZ();
-            for (int x = minX; x <= maxX; ++x) {
-                for (int z = minZ; z <= maxZ; ++z) {
-                    ChunkSnapshot chunk = getChunkSnapshot(x >> 4, z >> 4, snapshotsNether);
-                    if (chunk == null) {
-                        // This should NOT happen!
-                        logger.log(Level.WARNING, "Missing nether-chunk in snapshot for x,z = " + x + "," + z);
-                        continue;
-                    }
-                    int cx = (x & 0xf);
-                    int cz = (z & 0xf);
-                    for (int y = 0; y < 256; y++) {
-                        Material blockType = chunk.getBlockType(cx, y, cz);
-                        if (blockType == Material.AIR) {
-                            continue;
-                        }
-                        counts.add(blockType);
-                    }
-                }
-            }
-            islandScore = createIslandScore(counts);
-        }
-        return islandScore;
     }
 
     private static ChunkSnapshot getChunkSnapshot(int x, int z, List<ChunkSnapshot> snapshots) {

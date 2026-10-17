@@ -144,10 +144,56 @@ public class MultiverseHook extends PluginHook {
             mvWorld.setRespawnWorld(plugin.getWorldManager().getWorld().getName());
         }
 
-        linkNetherInventory(plugin.getWorldManager().getWorld(), world);
+        linkInventories(plugin.getWorldManager().getWorld(), world);
     }
 
-    private void linkNetherInventory(@NotNull World... worlds) {
+    /**
+     * Registers the given {@link World} to Multiverse-Core as the skyblock end world (skyworld_the_end).
+     * @param world World to register.
+     */
+    public void registerEndWorld(@NotNull World world) {
+        if (coreApi == null) {
+            return;
+        }
+
+        WorldManager wm = coreApi.getWorldManager();
+        String worldName = world.getName();
+
+        if (!wm.isWorld(worldName)) {
+            wm.importWorld(ImportWorldOptions.worldName(worldName)
+                .environment(World.Environment.THE_END)
+                .generator(GENERATOR_NAME)
+                .useSpawnAdjust(false));
+        }
+
+        Option<MultiverseWorld> optWorld = wm.getWorld(worldName);
+        if (optWorld.isEmpty()) {
+            return;
+        }
+        MultiverseWorld mvWorld = optWorld.get();
+
+        mvWorld.setScale(1.0);
+
+        Location fallback = new Location(world, Settings.end_fallbackX, Settings.end_height + 0.1, Settings.end_fallbackZ);
+        mvWorld.setAdjustSpawn(false);
+        mvWorld.setSpawnLocation(fallback);
+        world.setSpawnLocation(fallback);
+
+        if (!Settings.extras_sendToSpawn) {
+            mvWorld.setRespawnWorld(plugin.getWorldManager().getWorld().getName());
+        }
+
+        linkInventories(plugin.getWorldManager().getWorld(), world);
+    }
+
+    /**
+     * Shares the player inventory between the given worlds using Multiverse-Inventories. Every plugin managed world
+     * (overworld, nether and end) must be in the same group, otherwise players lose their items when switching
+     * dimensions.
+     *
+     * @param worlds Worlds to link together.
+     */
+    private void linkInventories(@NotNull World... worlds) {
         if (coreApi == null || inventoriesApi == null) {
             return;
         }

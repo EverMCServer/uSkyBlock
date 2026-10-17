@@ -425,7 +425,8 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
 
     public boolean playerIsOnOwnIsland(Player player) {
         return locationIsOnIsland(player, player.getLocation())
-            || locationIsOnNetherIsland(player, player.getLocation());
+            || locationIsOnNetherIsland(player, player.getLocation())
+            || locationIsOnEndIsland(player, player.getLocation());
     }
 
     private boolean playerIsTrusted(Player player) {
@@ -448,6 +449,22 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
                 return false;
             }
             ProtectedRegion region = WorldGuardHandler.getNetherRegionAt(p);
+            return region != null && region.contains(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        }
+        return false;
+    }
+
+    public boolean locationIsOnEndIsland(final Player player, final Location loc) {
+        if (!getWorldManager().isSkyEnd(loc.getWorld())) {
+            return false;
+        }
+        PlayerInfo playerInfo = playerLogic.getPlayerInfo(player);
+        if (playerInfo != null && playerInfo.getHasIsland()) {
+            Location p = playerInfo.getIslandEndLocation();
+            if (p == null) {
+                return false;
+            }
+            ProtectedRegion region = WorldGuardHandler.getEndRegionAt(p);
             return region != null && region.contains(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         }
         return false;
@@ -649,6 +666,7 @@ public class uSkyBlock extends JavaPlugin implements uSkyBlockAPI, CommandManage
 
         WorldManager.skyBlockWorld = null; // Force a re-import or what-ever...
         WorldManager.skyBlockNetherWorld = null;
+        WorldManager.skyBlockEndWorld = null;
 
         TranslationUtil.INSTANCE.loadItemLang(this);
 

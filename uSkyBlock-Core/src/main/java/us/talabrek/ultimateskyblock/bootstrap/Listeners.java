@@ -36,6 +36,7 @@ public class Listeners {
     private final SulfurEvents sulfurEvents;
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
+    private final EndPortalEvents endPortalEvents;
     private final ToolMenuEvents toolMenuEvents;
     private final SignEvents signEvents;
     private final ChatEvents chatEvents;
@@ -61,6 +62,7 @@ public class Listeners {
         @NotNull SulfurEvents sulfurEvents,
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
+        @NotNull EndPortalEvents endPortalEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
         @NotNull SignEvents signEvents,
         @NotNull ChatEvents chatEvents,
@@ -84,6 +86,7 @@ public class Listeners {
         this.sulfurEvents = sulfurEvents;
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
+        this.endPortalEvents = endPortalEvents;
         this.toolMenuEvents = toolMenuEvents;
         this.signEvents = signEvents;
         this.chatEvents = chatEvents;
@@ -122,6 +125,9 @@ public class Listeners {
         }
         if (Settings.nether_enabled) {
             manager.registerEvents(netherTerraFormEvents, plugin);
+        }
+        if (Settings.end_enabled) {
+            manager.registerEvents(endPortalEvents, plugin);
         }
         if (config.getYamlConfig().getBoolean("tool-menu.enabled", true)) {
             manager.registerEvents(toolMenuEvents, plugin);

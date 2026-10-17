@@ -76,6 +76,9 @@ public class Services {
         if (plugin.getWorldManager().getNetherWorld() != null) {
             WorldGuardHandler.setupGlobal(plugin.getWorldManager().getNetherWorld());
         }
+        if (plugin.getWorldManager().getEndWorld() != null) {
+            WorldGuardHandler.setupGlobal(plugin.getWorldManager().getEndWorld());
+        }
     }
 
     public void shutdown(uSkyBlock plugin) {

@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.PluginConfig;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.bootstrap.PluginDataDir;
+import us.talabrek.ultimateskyblock.event.EndPortalEvents;
 import us.talabrek.ultimateskyblock.handler.AsyncWorldEditHandler;
 import us.talabrek.ultimateskyblock.player.Perk;
 import us.talabrek.ultimateskyblock.player.PlayerPerk;
@@ -46,6 +47,7 @@ public class IslandGenerator {
     private final Logger logger;
     private final File[] schemFiles;
     private final File netherSchematic;
+    private final File endSchematic;
     private final File directorySchematics;
 
     @Inject
@@ -62,6 +64,7 @@ public class IslandGenerator {
         }
         copySchematicsFromJar();
         netherSchematic = getSchematicFile(config.getYamlConfig().getString("nether.schematicName", "acidIslandNether"));
+        endSchematic = getSchematicFile(Settings.end_schematicName != null ? Settings.end_schematicName : "acidIslandEnd");
 
         schemFiles = loadSchematics(config);
         if (schemFiles == null) {
@@ -103,12 +106,26 @@ public class IslandGenerator {
         if (netherFile == null) {
             netherFile = netherSchematic;
         }
+        File endFile = getSchematicFile(cSchem != null ? cSchem + "End" : "acidIslandEnd");
+        if (endFile == null) {
+            endFile = endSchematic;
+        }
         if (schemFile.exists() && Bukkit.getServer().getPluginManager().isPluginEnabled("WorldEdit")) {
             AsyncWorldEditHandler.loadIslandSchematic(schemFile, next, playerPerk);
             World skyBlockNetherWorld = uSkyBlock.getInstance().getWorldManager().getNetherWorld();
-            if (skyBlockNetherWorld != null) {
+            if (skyBlockNetherWorld != null && netherFile != null) {
                 Location netherHome = new Location(skyBlockNetherWorld, next.getBlockX(), Settings.nether_height, next.getBlockZ());
                 AsyncWorldEditHandler.loadIslandSchematic(netherFile, netherHome, playerPerk);
+            }
+            World skyBlockEndWorld = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+            if (skyBlockEndWorld != null) {
+                Location endHome = new Location(skyBlockEndWorld, next.getBlockX(), Settings.end_height, next.getBlockZ());
+                if (endFile != null) {
+                    AsyncWorldEditHandler.loadIslandSchematic(endFile, endHome, playerPerk);
+                }
+                // The arrival platform is built by the plugin (instead of by the vanilla world generator) so that it
+                // always ends up at exactly the same place, even outside the vanilla end spawn.
+                EndPortalEvents.buildArrivalPlatform(endHome);
             }
             return true;
         } else {
@@ -193,8 +210,23 @@ public class IslandGenerator {
                 name != null &&
                 (name.endsWith(".schematic") || name.endsWith(".schem")) &&
                 !name.startsWith("uSkyBlock") &&
-                !basename.toLowerCase().endsWith("nether");
+                !isExtraWorldSchematic(basename);
         });
+    }
+
+    /**
+     * The nether and end schematics are not selectable island schematics - they are placed automatically alongside
+     * the overworld island when it is created.
+     *
+     * @param basename Basename of the schematic (without extension).
+     * @return True if the schematic is an extra dimension schematic.
+     */
+    private boolean isExtraWorldSchematic(@NotNull String basename) {
+        String lower = basename.toLowerCase();
+        if (lower.endsWith("nether") || lower.endsWith("end")) {
+            return true;
+        }
+        return Settings.end_schematicName != null && lower.equals(Settings.end_schematicName.toLowerCase());
     }
 
     private File getSchematicFile(String cSchem) {

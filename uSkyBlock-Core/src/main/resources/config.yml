@@ -21,6 +21,9 @@ options:
     # [string] The default biome assigned to new islands
     defaultNetherBiome: nether_wastes
 
+    # [string] The biome used for the end world
+    defaultEndBiome: the_end
+
     # [integer] The number of milliseconds between the same notification is sent to the player.
     # This is used when events are triggered heavily - i.e. item-pickup-prevention, damage-prevention etc.
     maxSpam: 2000
@@ -212,6 +215,8 @@ options:
       overworld: true
       # [true/false] If natural Phantom spawns are allowed in the nether. True enables Phantom spawning.
       nether: false
+      # [true/false] If natural Phantom spawns are allowed in the end. True enables Phantom spawning.
+      end: false
 
   party:
 
@@ -441,6 +446,31 @@ nether:
     wither: 0.2
     skeleton: 0.1
     blaze: 0.2
+end:
+  # Whether the skyblock end world is enabled. Each island gets its own region, just like the nether.
+  enabled: true
+
+  # The Y coordinate used for the end arrival platforms and for the per island region content.
+  # Unlike the nether, the end does not use coordinate scaling, so this is an absolute height.
+  height: 64
+
+  # The minimum island level required before the end blocks are added to the island level.
+  activate-at:
+    level: 100
+
+  # The schematic pasted into the end world when an island is created (usually holds the return portal).
+  schematicName: acidIslandEnd
+
+  # Chunk generator used for the end world. Must be a ChunkGenerator.
+  chunk-generator: us.talabrek.ultimateskyblock.world.AcidEndChunkGenerator
+
+  # Spawn / fallback point of the end world (Y is end.height). This is where portals that cannot be linked to an
+  # island end up, and it is the shared end "main city" around the origin. The plugin places NO blocks here - the
+  # city is built and maintained by the server team. Keep it away from all island regions (the origin never gets an
+  # island because of options.general.spawnSize).
+  fallback:
+    x: 0
+    z: 0
 tool-menu:
   enabled: true
   tool: OAK_SAPLING
@@ -476,7 +506,7 @@ placeholder:
   servercommandplaceholder: false
 
 # DO NOT TOUCH THE FIELDS BELOW
-version: 110
+version: 111
 force-replace:
   options.party.invite-timeout: 100
   options.island.islandTeleportDelay: 5

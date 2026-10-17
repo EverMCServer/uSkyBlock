@@ -699,9 +699,16 @@ public class PlayerEvents implements Listener {
             if (rateLimiter.tryAcquire()) {
                 player.sendMessage("\u00a7c你需要完成海岛入门任务，才能进入下界！");
             }
-        } else {
-            plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_nether");
+            return;
         }
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
+            // The end is handled by EndPortalEvents (destination rewrite + island requirements).
+            // TODO: award the "enter_end" challenge once the portal is actually accepted. Deliberately not done
+            //       here: this listener runs before EndPortalEvents validates/cancels the portal, and it also
+            //       fires for end portals outside the plugin's worlds.
+            return;
+        }
+        plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_nether");
     }
 
     /**

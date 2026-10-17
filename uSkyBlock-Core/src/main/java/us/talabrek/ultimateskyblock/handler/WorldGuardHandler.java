@@ -20,6 +20,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
@@ -40,7 +41,17 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 public class WorldGuardHandler {
     private static final String CN = WorldGuardHandler.class.getName();
     private static final Logger log = Logger.getLogger(CN);
-    private static final String VERSION = "14";
+    /**
+     * Version of the island region layout. It is stored per island as {@code general.regionVersion} and compared in
+     * {@link #noOrOldRegion} to decide whether an existing island needs its regions rebuilt.
+     *
+     * <p>Bump this whenever the set of island regions or their geometry/flags changes, so that existing islands get
+     * rebuilt through {@code protectIsland()} (a member logging in) or {@code /usb protectall} (all islands).
+     * {@code updateRegion()} always (re)creates all regions for the enabled dimensions at once.</p>
+     *
+     * <p>15: adds the per island end region ({@code <islandName>end}) next to island/nether.</p>
+     */
+    private static final String VERSION = "15";
 
     public static WorldGuardPlatform getWorldGuard() {
         final Plugin plugin = uSkyBlock.getInstance().getServer().getPluginManager().getPlugin("WorldGuard");
@@ -90,6 +101,44 @@ public class WorldGuardHandler {
         return VERSION + " " + I18nUtil.getLocale();
     }
 
+    /**
+     * The suffixes of island regions in the plugin managed extra dimensions (nether and end). Regions in these
+     * dimensions span the full world height.
+     */
+    private static final List<String> EXTRA_WORLD_SUFFIXES = List.of("nether", "end");
+
+    /**
+     * The suffixes of all island regions. {@code island} is the overworld region, the others are extra dimensions.
+     */
+    private static final List<String> ISLAND_REGION_SUFFIXES = List.of("island", "nether", "end");
+
+    private static boolean isExtraWorldRegion(@Nullable String regionName) {
+        return regionName != null && EXTRA_WORLD_SUFFIXES.stream().anyMatch(regionName::endsWith);
+    }
+
+    /**
+     * Extracts the island name from a region id, or null if the region is not an island region.
+     *
+     * @param regionId Region id to inspect (case insensitive).
+     * @return Island name, or null when the id is not an island region.
+     */
+    @Nullable
+    public static String getIslandNameFromRegion(@Nullable String regionId) {
+        if (regionId == null) {
+            return null;
+        }
+        String id = regionId.toLowerCase();
+        if (id.equalsIgnoreCase("__global__")) {
+            return null;
+        }
+        for (String suffix : ISLAND_REGION_SUFFIXES) {
+            if (id.length() > suffix.length() && id.endsWith(suffix)) {
+                return id.substring(0, id.length() - suffix.length());
+            }
+        }
+        return null;
+    }
+
     public static void updateRegion(IslandInfo islandInfo) {
         try {
             ProtectedCuboidRegion region = setRegionFlags(islandInfo);
@@ -103,6 +152,14 @@ public class WorldGuardHandler {
             if (netherWorld != null) {
                 regionManager = getRegionManager(netherWorld);
                 regionManager.removeRegion(netherName);
+                regionManager.addRegion(region);
+            }
+            String endName = islandInfo.getName() + "end";
+            region = setRegionFlags(islandInfo, endName);
+            World endWorld = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+            if (endWorld != null) {
+                regionManager = getRegionManager(endWorld);
+                regionManager.removeRegion(endName);
                 regionManager.addRegion(region);
             }
             islandInfo.setRegionVersion(getVersion());
@@ -125,7 +182,7 @@ public class WorldGuardHandler {
         Location islandLocation = islandConfig.getIslandLocation();
         BlockVector3 minPoint = getProtectionVectorRight(islandLocation);
         BlockVector3 maxPoint = getProtectionVectorLeft(islandLocation);
-        if (regionName != null && regionName.endsWith("nether")) {
+        if (isExtraWorldRegion(regionName)) {
             minPoint = minPoint.withY(0);
             maxPoint = maxPoint.withY(255);
         }
@@ -189,6 +246,7 @@ public class WorldGuardHandler {
             if (regionManager.hasRegion(islandName + "island")) {
                 ProtectedRegion region = regionManager.getRegion(islandName + "island");
                 updateLockStatus(region, true);
+                updateExtraWorldLockStatus(islandName, true);
                 sender.sendMessage(tr("\u00a7eYour island is now locked. Only your party members may enter."));
             } else {
                 sender.sendMessage(tr("\u00a74You must be the party leader to lock your island!"));
@@ -204,12 +262,39 @@ public class WorldGuardHandler {
             if (regionManager.hasRegion(islandName + "island")) {
                 ProtectedRegion region = regionManager.getRegion(islandName + "island");
                 updateLockStatus(region, false);
+                updateExtraWorldLockStatus(islandName, false);
                 sender.sendMessage(tr("\u00a7eYour island is unlocked and anyone may enter, however only you and your party members may build or remove blocks."));
             } else {
                 sender.sendMessage(tr("\u00a74You must be the party leader to unlock your island!"));
             }
         } catch (Exception ex) {
             LogUtil.log(Level.SEVERE, "ERROR: Failed to unlock " + islandName + "'s Island (" + sender.getName() + ")", ex);
+        }
+    }
+
+    /**
+     * Applies the island lock state to the nether and end regions of an island, so that locking an island also
+     * locks its extra dimensions.
+     *
+     * @param islandName Name of the island.
+     * @param locked     Whether the island is locked.
+     */
+    private static void updateExtraWorldLockStatus(String islandName, boolean locked) {
+        World netherWorld = uSkyBlock.getInstance().getWorldManager().getNetherWorld();
+        if (netherWorld != null) {
+            RegionManager netherRegions = getRegionManager(netherWorld);
+            ProtectedRegion nether = netherRegions.getRegion(islandName + "nether");
+            if (nether != null) {
+                updateLockStatus(nether, locked);
+            }
+        }
+        World endWorld = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+        if (endWorld != null) {
+            RegionManager endRegions = getRegionManager(endWorld);
+            ProtectedRegion end = endRegions.getRegion(islandName + "end");
+            if (end != null) {
+                updateLockStatus(end, locked);
+            }
         }
     }
 
@@ -224,26 +309,34 @@ public class WorldGuardHandler {
     }
 
     public static String getIslandNameAt(Location location) {
-        RegionManager regionManager = getRegionManager(location.getWorld());
-        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
-        for (ProtectedRegion region : applicableRegions) {
-            String id = region.getId().toLowerCase();
-            if (!id.equalsIgnoreCase("__global__") && (id.endsWith("island") || id.endsWith("nether"))) {
-                return id.substring(0, id.length() - 6);
-            }
+        if (location == null || location.getWorld() == null) {
+            return null;
         }
-        return null;
-    }
-
-    public static ProtectedRegion getIslandRegionAt(Location location) {
         RegionManager regionManager = getRegionManager(location.getWorld());
         if (regionManager == null) {
             return null;
         }
         Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
         for (ProtectedRegion region : applicableRegions) {
-            String id = region.getId().toLowerCase();
-            if (!id.equalsIgnoreCase("__global__") && (id.endsWith("island") || id.endsWith("nether"))) {
+            String islandName = getIslandNameFromRegion(region.getId());
+            if (islandName != null) {
+                return islandName;
+            }
+        }
+        return null;
+    }
+
+    public static ProtectedRegion getIslandRegionAt(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+        RegionManager regionManager = getRegionManager(location.getWorld());
+        if (regionManager == null) {
+            return null;
+        }
+        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
+        for (ProtectedRegion region : applicableRegions) {
+            if (getIslandNameFromRegion(region.getId()) != null) {
                 return region;
             }
         }
@@ -255,7 +348,22 @@ public class WorldGuardHandler {
     }
 
     public static ProtectedRegion getNetherRegionAt(Location location) {
-        if (!Settings.nether_enabled || location == null) {
+        return getRegionAt(location, "nether", Settings.nether_enabled);
+    }
+
+    /**
+     * Gets the end region covering the given {@link Location}, or null if there is none.
+     *
+     * @param location Location to look up.
+     * @return The end region at the location, or null.
+     */
+    @Nullable
+    public static ProtectedRegion getEndRegionAt(Location location) {
+        return getRegionAt(location, "end", Settings.end_enabled);
+    }
+
+    private static ProtectedRegion getRegionAt(Location location, String suffix, boolean enabled) {
+        if (!enabled || location == null || location.getWorld() == null) {
             return null;
         }
         RegionManager regionManager = getRegionManager(location.getWorld());
@@ -265,7 +373,7 @@ public class WorldGuardHandler {
         Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
         for (ProtectedRegion region : applicableRegions) {
             String id = region.getId().toLowerCase();
-            if (!id.equalsIgnoreCase("__global__") && id.endsWith("nether")) {
+            if (!id.equalsIgnoreCase("__global__") && id.endsWith(suffix)) {
                 return region;
             }
         }
@@ -276,6 +384,10 @@ public class WorldGuardHandler {
         RegionManager regionManager = getRegionManager(uSkyBlock.getInstance().getWorldManager().getWorld());
         regionManager.removeRegion(islandName + "island");
         regionManager.removeRegion(islandName + "nether");
+        World endWorld = uSkyBlock.getInstance().getWorldManager().getEndWorld();
+        if (endWorld != null) {
+            getRegionManager(endWorld).removeRegion(islandName + "end");
+        }
     }
 
     public static void setupGlobal(World world) {
@@ -333,7 +445,6 @@ public class WorldGuardHandler {
     }
 
     public static ProtectedCuboidRegion getIslandRegion(Location islandLocation) {
-        int r = Settings.island_radius;
         BlockVector3 islandCenter = BlockVector3.at(islandLocation.getBlockX(), 0, islandLocation.getBlockZ());
         return new ProtectedCuboidRegion(
                 String.format("%d,%disland", islandCenter.getBlockX(), islandLocation.getBlockZ()),

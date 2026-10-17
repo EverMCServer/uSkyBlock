@@ -166,6 +166,21 @@ public class IslandLogic {
 
     public void clearIsland(final Location loc, final Runnable afterDeletion) {
         logger.log(Level.FINE, "clearing island at {0}", loc);
+        Runnable clearEnd = () -> {
+            Location endIsland = getEndLocation(loc);
+            ProtectedRegion endRegion = endIsland != null ? WorldGuardHandler.getEndRegionAt(endIsland) : null;
+            if (endRegion != null) {
+                for (Player player : WorldGuardHandler.getPlayersInRegion(endIsland.getWorld(), endRegion)) {
+                    if (player != null && player.isOnline() && worldManager.isSkyEnd(player.getWorld()) && !player.isFlying()) {
+                        player.sendMessage(tr("\u00a7cThe island owning this piece of the end is being deleted! Sending you to spawn."));
+                        teleportLogic.spawnTeleport(player, true);
+                    }
+                }
+                WorldEditHandler.clearIsland(endIsland.getWorld(), endRegion, afterDeletion);
+            } else {
+                afterDeletion.run();
+            }
+        };
         Runnable clearNether = () -> {
             Location netherIsland = getNetherLocation(loc);
             ProtectedRegion netherRegion = WorldGuardHandler.getNetherRegionAt(netherIsland);
@@ -176,9 +191,9 @@ public class IslandLogic {
                         teleportLogic.spawnTeleport(player, true);
                     }
                 }
-                WorldEditHandler.clearIsland(netherIsland.getWorld(), netherRegion, afterDeletion);
+                WorldEditHandler.clearIsland(netherIsland.getWorld(), netherRegion, clearEnd);
             } else {
-                afterDeletion.run();
+                clearEnd.run();
             }
         };
         World skyBlockWorld = worldManager.getWorld();
@@ -198,10 +213,25 @@ public class IslandLogic {
     }
 
     private Location getNetherLocation(Location loc) {
+        World nether = worldManager.getNetherWorld();
+        if (nether == null) {
+            return null;
+        }
         Location netherIsland = loc.clone();
-        netherIsland.setWorld(worldManager.getNetherWorld());
+        netherIsland.setWorld(nether);
         netherIsland.setY(loc.getY() / 2);
         return netherIsland;
+    }
+
+    private Location getEndLocation(Location loc) {
+        World end = worldManager.getEndWorld();
+        if (end == null) {
+            return null;
+        }
+        Location endIsland = loc.clone();
+        endIsland.setWorld(end);
+        endIsland.setY(Settings.end_height);
+        return endIsland;
     }
 
     public boolean clearFlatland(final CommandSender sender, final Location loc, Duration delay) {

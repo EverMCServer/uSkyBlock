@@ -1,5 +1,6 @@
 package us.talabrek.ultimateskyblock.event;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Dispenser;
@@ -88,8 +90,15 @@ public class IslandBorderEvent implements Listener {
 
         // prevent mobs leave the island — track last position to bounce at border
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            List<Entity> entities = plugin.getWorldManager().getWorld().getEntities();
-            entities.addAll(plugin.getWorldManager().getNetherWorld().getEntities());
+            List<Entity> entities = new ArrayList<>(plugin.getWorldManager().getWorld().getEntities());
+            World netherWorld = plugin.getWorldManager().getNetherWorld();
+            if (netherWorld != null) {
+                entities.addAll(netherWorld.getEntities());
+            }
+            World endWorld = plugin.getWorldManager().getEndWorld();
+            if (endWorld != null) {
+                entities.addAll(endWorld.getEntities());
+            }
             for (Entity e : entities) {
                 if (denyCrossBorder(e)) {
                     Location last = lastPosition.get(e.getUniqueId());

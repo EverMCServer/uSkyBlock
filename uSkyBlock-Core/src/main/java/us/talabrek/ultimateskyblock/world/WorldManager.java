@@ -13,6 +13,7 @@ import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.generator.ChunkGenerator;
@@ -45,6 +46,7 @@ public class WorldManager {
 
     public static volatile World skyBlockWorld;
     public static volatile World skyBlockNetherWorld;
+    public static volatile World skyBlockEndWorld;
 
     static {
         skyBlockWorld = null;
@@ -199,6 +201,30 @@ public class WorldManager {
     }
 
     /**
+     * Gets the {@link ChunkGenerator} responsible for generating chunks in the end skyworld.
+     *
+     * @return ChunkGenerator for end skyworld.
+     */
+    @NotNull
+    private ChunkGenerator getEndGenerator() {
+        try {
+            String clazz = Settings.end_chunkGenerator != null
+                ? Settings.end_chunkGenerator
+                : "us.talabrek.ultimateskyblock.world.AcidEndChunkGenerator";
+            Object generator = Class.forName(clazz).getDeclaredConstructor().newInstance();
+            if (generator instanceof ChunkGenerator) {
+                return (ChunkGenerator) generator;
+            }
+        } catch (ClassNotFoundException ex) {
+            logger.log(Level.WARNING, "Invalid end chunk-generator configured: " + ex);
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException |
+                 NoSuchMethodException ex) {
+            logger.log(Level.WARNING, "Unable to instantiate end chunk-generator: " + ex);
+        }
+        return new AcidEndChunkGenerator();
+    }
+
+    /**
      * Gets a {@link ChunkGenerator} for use in a default world, as specified in the server configuration
      *
      * @param worldName Name of the world that this will be applied to
@@ -209,10 +235,17 @@ public class WorldManager {
     public ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, @Nullable String id) {
         Validate.notNull(worldName, "WorldName cannot be null");
 
+        if (isEndWorldName(id) || isEndWorldName(worldName)) {
+            return Settings.end_enabled ? getEndGenerator() : getOverworldGenerator();
+        }
         return ((id != null && id.endsWith("nether")) || (worldName.endsWith("nether")))
             && Settings.nether_enabled
             ? getNetherGenerator()
             : getOverworldGenerator();
+    }
+
+    private boolean isEndWorldName(@Nullable String name) {
+        return name != null && (name.endsWith("end") || name.endsWith("the_end"));
     }
 
     /**
@@ -291,6 +324,104 @@ public class WorldManager {
     }
 
     /**
+     * Gets the skyblock end island {@link World}. Creates and/or imports the world if necessary. Returns null if
+     * the end is not enabled in the plugin configuration.
+     *
+     * @return Skyblock end island world, or null if the end is disabled.
+     */
+    @Nullable
+    public synchronized World getEndWorld() {
+        if (!Settings.end_enabled) {
+            return null;
+        }
+
+        if (skyBlockEndWorld == null) {
+            String worldName = getEndWorldName();
+            skyBlockEndWorld = Bukkit.getWorld(worldName);
+            ChunkGenerator skyGenerator = getEndGenerator();
+            ChunkGenerator worldGenerator = skyBlockEndWorld != null ? skyBlockEndWorld.getGenerator() : null;
+            if (skyBlockEndWorld == null
+                || skyBlockEndWorld.canGenerateStructures()
+                || worldGenerator == null
+                || !worldGenerator.getClass().getName().equals(skyGenerator.getClass().getName())) {
+                skyBlockEndWorld = WorldCreator
+                    .name(worldName)
+                    .type(WorldType.NORMAL)
+                    .generateStructures(false)
+                    .environment(World.Environment.THE_END)
+                    .generator(skyGenerator)
+                    .createWorld();
+                skyBlockEndWorld.save();
+            }
+
+            setupEndSpawnPoint(skyBlockEndWorld);
+            removeEnderDragon(skyBlockEndWorld);
+
+            scheduler.sync(() ->
+                hookManager.getMultiverse().ifPresent(hook ->
+                    hook.registerEndWorld(skyBlockEndWorld)),
+                TimeUtil.ticksAsDuration(config.getYamlConfig().getLong("init.initDelay", 50L) + 140L));
+        }
+
+        return skyBlockEndWorld;
+    }
+
+    /**
+     * Gets the name of the skyblock end world.
+     *
+     * @return Name of the end world.
+     */
+    @NotNull
+    public String getEndWorldName() {
+        return Settings.general_worldName + "_the_end";
+    }
+
+    /**
+     * Sets the end world spawn (config {@code end.fallback.x/z}, Y = {@code end.height}). The location doubles as
+     * the end fallback point and is the shared end "main city" around the origin.
+     *
+     * <p>The plugin deliberately places no blocks here: the main city is built and maintained by the server team,
+     * so touching blocks on every startup would overwrite it. Until the city has a floor, entities that end up at
+     * the fallback point fall into the void.</p>
+     *
+     * @param world End world to prepare.
+     */
+    private void setupEndSpawnPoint(@NotNull World world) {
+        world.setSpawnLocation(Settings.end_fallbackX, Settings.end_height, Settings.end_fallbackZ);
+    }
+
+    /**
+     * The end world is a shared per-island dimension without dragon fights, so any dragon must go. Dragons are also
+     * removed on a low frequency schedule to make sure none spawns later (e.g. through end crystal rituals).
+     *
+     * @param world End world to clear.
+     */
+    private void removeEnderDragon(@NotNull World world) {
+        scheduler.sync(() -> world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove),
+            TimeUtil.ticksAsDuration(20L));
+        scheduler.sync(() -> world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove),
+            TimeUtil.ticksAsDuration(600L), TimeUtil.ticksAsDuration(600L));
+    }
+
+    /**
+     * Checks if the given {@link World} is the skyblock end island world.
+     *
+     * <p>Only the world created by this plugin counts: matching {@link World.Environment#THE_END} would also catch
+     * unrelated end worlds (e.g. the lobby's vanilla {@code world_the_end}) and make this plugin handle their
+     * portals.</p>
+     *
+     * @param world World to check.
+     * @return True if the given world is the skyblock end island world, false otherwise.
+     */
+    public boolean isSkyEnd(@Nullable World world) {
+        if (world == null || !Settings.end_enabled) {
+            return false;
+        }
+
+        return world.getName().equalsIgnoreCase(getEndWorldName());
+    }
+
+    /**
      * Checks if the given {@link World} is the skyblock island world.
      *
      * @param world World to check.
@@ -332,6 +463,6 @@ public class WorldManager {
 
         return world.getName().startsWith(WorldManager.skyBlockWorld.getName())
             && !(world.getEnvironment() == World.Environment.NETHER && !Settings.nether_enabled)
-            && !(world.getEnvironment() == World.Environment.THE_END);
+            && !(world.getEnvironment() == World.Environment.THE_END && !Settings.end_enabled);
     }
 }
