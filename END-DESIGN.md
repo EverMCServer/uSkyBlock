@@ -292,6 +292,12 @@
 - `MultiverseHook` 需要新增 `registerEndWorld()`：`importWorld(ImportWorldOptions.worldName(...).environment(THE_END).generator("uSkyBlock").useSpawnAdjust(false))`，`setScale(1.0)`、`setRespawnWorld(...)` 与下界一致
 - **Multiverse-Inventories**：末地必须加入 `skyblock` 组（`linkNetherInventory()` 现有实现是硬编码两参，建议重构为通用的"把若干世界加入 skyblock 组"）
 - **Multiverse 自带的传送门模块**：Multiverse-Core 的 portal 功能会接管原版传送门链接。需要确认它对 `END_PORTAL` 是否插手，以及是否需要为末地世界关闭其传送门处理（否则可能出现"我们 `setTo` 完了，Multiverse 又改回去"的竞争）
+- **⚠️ 已实测确认（2026-10-17，测试服）：`Multiverse-NetherPortals` 会改实体过门事件，并且会就地改写 `EntityPortalEvent.getFrom()`。**
+  - 它的 `portal-auto-link-when.end.suffix` 默认是 `_the_end`，正好命中 `world_acidisland_the_end`，于是它把主世界和末地当成一对链接世界（`links.yml` 里没有显式链接，是**自动链接**，`/mvnp unlink` 断不掉）；`teleport-entities: true` 让它接管非玩家实体。
+  - `MVNPEntityListener#onEntityPortal`（`@DefaultEventPriority` 默认 **NORMAL**）把 `event.getFrom()` 传进 `MVLinkChecker.findNewTeleportLocation(...)`，该方法会**把那个 `Location` 实例的 world 就地改成链接世界**，随后 `event.setTo(自己算的目的地)`。`EntityTeleportEvent` 的 `from`/`to` 是存储的快照（`setFrom`/`setTo` 才 clone），所以日志里会出现"同一条事件 LOWEST 时 `from` 在主世界、HIGHEST 时 `from` 已在末地"。
+  - **后果**：任何依赖 `event.getFrom().getWorld()` 判断方向的实现，都会把"从主世界进末地"误判成"从末地返回"，从而 `setTo(本岛返回点)` —— 这正是"实体进末地却出现在主世界返回点"的根因。
+  - **对策（已实现）**：方向判定改用 **LOWEST 优先级快照**（`portalFromSnapshots`，记录进入事件流水线之前 `from` 的世界名，按实体 UUID+5 tick 过期），并用 `EntityPortalEnterEvent` 的记录兜底；目的地在本插件 HIGHEST（晚于 MV 的 NORMAL）最后一次覆盖成本岛到达点。**不要**用 `teleport-entities: false` 来关 MV——那会让它对所有实体过门事件直接 `setCancelled(true)`，刷沙机链路直接失效。
+  - 残留副作用：MV 的 `end-platform-drop-blocks: true` 会让它在**自己的**目的地（`(100,50,0)`，即末地主城）铺 5×5 平台并按物品掉方块；如果要彻底避免，只能在**停服后**把 `portal-auto-link-when.end.suffix` 改成不命中的值再启动（在线 reload 时 MV 会重写 config.yml，手改会被覆盖）。
 - 其他须复核的插件行为：WorldGuard 全局区域（`setupGlobal()` 需要为末地世界调用）、WorldEdit 的 `isOuterPossible()` 前置检查（下界启用前会检查，末地是否也要）
 
 ### 4.14 【补充】运维与可观测性

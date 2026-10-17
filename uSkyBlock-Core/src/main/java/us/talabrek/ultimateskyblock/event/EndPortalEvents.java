@@ -100,6 +100,26 @@ public class EndPortalEvents implements Listener {
     private final Map<UUID, PortalEntry> endPortalEntries = new ConcurrentHashMap<>();
 
     /**
+     * World an entity was in when its portal event was first seen, per entity.
+     *
+     * <p>The direction of a portal event has to be decided from the world the entity comes from, but
+     * {@link EntityPortalEvent#getFrom()} cannot be trusted for that: other plugins mutate the event while it is being
+     * dispatched. Multiverse-NetherPortals (it auto-links every {@code <world>_the_end} world, which matches this
+     * plugin's end world) passes {@code event.getFrom()} into its own location calculation, which rewrites the world
+     * of that very {@link Location} instance in place, and also replaces the destination with a location in the linked
+     * world. By the time a later handler looks at the event, {@code getFrom()} can therefore already point at the end
+     * world - which made an entity that is <i>entering</i> the end look like one that is <i>leaving</i> it, and sent it
+     * to the island return point. The snapshot taken at {@link EventPriority#LOWEST} (before any plugin runs) is used
+     * instead; see {@link #getPortalWorld(EntityPortalEvent)}.</p>
+     */
+    private final Map<UUID, FromSnapshot> portalFromSnapshots = new ConcurrentHashMap<>();
+
+    /**
+     * Tick the expired {@link #portalFromSnapshots} were last purged in, so the purge runs at most once per tick.
+     */
+    private int lastSnapshotPurgeTick = -1;
+
+    /**
      * Tick the expired {@link #endPortalEntries} were last purged in, so the purge runs at most once per tick.
      */
     private int lastEntryPurgeTick = -1;
@@ -264,33 +284,54 @@ public class EndPortalEvents implements Listener {
      * never has to be entered from inside. End -> overworld: entities are sent to the island's configured return
      * point instead of the world spawn.</p>
      *
-     * <p>Both directions are decided by the world the entity is in. That distinction alone is not enough though: an
-     * entity keeps the portal state of the portal it came through when it changes dimension, so the destination
-     * dimension can evaluate that portal again for an entity that has just arrived - without the entity standing in
-     * any portal block. Which portal the entity really used is tracked from {@link EntityPortalEnterEvent}, see
-     * {@link #handleEntityLeavingEnd(EntityPortalEvent, Location, World)}.</p>
+     * <p>Both directions are decided by the world the entity comes from, but that world is read from the snapshot
+     * taken at {@link EventPriority#LOWEST} (see {@link #portalFromSnapshots}): other plugins rewrite the event while
+     * it is dispatched, and {@code getFrom()} can already point at the destination world by the time this handler
+     * runs. The portal the entity really entered is tracked from {@link EntityPortalEnterEvent} and used to tell a
+     * genuine portal exit apart from a portal event the destination dimension fires for the portal the entity came
+     * through.</p>
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
-        // TODO(diagnostic): remove the debug calls together with the diagnostic section below.
+        // TODO(diagnostic): remove the debug call together with the diagnostic section below.
         debugPortalEvent("HIGHEST", event, "-");
         if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
             return;
         }
-        Location from = event.getFrom();
-        World fromWorld = from.getWorld();
+        @Nullable World fromWorld = getPortalWorld(event);
         if (fromWorld == null) {
             return;
         }
-
         if (plugin.getWorldManager().isSkyEnd(fromWorld)) {
-            handleEntityLeavingEnd(event, from, fromWorld);
+            handleEntityLeavingEnd(event, event.getFrom());
             return;
         }
         if (!plugin.getWorldManager().isSkyWorld(fromWorld)) {
-            return; // Only portals leaving the overworld island are handled here.
+            return; // Not a portal of the plugin worlds.
         }
-        handleEntityEnteringEnd(event, from, fromWorld);
+        handleEntityEnteringEnd(event, event.getFrom(), fromWorld);
+    }
+
+    /**
+     * Gets the world a portal event comes from.
+     *
+     * <p>Prefers the snapshot taken at {@link EventPriority#LOWEST}; falls back to the event itself when the snapshot
+     * is missing or expired.</p>
+     *
+     * @param event Event to inspect.
+     * @return World the entity comes from, or null when unknown.
+     */
+    @Nullable
+    private World getPortalWorld(@NotNull EntityPortalEvent event) {
+        FromSnapshot snapshot = portalFromSnapshots.get(event.getEntity().getUniqueId());
+        if (snapshot != null && Bukkit.getCurrentTick() - snapshot.tick() <= PORTAL_ENTRY_TTL_TICKS) {
+            @Nullable World world = Bukkit.getWorld(snapshot.worldName());
+            if (world != null) {
+                return world;
+            }
+        }
+        @Nullable Location from = event.getFrom();
+        return from != null ? from.getWorld() : null;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -301,12 +342,27 @@ public class EndPortalEvents implements Listener {
     // ---------------------------------------------------------------------------------------------------------------
 
     /**
-     * Logs every entity portal event as it enters the event pipeline, before any plugin touched it.
+     * Snapshots the world an entity portal event comes from before any plugin can rewrite it, and logs the event.
+     *
+     * <p>The snapshot is required for the direction decision, see {@link #portalFromSnapshots}. The log line is the
+     * diagnostic part of this handler.</p>
      *
      * @param event Event to log.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onEntityPortalRaw(EntityPortalEvent event) {
+        @Nullable Location from = event.getFrom();
+        @Nullable World fromWorld = from != null ? from.getWorld() : null;
+        if (fromWorld != null) {
+            int now = Bukkit.getCurrentTick();
+            portalFromSnapshots.put(event.getEntity().getUniqueId(),
+                new FromSnapshot(fromWorld.getName(), now));
+            // Drop expired snapshots at most once per tick.
+            if (lastSnapshotPurgeTick != now) {
+                lastSnapshotPurgeTick = now;
+                portalFromSnapshots.values().removeIf(entry -> now - entry.tick() > PORTAL_ENTRY_TTL_TICKS);
+            }
+        }
         debugPortalEvent("LOWEST", event, "-");
     }
 
@@ -349,6 +405,7 @@ public class EndPortalEvents implements Listener {
         }
         @Nullable Location from = event.getFrom();
         @Nullable World fromWorld = from != null ? from.getWorld() : null;
+        @Nullable World snapshotWorld = getPortalWorld(event);
         @Nullable Location recent = fromWorld != null ? getRecentEndPortalBlock(event.getEntity(), fromWorld) : null;
         debugLog(stage
             + " entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
@@ -358,6 +415,8 @@ public class EndPortalEvents implements Listener {
             + " block=" + (from != null ? from.getBlock().getType() : "?")
             + " to=" + describe(event.getTo())
             + " fromKind=" + (fromWorld != null ? worldKind(fromWorld) : "?")
+            + " resolvedFrom=" + (snapshotWorld != null ? snapshotWorld.getName() : "null")
+            + " entityWorld=" + event.getEntity().getWorld().getName()
             + " recentEntry=" + describe(recent)
             + " | " + note);
     }
@@ -442,6 +501,12 @@ public class EndPortalEvents implements Listener {
         if (endWorld == null) {
             return;
         }
+        if (plugin.getWorldManager().isSkyEnd(event.getEntity().getWorld())) {
+            // The entity is already in the end: the destination dimension is re-evaluating the portal the entity came
+            // through. Moving it again would teleport it away from where it just arrived.
+            event.setCancelled(true);
+            return;
+        }
         // Resolve the island from the portal block itself when it is known, not from where the entity happens to stand.
         @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
         Location reference = portalBlock != null ? portalBlock : from;
@@ -455,6 +520,8 @@ public class EndPortalEvents implements Listener {
         if (to == null) {
             return;
         }
+        // This overwrites whatever another plugin (e.g. Multiverse-NetherPortals) put into the event: the entity has
+        // to arrive on its own island's platform, not at the spawn of the linked world.
         event.setTo(to);
         @Nullable Location arrival = getEndArrivalLocation(endWorld, islandInfo);
         if (arrival != null) {
@@ -506,22 +573,20 @@ public class EndPortalEvents implements Listener {
     /**
      * Sends an entity that leaves the island's end region through a return portal back to the island's return point.
      *
-     * <p><b>Only a portal the entity really entered counts as "leaving the end".</b> Two things make this necessary:
-     * the overworld end portal and the return portal built in the end are the same block, and an entity keeps the
-     * portal it went through after changing dimension, so the destination dimension evaluates that portal again. A
-     * portal event is therefore also fired for an entity that has just arrived in the end and is standing on the
-     * obsidian arrival platform, without it being inside any portal. Rewriting such an event to the return point would
-     * teleport the entity straight back to the overworld (that was the "entity entering the end ends up at the island
-     * return point" bug), so it is cancelled instead: a portal event that was not caused by a portal block must not
-     * move the entity at all.</p>
+     * <p><b>Only a portal the entity really entered counts as "leaving the end".</b> An entity keeps the portal it
+     * went through after changing dimension, so the destination dimension evaluates that portal again: a portal event
+     * is therefore also fired for an entity that has just arrived in the end and is standing on the obsidian arrival
+     * platform, without it being inside any portal. Rewriting such an event to the return point would teleport the
+     * entity straight back to the overworld, so it is cancelled instead: a portal event that was not caused by a portal
+     * block in the end must not move the entity at all.</p>
      *
-     * <p>The check uses the recorded portal entry of this entity in the same world (see
+     * <p>The check uses the recorded portal entry of this entity in the end world (see
      * {@link #onEntityPortalEnter(EntityPortalEnterEvent)}); the block below/at/above the entity is only a fallback for
      * the rare case where the entry event was missed.</p>
      */
-    private void handleEntityLeavingEnd(@NotNull EntityPortalEvent event, @NotNull Location from,
-                                        @NotNull World fromWorld) {
-        @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
+    private void handleEntityLeavingEnd(@NotNull EntityPortalEvent event, @NotNull Location from) {
+        @Nullable World endWorld = event.getEntity().getWorld();
+        @Nullable Location portalBlock = endWorld != null ? getRecentEndPortalBlock(event.getEntity(), endWorld) : null;
         if (portalBlock == null && !isInsideEndPortalBlock(from)) {
             event.setCancelled(true);
             return;
@@ -534,6 +599,8 @@ public class EndPortalEvents implements Listener {
         }
         @Nullable Location returnPoint = islandInfo.getReturnPoint();
         if (returnPoint != null) {
+            // Overwrites whatever another plugin put into the event (Multiverse-NetherPortals redirects it to the
+            // spawn of the linked world).
             event.setTo(returnPoint);
         }
     }
@@ -595,6 +662,15 @@ public class EndPortalEvents implements Listener {
      * @param tick      Tick the entry was recorded in, used to expire stale entries.
      */
     private record PortalEntry(@NotNull String worldName, @NotNull Location block, int tick) {
+    }
+
+    /**
+     * World an entity portal event came from, captured at {@link EventPriority#LOWEST}.
+     *
+     * @param worldName Name of the world the entity came from.
+     * @param tick      Tick the snapshot was taken in, used to expire stale snapshots.
+     */
+    private record FromSnapshot(@NotNull String worldName, int tick) {
     }
 
     /**
