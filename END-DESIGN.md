@@ -452,7 +452,7 @@
 | **`acidIslandEnd.schem` 蓝图** | **仓库与服务器 `uSkyBlock/schematics/` 里都没有**。缺它时插件不会报错（会跳过粘贴），但**返回传送门不存在**，玩家进末地后有去无回 —— 需要建造并放入蓝图 |
 | **P0 实测未做** | §4.3.3 的 5 项（平台是否跟随 `setTo()`、落点高度、破坏范围、实体是否跟随、刷沙机链路）必须在测试服验证；**逐项步骤见 [`END-P0-CHECKLIST.md`](END-P0-CHECKLIST.md)**。若"平台不跟随"，需要回到设计层面调整 D12 |
 | **末地世界首次生成** | 需要重启服务器让新世界创建、Multiverse 导入、区域建立；上线前建议先确认旧世界命名不冲突 |
-| **现有岛屿补末地区域** | **已用「区域版本 bump」方案解决**：`WorldGuardHandler.VERSION` 14 → 15，老岛的 `general.regionVersion`（`14 zh_CN`）因此失配，`protectIsland()` 会重建 **island + nether + end 三套区域**。部署后执行一次 `/usb protectall` 即可覆盖全部老岛（13 个），输出 `N new regions were created` 应为岛数；没跑之前老岛玩家在末地会被 `__global__` 的 BUILD DENY 挡住、且不算"在自己的岛上" |
+| **现有岛屿补末地区域** | **已用「区域版本 bump」方案解决**：`WorldGuardHandler.VERSION` 14 → 15，老岛的 `general.regionVersion`（`14 zh_CN`）因此失配，`protectIsland()` 会重建 **island + nether + end 三套区域**。部署后执行一次 `/usb protectall` 即可覆盖全部老岛（数量 = `plugins/uSkyBlock/islands/` 下的岛屿文件数），输出 `N new regions were created` 应等于该数量；没跑之前老岛玩家在末地会被 `__global__` 的 BUILD DENY 挡住、且不算"在自己的岛上" |
 | 岛屿迁移后的末地重建 | **不需要**：仓库里没有岛屿迁移/重定位功能（`IslandLocatorLogic` 只负责分配新位置），岛屿位置不会变，因此末地区域随坐标天然稳定 |
 | 珍珠/紫颂果跨区域传送 | **已处理**：末影珍珠落点不在任何岛屿区域内时取消传送（`EndPortalEvents.onPearlTeleport`）；紫颂果在末地无紫颂植株自然生长的前提下影响很小 |
 | **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**待 P0 确认**：未归属岛屿的实体落到原点时，原版 5×5 平台重建是否会破坏主城方块；若是，需要把实体兜底改到主城旁空地或取消实体兜底 |

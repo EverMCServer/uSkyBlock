@@ -157,7 +157,7 @@ public class XxxEvents implements Listener {
 - **岛屿数据:** WorldGuard 区域（`<islandName>island` / `<islandName>nether` / `<islandName>end`）+ 区域元数据 + `orphans.yml`
 - **PDC (PersistentDataContainer):** 毒水系统使用**区块 PDC** 存储水体毒性（key 格式 `T<y+64>`）；凋零标记、Vault 刷新时间戳也使用 PDC
 - 区域 id 约定：后缀 `island` / `nether` / `end`（`WorldGuardHandler.ISLAND_REGION_SUFFIXES = ["island","nether","end"]`，`EXTRA_WORLD_SUFFIXES = ["nether","end"]`）；一律走 `WorldGuardHandler.getIslandNameFromRegion()` 截取岛屿名，**不要再写 `substring(length - 6)` 之类的硬编码后缀长度**
-- 区域版本：`WorldGuardHandler.VERSION`（当前 `15`）会写进每个岛的 `general.regionVersion`；**新增/改变某维度的区域时必须递增它**，老岛才会在 `protectIsland()`（岛主登录触发）或 `/usb protectall`（遍历所有岛）时重建 **island + nether + end 三套**区域。版本没变时 `protectIsland()` 会跳过，老岛不会自动补出新维度的区域（末地就是靠 14 → 15 让 13 个老岛补出 `end` 区域）
+- 区域版本：`WorldGuardHandler.VERSION`（当前 `15`）会写进每个岛的 `general.regionVersion`；**新增/改变某维度的区域时必须递增它**，老岛才会在 `protectIsland()`（岛主登录触发）或 `/usb protectall`（遍历所有岛）时重建 **island + nether + end 三套**区域。版本没变时 `protectIsland()` 会跳过，老岛不会自动补出新维度的区域（末地就是靠 14 → 15 让所有老岛补出 `end` 区域，`/usb protectall` 的 `N` = `islands/` 下当前岛屿文件数）
 
 ### 世界与传送核心机制（实现新维度前必读）
 

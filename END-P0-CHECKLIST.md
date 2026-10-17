@@ -31,7 +31,7 @@
    ```
    /usb protectall
    ```
-   预期：进度跑完显示 `N new regions were created`，N = 岛屿数量（测试服 13）；`plugins/WorldGuard/worlds/world_acidisland_the_end/regions.yml` 里出现全部 `<name>end` 区域。
+   预期：进度跑完显示 `N new regions were created`，N = `plugins/uSkyBlock/islands/` 下的岛屿文件数（部署时用 `ls islands | wc -l` 核对）；`plugins/WorldGuard/worlds/world_acidisland_the_end/regions.yml` 里出现全部 `<name>end` 区域。
    - 不跑这一步的话：老岛玩家进末地后会被末地世界的 `__global__`（BUILD DENY）挡住，不能建造，且 `playerIsOnOwnIsland()` 在末地返回 false。
    - 只让岛主登录也会触发单岛重建（`protectIsland()`），但 `/usb protectall` 一次覆盖所有岛。
 6. 找一块**没有岛屿**的坐标（例如岛屿网格的间隙），记下它的 4 个角 —— 后面测"平台是否跟随"要用它。
