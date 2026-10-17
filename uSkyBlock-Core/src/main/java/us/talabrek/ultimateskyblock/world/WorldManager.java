@@ -13,9 +13,6 @@ import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.boss.BossBar;
-import org.bukkit.boss.DragonBattle;
-import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.generator.ChunkGenerator;
@@ -357,7 +354,6 @@ public class WorldManager {
             }
 
             setupEndSpawnPoint(skyBlockEndWorld);
-            removeEnderDragon(skyBlockEndWorld);
 
             scheduler.sync(() ->
                 hookManager.getMultiverse().ifPresent(hook ->
@@ -390,49 +386,6 @@ public class WorldManager {
      */
     private void setupEndSpawnPoint(@NotNull World world) {
         world.setSpawnLocation(Settings.end_fallbackX, Settings.end_height, Settings.end_fallbackZ);
-    }
-
-    /**
-     * The end world is a shared per-island dimension without dragon fights, so any dragon must go. Dragons are also
-     * removed on a low frequency schedule to make sure none spawns later (e.g. through end crystal rituals).
-     *
-     * <p>The dragon fight boss bar is owned by the world's {@link DragonBattle}, not by the dragon entity, so it
-     * survives {@link Entity#remove()}. It is cleared here and kept cleared by a repeating task; players entering the
-     * end are also handled immediately in {@code EndPortalEvents}.</p>
-     *
-     * @param world End world to clear.
-     */
-    private void removeEnderDragon(@NotNull World world) {
-        scheduler.sync(() -> {
-            world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove);
-            clearDragonBossBar(world);
-        }, TimeUtil.ticksAsDuration(20L));
-        scheduler.sync(() -> {
-            world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove);
-            clearDragonBossBar(world);
-        }, TimeUtil.ticksAsDuration(600L), TimeUtil.ticksAsDuration(600L));
-        // The fight keeps its own boss bar and re-adds players entering the dimension; keep it hidden.
-        scheduler.sync(() -> clearDragonBossBar(world), TimeUtil.ticksAsDuration(20L),
-            TimeUtil.ticksAsDuration(20L));
-    }
-
-    /**
-     * Hides and clears the ender dragon battle's boss bar.
-     *
-     * <p>The bar belongs to the world's {@link DragonBattle}; removing the dragon entity does not remove it. This
-     * method is idempotent and cheap, so it can be called whenever a player enters the end and from the periodic
-     * dragon cleanup.</p>
-     *
-     * @param world End world.
-     */
-    public void clearDragonBossBar(@NotNull World world) {
-        DragonBattle battle = world.getEnderDragonBattle();
-        if (battle == null) {
-            return;
-        }
-        BossBar bossBar = battle.getBossBar();
-        bossBar.setVisible(false);
-        bossBar.removeAll();
     }
 
     /**

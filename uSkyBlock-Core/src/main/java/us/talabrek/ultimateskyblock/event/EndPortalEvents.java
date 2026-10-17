@@ -9,19 +9,12 @@ import org.bukkit.Material;
 import org.bukkit.PortalType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.EnderCrystal;
-import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.jetbrains.annotations.NotNull;
@@ -270,65 +263,6 @@ public class EndPortalEvents implements Listener {
         @Nullable Location arrival = getEndArrivalLocation(endWorld, islandInfo);
         if (arrival != null) {
             ensureArrivalPlatformLater(arrival);
-        }
-    }
-
-    /**
-     * The end world has no dragon fight, but the world's {@link org.bukkit.boss.DragonBattle} still owns a boss bar
-     * and re-adds it to players entering the dimension. Clear it immediately when a player arrives; the periodic
-     * cleanup in {@code WorldManager.clearDragonBossBar(World)} keeps it hidden.
-     */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-        if (!Settings.end_enabled) {
-            return;
-        }
-        World world = event.getPlayer().getWorld();
-        if (plugin.getWorldManager().isSkyEnd(world)) {
-            plugin.getWorldManager().clearDragonBossBar(world);
-        }
-    }
-
-    /**
-     * Blocks the ender dragon spawn in the island end world. The world has no dragon fight; letting the fight spawn
-     * a dragon only creates a boss bar and a mob that would have to be removed again.
-     */
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onEnderDragonSpawn(EntitySpawnEvent event) {
-        if (!Settings.end_enabled || event.getEntityType() != EntityType.ENDER_DRAGON) {
-            return;
-        }
-        if (plugin.getWorldManager().isSkyEnd(event.getLocation().getWorld())) {
-            event.setCancelled(true);
-        }
-    }
-
-    /**
-     * The end world is shared by all islands and has no dragon, so the respawn ritual (end crystals around the exit
-     * portal) makes no sense there and would summon a dragon for everybody. Placing crystals in the end is blocked.
-     */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onEndCrystalPlace(EntityPlaceEvent event) {
-        if (!Settings.end_enabled || !plugin.getWorldManager().isSkyEnd(event.getEntity().getWorld())) {
-            return;
-        }
-        if (event.getEntityType() != EntityType.END_CRYSTAL) {
-            return;
-        }
-        event.setCancelled(true);
-    }
-
-    /**
-     * End crystals (and dragons) can destroy terrain. Since the end world holds player builds, explosions caused by
-     * end crystals and dragons are cancelled.
-     */
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onEndExplode(EntityExplodeEvent event) {
-        if (!Settings.end_enabled || !plugin.getWorldManager().isSkyEnd(event.getEntity().getWorld())) {
-            return;
-        }
-        if (event.getEntity() instanceof EnderCrystal || event.getEntity() instanceof EnderDragon) {
-            event.setCancelled(true);
         }
     }
 

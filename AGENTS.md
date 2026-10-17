@@ -98,7 +98,7 @@ Windows 下用 `gradlew.bat`（本机没有 `pwsh`，`gradlew` 需要 Java 25；
 | `IslandBorderEvent.java` | 22KB | **跨边界实体保护** — 防止物品/生物/载具/掉落方块穿越岛屿边界 |
 | `SpawnEvents.java` | 17KB | **刷怪管理** — 刷怪上限、生物生成控制、试炼刷怪笼转换（含幻翼开关） |
 | `ToxicEvents.java` | 16KB | **毒水系统** — 酸性水扩散与伤害（区块 PDC 存储） |
-| `EndPortalEvents.java` | 16KB | **末地传送** — `PlayerPortalEvent(END_PORTAL)` 双向改写目的地、`EntityPortalEvent(ENDER)` 不取消只改落点、到达点 5×5 平台重建、末地水晶/龙爆炸拦截、末影珍珠跨区域拦截。仅在 `Settings.end_enabled` 时注册 |
+| `EndPortalEvents.java` | 16KB | **末地传送** — `PlayerPortalEvent(END_PORTAL)` 进入方向改写到本岛到达点、`EntityPortalEvent(ENDER)` 双向改写（进末地落本岛、离末地落本岛返回点）、到达点 5×5 平台重建并按挖掘掉落、末影珍珠跨区域拦截。**不处理末影龙/龙战**。仅在 `Settings.end_enabled` 时注册 |
 | `NetherTerraFormEvents.java` | 12KB | **下界改造** — 破坏方块时按概率转换/生成方块，猪灵→凋灵骷髅/烈焰人；仅 `isSkyNether()` |
 | `GriefEvents.java` | 8KB | **防破坏** — 苦力怕、凋零、践踏、剪羊毛、孵化等 |
 | `ExploitEvents.java` | 6KB | **防漏洞利用** — 传送门滥用、村民交易、他人岛屿骑乘 |
@@ -185,7 +185,7 @@ public class XxxEvents implements Listener {
 
 目标：像下界一样，让每位玩家在末地拥有自己的区域并自由建造。**本服是生电（技术生存）玩法，末地必须支持刷沙机等依赖"实体穿过末地传送门 + 末地平台重建"机制的装置**，这约束了整个设计。
 
-已确认的决策（完整表见 `END-DESIGN.md` §5）：①自定义虚空世界（无底部），每人一块区域；②不生成末影龙，龙战/龙蛋计划用 MythicDungeon 做副本，不在本次范围；③**所有实体都允许穿过末地传送门**（生电需求），到达点是**每个岛屿自己那块独立的 5×5 黑曜石平台**（原版机制、每岛一份，由 `setTo()` 落到该岛坐标）；④无岛屿玩家禁止进入末地；⑤末地参与岛屿等级计算；⑥末地纳入 `isSkyAssociatedWorld()` 并逐系统排除。
+已确认的决策（完整表见 `END-DESIGN.md` §5）：①自定义虚空世界（无底部），每人一块区域；②**不处理末影龙/龙战**（vanilla 龙战运行，上线后管理员手动击杀原点的龙；击杀会生成原版祭坛/龙蛋）；③**所有实体都允许穿过末地传送门**（生电需求），到达点是**每个岛屿自己那块独立的 5×5 黑曜石平台**（原版机制、每岛一份，由 `setTo()` 落到该岛坐标）；④无岛屿玩家禁止进入末地；⑤末地参与岛屿等级计算；⑥末地纳入 `isSkyAssociatedWorld()` 并逐系统排除。
 
 **已实现、不要在末地重复造的部分**：鞘翅与末地门框架都已通过 `uSkyBlock/challenges.yml` 的挑战在主世界发放（`ClassEnd` 章节给 `end_portal_frame`、幻翼膜挑战链给 `elytra`）。
 

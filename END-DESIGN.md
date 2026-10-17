@@ -18,7 +18,7 @@
 | 保护 | WorldGuard 区域 `<islandName>end`，Y 范围 `0..255`，与 `<islandName>nether` 完全对称 |
 | 进入 | `PlayerPortalEvent` / `EntityPortalEvent` 改写目的地；**到达点是每个岛屿各自独立的 5×5 黑曜石平台**（原版机制，但每岛一份），坐标 = 该岛 X/Z + `end.height` |
 | 返回 | 每个岛屿在末地的区域内用**蓝图**建造返回传送门（与到达平台保持距离），回到自己主世界岛屿 |
-| 末影龙 | **不生成**（决策 D2=A）；末影龙战斗/龙蛋计划用 MythicDungeon 做独立副本，不属于本次范围 |
+| 末影龙 | **不做任何处理**（最新口径，取代 D2=A）：插件不删龙、不拦水晶/爆炸、不清 bossbar；vanilla 龙战照常运行，上线后由管理员手动击杀原点的龙 |
 | 鞘翅 / 末地门框架 | **已通过 challenge 实现在主世界发放**（运行时 `uSkyBlock/challenges.yml`），末地侧不需要再做获取途径 |
 | 实体过门 | **全部实体都允许通过**（生电需求，决策 D4=放开）|
 | 刷沙机 | **必须能实现**（生电玩法），依赖原版"实体进门即重建末地平台"机制，见 §4.3 |
@@ -98,30 +98,32 @@
 
 **必须同时处理的边界**：跨维度传送会触发 `PlayerTeleportEvent`；`PlayerEvents.onTeleport`（`PlayerEvents.java:655`）里已有封禁/上锁岛屿拦截，末地目标也要走同一套校验，否则会出现"被封禁玩家绕过岛屿锁定、直接落到对方末地区域"。
 
-### 4.2 【用户已问】怎样处理末影龙 —— **已决策：D2=A（不生成龙）**
+### 4.2 【用户已问】怎样处理末影龙 —— **最新口径：不做任何处理**
+
+> **口径变更（最新，取代 D2=A）**：插件**不对末影龙/龙战做任何处理** —— 不删龙、不取消生成、不拦末地水晶/爆炸、不清 bossbar。vanilla 龙战照常运行；上线后由管理员手动击杀原点的龙。下面的 A/B/C 方案与"必须处理的事"保留作历史备查，**不再实施**。
+>
+> ⚠️ 手动杀龙的副作用：原版会在末地祭坛位置（通常是原点附近）生成 Exit Portal（基岩/末地门方块）和龙蛋，可能覆盖原点主城；建议上线后**先杀龙、再建主城**，或杀完后清理/改建。龙战期间龙也会破坏方块。
 
 **约束事实**：一个世界一条龙；龙死后默认不再生（除非玩家用 4 个末地水晶做复活仪式）；末地折跃门（gateway）只在**击杀龙之后**生成；龙被击杀时在世界出生点的返回传送门上方生成龙蛋；龙死亡掉落大量经验。
 
-**三种可选方案（保留备查，已选 A）**
+**三种可选方案（历史备查，现不采用）**
 
 | 方案 | 做法 | 优点 | 代价 |
 |------|------|------|------|
-| **A. 不生成龙（已选）** | 世界创建后立即移除龙实体；拦截复活仪式（末地水晶）；拦截末地水晶爆炸（顺手保护龙蛋/祭坛） | 结构最简单、无世界级竞争、不会出现"别人杀了龙我永远拿不到龙蛋"的不公平；末地变成纯粹的建造/资源维度 | 没有原版终局体验；**鞘翅/龙蛋/龙头/折跃门全部失去原生来源**，必须另配获取途径 |
+| **A. 不生成龙（历史，未采用）** | 世界创建后立即移除龙实体；拦截复活仪式（末地水晶）；拦截末地水晶爆炸（顺手保护龙蛋/祭坛） | 结构最简单、无世界级竞争、不会出现"别人杀了龙我永远拿不到龙蛋"的不公平；末地变成纯粹的建造/资源维度 | 没有原版终局体验；**鞘翅/龙蛋/龙头/折跃门全部失去原生来源**，必须另配获取途径 |
 | B. 龙归第一人 | 保留龙，全服共享一次击杀 | 保留一次原版终局体验 | 只有一个人能体验；龙死后末地永久空荡；龙蛋/折跃门归属问题；且需要"谁的第一次进末地"这类规则解释 |
 | C. 每人一条龙（伪实例化） | 仅当某玩家的岛屿区域内有玩家时生成龙，用 PDC/记分板记录每个岛屿的龙状态；击杀奖励按岛屿发放 | 保留 Boss 体验且公平 | **一个世界只有一个 `DragonBattle`**，血量/阶段/水晶/退出传送门都是世界级的，需要大量 hack（伪造血条、独立判定、屏蔽原版结算），维护成本高、易随服务端升级失效；收益主要是"体验"而非玩法必需 |
 
-**A 方案下必须一并处理的事（已明确，无需再决策）**：
+**原 A 方案下需要考虑的事（历史备查，现不采用）**：
 
 - **鞘翅已在主世界可获得**：运行时 `uSkyBlock/challenges.yml` 中已有幻翼膜挑战链（`phantom` 2% 概率鞘翅、`phantom_100` 稳定给鞘翅），**末地侧不需要再提供获取途径**
 - **末地传送门框架也已通过 challenge 发放**：运行时 `uSkyBlock/challenges.yml` 的 `ClassEnd`（末地之试炼）章节下，`dirt_trial` / `sand_trial` / `ice_trial` / `eye_trial` 等挑战奖励 `end_portal_frame:1`；玩家另需自备 **12 颗末影之眼**自行激活（`eye_trial` 也要求上缴末影之眼，说明该资源链已闭环）。**这意味着 D5 无需实现**
-- **末影龙战斗 / 龙蛋**：计划用 **MythicDungeon 做挑战副本**，**不在本次末地世界范围内**。因此本次只需保证"世界出生点/主岛不存在一条野生的龙"
-- **末地水晶**：仍建议禁止在主岛放置/引爆（否则会触发原版复活仪式，与"不做龙"冲突），并在 `GriefEvents` 类似位置拦截爆炸破坏
+- **末影龙战斗 / 龙蛋**：计划用 **MythicDungeon 做挑战副本**，**不在本次末地世界范围内**
+- **末地水晶**：原方案建议禁止在主岛放置/引爆
 - **折跃门**：虚空世界不生成；外岛内容统一走未来副本，不做
 - **经验/龙蛋**：不做，交由副本承担
 
-**实现要点**：优先在**世界创建后同步移除**（`world.getEntitiesByClass(EnderDragon.class)`），并加一个低频巡检兜底；同时拦截末地水晶的放置/引爆。不要在第一个玩家进末地时才处理（可能已被看见/互动）。
-
-> **bossbar 坑（已实测）**：末影龙 bossbar 属于世界的 `DragonBattle`（`world.getEnderDragonBattle().getBossBar()`），**不是**龙实体的附属物；用 `Entity#remove()` 移除龙不会移除 bossbar，它会一直显示（重新进末地还会被重新加回）。修复：`WorldManager.clearDragonBossBar()` 对 `DragonBattle` 的 bossbar 调 `setVisible(false)` + `removeAll()`，并在每次有人进入末地时立即清、每 20 tick 兜底；同时用 `EntitySpawnEvent` 取消末地世界的末影龙生成。
+**实现**：无。插件不监听末影龙/龙战相关事件（不删龙、不拦水晶/爆炸、不清 bossbar）。
 
 ### 4.3 【用户已问】实体穿过末地传送门的行为 —— **已决策：D4=放开所有实体（生电玩法）**
 
@@ -321,7 +323,7 @@
 | ID | 问题 | 决策 |
 |----|------|------|
 | **D1** | 末地地形形态 | **A. 自定义虚空世界**，每人一块区域（放弃原版地形/末地城/折跃门） |
-| **D2** | 末影龙 | **A. 不生成龙**；末影龙战斗与龙蛋计划用 **MythicDungeon 做独立副本**，不在本次范围 |
+| **D2** | 末影龙 | **不做任何处理**（最新口径，取代原 A 方案）：插件不删龙、不拦水晶/爆炸、不清 bossbar；vanilla 龙战照常运行，上线后管理员手动击杀原点的龙 |
 | **D2b** | 鞘翅/龙蛋等来源 | **已在主世界实现**：`uSkyBlock/challenges.yml` 幻翼膜挑战链给鞘翅（2% / 稳定）；无需在末地侧再做 |
 | **D3** | 末地城/折跃门 | 虚空世界不生成；外岛内容统一走未来副本，不做 |
 | **D4** | 非玩家实体过门 | **放开所有实体通过**（生电需求）。因此必须正面设计到达点（§4.3），不能靠"禁止实体过门"回避 |
@@ -423,7 +425,7 @@
 |------|------|
 | `Settings.java` | 新增 `end_enabled / end_height / end_activateAtLevel / end_schematicName / end_chunkGenerator / end_fallbackX / end_fallbackZ` + `general_defaultEndBiome`；读 `end.*` 配置；末地启用前同样检查 `WorldEditHandler.isOuterPossible()` |
 | `world/AcidEndChunkGenerator.java`（新增） | 纯虚空生成器 + 单群系（`general_defaultEndBiome`）+ 兜底出生点 |
-| `world/WorldManager.java` | `getEndWorld()`（世界名 `<worldName>_the_end`，`Environment.THE_END`，`generateStructures(false)`）、`getEndWorldName()`、`isSkyEnd()`、`getEndGenerator()`、`getDefaultWorldGenerator()` 识别 end、`isSkyAssociatedWorld()` 纳入末地、末地出生点=原点主城（**不建方块**）+ 末影龙定时清除 + **末影龙 bossbar 清理**（`DragonBattle#getBossBar()` 的 `setVisible(false)`/`removeAll()`，每 20 tick 兜底；进入末地时立即清） |
+| `world/WorldManager.java` | `getEndWorld()`（世界名 `<worldName>_the_end`，`Environment.THE_END`，`generateStructures(false)`）、`getEndWorldName()`、`isSkyEnd()`、`getEndGenerator()`、`getDefaultWorldGenerator()` 识别 end、`isSkyAssociatedWorld()` 纳入末地、末地出生点=原点主城（**不建方块**）；**不处理末影龙/龙战**（vanilla 龙战运行，管理员手动击杀） |
 | `handler/WorldGuardHandler.java` | 区域 id `<name>end`（Y 0..255）、`updateRegion()` 同步创建、`removeIslandRegion()` 一并删除、`getEndRegionAt()`、`getIslandNameAt/getIslandRegionAt` 抽出 `getIslandNameFromRegion()` 统一后缀处理（**顺手修掉了原来的 `substring(length-6)` 硬编码**）、岛屿上锁同时锁下界与末地、**区域版本 `VERSION` 14 → 15**（`general.regionVersion` 不匹配时 `protectIsland()` 会重建 island/nether/end 三套区域） |
 | `hook/world/MultiverseHook.java` | `registerEndWorld()`；`linkNetherInventory()` 重构为通用 `linkInventories()`（**末地加入 `skyblock` 组，避免丢装备**） |
 | `island/IslandGenerator.java` | 建岛时读 `end.schematicName` + `<scheme>End` 兜底并粘贴末地蓝图；额外世界蓝图不再出现在可选岛屿蓝图列表 |
@@ -438,7 +440,7 @@
 
 | 位置 | 内容 |
 |------|------|
-| `event/EndPortalEvents.java`（新增） | ①`PlayerPortalEvent`（`END_PORTAL`，主世界岛屿 → 末地）：改写为本岛玩家到达点 `(X+0.5, end.height, Z+0.5)`，无岛/未链接直接拒绝；玩家**离开**末地不在这里处理（Paper 触发的是 `PlayerRespawnEvent(END_PORTAL)`，由 `PlayerEvents.onPlayerRespawn` 送岛 home） ②`EntityPortalEvent`（`ENDER`）：主世界 → 末地改写到本岛实体到达点 `(X+0.5, end.height+1, Z+0.5)`；末地 → 主世界改写到**本岛返回点**（默认 `(X,64,Z)`，`/is setreturn` 可改）；无法解析时送兜底点 ③`buildArrivalPlatform()`：在到达点重建 5×5 黑曜石平台，清空上方 3 格并**按挖掘掉落**（含容器内容物），每次到达后下一 tick 重建（聚合同 tick 多次到达） ④末地水晶放置拦截 + 末地水晶/末影龙爆炸取消 + **取消末影龙生成**（`EntitySpawnEvent`） ⑤**末影珍珠跨区域拦截**：珍珠落点不在任何岛屿区域内时取消（防止掉虚空，也防止用珍珠跳过区域隔离） ⑥玩家进入末地时立即清 bossbar |
+| `event/EndPortalEvents.java`（新增） | ①`PlayerPortalEvent`（`END_PORTAL`，主世界岛屿 → 末地）：改写为本岛玩家到达点 `(X+0.5, end.height, Z+0.5)`，无岛/未链接直接拒绝；玩家**离开**末地不在这里处理（Paper 触发的是 `PlayerRespawnEvent(END_PORTAL)`，由 `PlayerEvents.onPlayerRespawn` 送岛 home） ②`EntityPortalEvent`（`ENDER`）：主世界 → 末地改写到本岛实体到达点 `(X+0.5, end.height+1, Z+0.5)`；末地 → 主世界改写到**本岛返回点**（默认 `(X,64,Z)`，`/is setreturn` 可改）；无法解析时送兜底点 ③`buildArrivalPlatform()`：在到达点重建 5×5 黑曜石平台，清空上方 3 格并**按挖掘掉落**（含容器内容物），每次到达后下一 tick 重建（聚合同 tick 多次到达） ④**末影珍珠跨区域拦截**：珍珠落点不在任何岛屿区域内时取消（防止掉虚空，也防止用珍珠跳过区域隔离）。**不处理末影龙/龙战** |
 | `island/IslandInfo.java` | 新增 `getReturnPoint()`/`setReturnPoint()`（`general.returnPointX/Y/Z`，默认 `(X,64,Z)`；`resetIslandConfig()` 一并清除） |
 | `command/island/SetReturnCommand.java`（新增） | `/is setreturn`：岛主在自己主世界岛上使用，聊天框显示"所在方块中心"坐标，点击 `[确认]`（或 `/is setreturn confirm`）二次确认后写入岛返回点；60 秒超时，另支持 `cancel` |
 | `bootstrap/Listeners.java` | 按 `Settings.end_enabled` 条件注册 `EndPortalEvents` |
@@ -465,6 +467,7 @@
 | 岛屿迁移后的末地重建 | **不需要**：仓库里没有岛屿迁移/重定位功能（`IslandLocatorLogic` 只负责分配新位置），岛屿位置不会变，因此末地区域随坐标天然稳定 |
 | 珍珠/紫颂果跨区域传送 | **已处理**：末影珍珠落点不在任何岛屿区域内时取消传送（`EndPortalEvents.onPearlTeleport`）；紫颂果在末地无紫颂植株自然生长的前提下影响很小 |
 | **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**注意**：实体兜底（`getEndEntityFallbackLocation`）现在只改落点、不再铺平台；原版平台建在 `Level.END` 的 `(100,48,0)`，与主城/本岛无关，但需确认 `Level.END` 指向哪个世界（大厅的 `world_the_end` 还是我们的 `_the_end`） |
+| **末影龙 / 龙战（最新口径）** | 插件**不做任何处理**（不删龙、不拦水晶/爆炸、不清 bossbar）。vanilla 龙战会生成龙和 bossbar，上线后由管理员手动击杀原点附近的龙。⚠️ **击杀龙会触发原版 Exit Portal（基岩/末地门方块）和龙蛋生成**，位置通常在原点附近，可能覆盖主城；建议**先杀龙、再建主城**，或杀完后清理/改建 |
 | **`enter_end` 触发点（TODO）** | 挑战已定义，但**代码里暂时不发**：`EndPortalEvents.onPlayerPortal` 留了 TODO。旧实现会在传送门被校验/取消之前完成挑战（无岛、未链接、他人岛屿、大厅末地都会误完成）。后续应改成"传送真正被接受后（例如到达后 / `PlayerChangedWorldEvent`）再发" |
 | `WorldEditHandler.isOuterPossible()` | 末地启用沿用了下界的前置检查，需确认它在当前服务器配置下返回 true（否则末地会被自动禁用并打警告） |
 
