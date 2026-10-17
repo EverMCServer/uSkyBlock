@@ -16,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
+import io.papermc.paper.event.entity.EntityPortalReadyEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -106,7 +107,7 @@ public class EndPortalEvents implements Listener {
     /**
      * Maximum number of end portal events the diagnostic logs before it goes quiet.
      *
-     * <p>TODO(diagnostic): remove together with {@link #debugPortalEvent(EntityPortalEvent, Location, World, String)};
+     * <p>TODO(diagnostic): remove together with {@link #debugPortalEvent(String, EntityPortalEvent, String)};
      * the cap keeps a busy entity contraption from flooding the server log.</p>
      */
     private static final int DEBUG_PORTAL_EVENT_LIMIT = 500;
@@ -271,6 +272,8 @@ public class EndPortalEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
+        // TODO(diagnostic): remove the debug calls together with the diagnostic section below.
+        debugPortalEvent("HIGHEST", event, "-");
         if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
             return;
         }
@@ -279,9 +282,6 @@ public class EndPortalEvents implements Listener {
         if (fromWorld == null) {
             return;
         }
-        // TODO(diagnostic): remove once the "entity entering the end ends up at the island return point" issue is
-        //                   confirmed on the test server. Prints every end portal event of the plugin worlds.
-        debugPortalEvent(event, from, fromWorld, "dispatch");
 
         if (plugin.getWorldManager().isSkyEnd(fromWorld)) {
             handleEntityLeavingEnd(event, from, fromWorld);
@@ -293,37 +293,110 @@ public class EndPortalEvents implements Listener {
         handleEntityEnteringEnd(event, from, fromWorld);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+    // TODO(diagnostic): temporary instrumentation for the "entity entering the end ends up at the island return point"
+    //                   issue. Logs every end portal event at three priorities plus the portal enter/ready events, so we
+    //                   can see whether something (e.g. Multiverse-NetherPortals) cancels or redirects it before the
+    //                   plugin runs. Remove this whole section (and its calls) once the issue is understood.
+    // ---------------------------------------------------------------------------------------------------------------
+
     /**
-     * Convenience overload of {@link #debugPortalEvent(EntityPortalEvent, Location, World, String)}.
+     * Logs every entity portal event as it enters the event pipeline, before any plugin touched it.
      *
-     * @param event     Event to log.
-     * @param from      Entity location of the event.
-     * @param fromWorld World the event happens in.
-     * @param note      Short description of what the plugin is going to do.
+     * @param event Event to log.
      */
-    private void debugPortalEvent(@NotNull EntityPortalEvent event, @NotNull Location from,
-                                 @NotNull World fromWorld, @NotNull String note) {
-        int count = debugPortalEventCount;
-        if (count > DEBUG_PORTAL_EVENT_LIMIT) {
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onEntityPortalRaw(EntityPortalEvent event) {
+        debugPortalEvent("LOWEST", event, "-");
+    }
+
+    /**
+     * Logs the state of every entity portal event after all plugins (including this one) are done with it.
+     *
+     * @param event Event to log.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onEntityPortalFinal(EntityPortalEvent event) {
+        debugPortalEvent("MONITOR", event, "-");
+    }
+
+    /**
+     * Logs every Paper {@code EntityPortalReadyEvent} (Multiverse-NetherPortals redirects entities through it).
+     *
+     * @param event Event to log.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onEntityPortalReady(EntityPortalReadyEvent event) {
+        if (!takeDebugSlot()) {
             return;
         }
-        debugPortalEventCount = count + 1;
-        if (count == DEBUG_PORTAL_EVENT_LIMIT) {
-            plugin.getLogger().info("[end-debug] " + DEBUG_PORTAL_EVENT_LIMIT
-                + " end portal events logged, further events are suppressed.");
-            return;
-        }
-        @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
-        plugin.getLogger().info("[end-debug] #" + (count + 1)
-            + " entity=" + event.getEntityType()
-            + "/" + event.getEntity().getUniqueId().toString().substring(0, 8)
-            + " from=" + describe(from)
-            + " blockAtFrom=" + from.getBlock().getType()
-            + " to=" + describe(event.getTo())
+        debugLog("READY entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
             + " portal=" + event.getPortalType()
-            + " fromKind=" + worldKind(fromWorld)
-            + " recentPortalEntry=" + describe(portalBlock)
+            + " target=" + (event.getTargetWorld() != null ? event.getTargetWorld().getName() : "null")
+            + " cancelled=" + event.isCancelled());
+    }
+
+    /**
+     * Logs an entity portal event with everything the plugin can know about it.
+     *
+     * @param stage Stage of the event pipeline the line is logged at.
+     * @param event Event to log.
+     * @param note  Short description of what the plugin is going to do.
+     */
+    private void debugPortalEvent(@NotNull String stage, @NotNull EntityPortalEvent event, @NotNull String note) {
+        if (!takeDebugSlot()) {
+            return;
+        }
+        @Nullable Location from = event.getFrom();
+        @Nullable World fromWorld = from != null ? from.getWorld() : null;
+        @Nullable Location recent = fromWorld != null ? getRecentEndPortalBlock(event.getEntity(), fromWorld) : null;
+        debugLog(stage
+            + " entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
+            + " portal=" + event.getPortalType()
+            + " cancelled=" + event.isCancelled()
+            + " from=" + describe(from)
+            + " block=" + (from != null ? from.getBlock().getType() : "?")
+            + " to=" + describe(event.getTo())
+            + " fromKind=" + (fromWorld != null ? worldKind(fromWorld) : "?")
+            + " recentEntry=" + describe(recent)
             + " | " + note);
+    }
+
+    /**
+     * Takes a diagnostic log slot, so a busy contraption cannot flood the server log.
+     *
+     * @return True when a line may be logged.
+     */
+    private boolean takeDebugSlot() {
+        if (debugPortalEventCount > DEBUG_PORTAL_EVENT_LIMIT) {
+            return false;
+        }
+        debugPortalEventCount++;
+        if (debugPortalEventCount == DEBUG_PORTAL_EVENT_LIMIT) {
+            plugin.getLogger().info("[end-debug] " + DEBUG_PORTAL_EVENT_LIMIT
+                + " diagnostic lines logged, further end portal events are suppressed.");
+        }
+        return debugPortalEventCount <= DEBUG_PORTAL_EVENT_LIMIT;
+    }
+
+    /**
+     * Writes a diagnostic line.
+     *
+     * @param message Message to log.
+     */
+    private void debugLog(@NotNull String message) {
+        plugin.getLogger().info("[end-debug] #" + debugPortalEventCount + " " + message);
+    }
+
+    /**
+     * Formats the short id of an entity for the diagnostic log.
+     *
+     * @param entity Entity to format.
+     * @return First 8 characters of the entity UUID.
+     */
+    @NotNull
+    private static String shortId(@NotNull Entity entity) {
+        return entity.getUniqueId().toString().substring(0, 8);
     }
 
     /**
@@ -376,7 +449,6 @@ public class EndPortalEvents implements Listener {
         if (islandInfo == null) {
             // No island could be resolved - send the entity to the shared end fallback point.
             event.setTo(getEndEntityFallbackLocation(endWorld));
-            debugPortalEvent(event, from, fromWorld, "ENTERING -> no island, end fallback");
             return;
         }
         @Nullable Location to = getEndEntityLocation(endWorld, islandInfo);
@@ -388,8 +460,6 @@ public class EndPortalEvents implements Listener {
         if (arrival != null) {
             ensureArrivalPlatformLater(arrival);
         }
-        debugPortalEvent(event, from, fromWorld,
-            "ENTERING island=" + islandInfo.getName() + " -> arrival=" + describe(to));
     }
 
     /**
@@ -401,9 +471,16 @@ public class EndPortalEvents implements Listener {
      * check, so it also carries the block position and is independent of where the entity's reference point happens to
      * be - falling blocks, boats, passengers and mobs with unusual hitboxes are recognised exactly like players.</p>
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-        if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
+        // TODO(diagnostic): remove this log together with the diagnostic section below.
+        if (takeDebugSlot()) {
+            debugLog("ENTER entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
+                + " portal=" + event.getPortalType()
+                + " cancelled=" + event.isCancelled()
+                + " world=" + describe(event.getLocation()));
+        }
+        if (event.isCancelled() || !Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
             return;
         }
         Location portalBlock = event.getLocation();
@@ -446,7 +523,6 @@ public class EndPortalEvents implements Listener {
                                         @NotNull World fromWorld) {
         @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
         if (portalBlock == null && !isInsideEndPortalBlock(from)) {
-            debugPortalEvent(event, from, fromWorld, "LEAVING without a portal block -> cancelled");
             event.setCancelled(true);
             return;
         }
@@ -454,15 +530,12 @@ public class EndPortalEvents implements Listener {
         Location reference = portalBlock != null ? portalBlock : from;
         IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(reference));
         if (islandInfo == null) {
-            debugPortalEvent(event, from, fromWorld, "LEAVING -> no island, vanilla behaviour");
             return; // Not inside an island region (e.g. the shared main city) - leave vanilla behaviour.
         }
         @Nullable Location returnPoint = islandInfo.getReturnPoint();
         if (returnPoint != null) {
             event.setTo(returnPoint);
         }
-        debugPortalEvent(event, from, fromWorld,
-            "LEAVING island=" + islandInfo.getName() + " -> returnPoint=" + describe(returnPoint));
     }
 
     /**
