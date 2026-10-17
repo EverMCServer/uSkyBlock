@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.PortalType;
@@ -14,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -28,7 +30,10 @@ import us.talabrek.ultimateskyblock.uSkyBlock;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -62,6 +67,16 @@ public class EndPortalEvents implements Listener {
      */
     private static final int PLATFORM_CLEARANCE = 3;
 
+    /**
+     * How many ticks a portal entry is remembered.
+     *
+     * <p>An end portal teleports instantly (its transition time is {@code 0}), so the portal block an entity uses is
+     * entered in the same tick the entity is teleported: non-player entities handle portals at the end of their own
+     * tick, right after the block collision check that fires {@link EntityPortalEnterEvent}. A small margin covers odd
+     * tick orders (e.g. passengers, or an entity that keeps standing in the portal).</p>
+     */
+    private static final int PORTAL_ENTRY_TTL_TICKS = 5;
+
     private final uSkyBlock plugin;
     private final RateLimiter rateLimiter = RateLimiter.create(1);
 
@@ -71,6 +86,35 @@ public class EndPortalEvents implements Listener {
      */
     private final Set<Location> pendingPlatformRebuilds = new LinkedHashSet<>();
     private boolean platformRebuildScheduled;
+
+    /**
+     * End portal blocks entities really entered, per entity, see {@link #onEntityPortalEnter(EntityPortalEnterEvent)}.
+     *
+     * <p>This is the reliable counterpart of {@link EntityPortalEvent}: that event describes the <i>teleport</i>
+     * (source location, destination, portal type) and carries no information at all about the portal block that
+     * caused it - and both the overworld end portal and the return portal built in the end report the same
+     * {@link PortalType#ENDER}. The portal <i>enter</i> event on the other hand is fired by the portal block itself and
+     * includes the block position, so it tells us which world and which block actually "caught" the entity.</p>
+     */
+    private final Map<UUID, PortalEntry> endPortalEntries = new ConcurrentHashMap<>();
+
+    /**
+     * Tick the expired {@link #endPortalEntries} were last purged in, so the purge runs at most once per tick.
+     */
+    private int lastEntryPurgeTick = -1;
+
+    /**
+     * Maximum number of end portal events the diagnostic logs before it goes quiet.
+     *
+     * <p>TODO(diagnostic): remove together with {@link #debugPortalEvent(EntityPortalEvent, Location, World, String)};
+     * the cap keeps a busy entity contraption from flooding the server log.</p>
+     */
+    private static final int DEBUG_PORTAL_EVENT_LIMIT = 500;
+
+    /**
+     * Number of end portal events logged by the diagnostic so far.
+     */
+    private int debugPortalEventCount;
 
     @Inject
     public EndPortalEvents(@NotNull uSkyBlock plugin) {
@@ -218,41 +262,121 @@ public class EndPortalEvents implements Listener {
      * <p>Overworld -> end: entities arrive one block above the obsidian platform (vanilla offset) so the platform
      * never has to be entered from inside. End -> overworld: entities are sent to the island's configured return
      * point instead of the world spawn.</p>
+     *
+     * <p>Both directions are decided by the world the entity is in. That distinction alone is not enough though: an
+     * entity keeps the portal state of the portal it came through when it changes dimension, so the destination
+     * dimension can evaluate that portal again for an entity that has just arrived - without the entity standing in
+     * any portal block. Which portal the entity really used is tracked from {@link EntityPortalEnterEvent}, see
+     * {@link #handleEntityLeavingEnd(EntityPortalEvent, Location, World)}.</p>
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
         if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
             return;
         }
-        World fromWorld = event.getFrom().getWorld();
+        Location from = event.getFrom();
+        World fromWorld = from.getWorld();
         if (fromWorld == null) {
             return;
         }
+        // TODO(diagnostic): remove once the "entity entering the end ends up at the island return point" issue is
+        //                   confirmed on the test server. Prints every end portal event of the plugin worlds.
+        debugPortalEvent(event, from, fromWorld, "dispatch");
 
         if (plugin.getWorldManager().isSkyEnd(fromWorld)) {
-            // Returning from the island's end region: use the island's return point (default X, 64, Z).
-            IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(event.getFrom()));
-            if (islandInfo == null) {
-                return; // Not inside an island region (e.g. the shared main city) - leave vanilla behaviour.
-            }
-            @Nullable Location returnPoint = islandInfo.getReturnPoint();
-            if (returnPoint != null) {
-                event.setTo(returnPoint);
-            }
+            handleEntityLeavingEnd(event, from, fromWorld);
             return;
         }
         if (!plugin.getWorldManager().isSkyWorld(fromWorld)) {
             return; // Only portals leaving the overworld island are handled here.
         }
+        handleEntityEnteringEnd(event, from, fromWorld);
+    }
 
+    /**
+     * Convenience overload of {@link #debugPortalEvent(EntityPortalEvent, Location, World, String)}.
+     *
+     * @param event     Event to log.
+     * @param from      Entity location of the event.
+     * @param fromWorld World the event happens in.
+     * @param note      Short description of what the plugin is going to do.
+     */
+    private void debugPortalEvent(@NotNull EntityPortalEvent event, @NotNull Location from,
+                                 @NotNull World fromWorld, @NotNull String note) {
+        int count = debugPortalEventCount;
+        if (count > DEBUG_PORTAL_EVENT_LIMIT) {
+            return;
+        }
+        debugPortalEventCount = count + 1;
+        if (count == DEBUG_PORTAL_EVENT_LIMIT) {
+            plugin.getLogger().info("[end-debug] " + DEBUG_PORTAL_EVENT_LIMIT
+                + " end portal events logged, further events are suppressed.");
+            return;
+        }
+        @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
+        plugin.getLogger().info("[end-debug] #" + (count + 1)
+            + " entity=" + event.getEntityType()
+            + "/" + event.getEntity().getUniqueId().toString().substring(0, 8)
+            + " from=" + describe(from)
+            + " blockAtFrom=" + from.getBlock().getType()
+            + " to=" + describe(event.getTo())
+            + " portal=" + event.getPortalType()
+            + " fromKind=" + worldKind(fromWorld)
+            + " recentPortalEntry=" + describe(portalBlock)
+            + " | " + note);
+    }
+
+    /**
+     * Formats a location for the diagnostic log.
+     *
+     * @param location Location to format, may be null.
+     * @return {@code world@(x,y,z)}, or {@code null}.
+     */
+    @NotNull
+    private static String describe(@Nullable Location location) {
+        if (location == null) {
+            return "null";
+        }
+        World world = location.getWorld();
+        String worldName = world != null ? world.getName() : "?";
+        return worldName + "@(" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ() + ")";
+    }
+
+    /**
+     * Classifies a world for the diagnostic log.
+     *
+     * @param world World to classify.
+     * @return {@code end}, {@code overworld} or {@code other}.
+     */
+    @NotNull
+    private String worldKind(@NotNull World world) {
+        if (plugin.getWorldManager().isSkyEnd(world)) {
+            return "end";
+        }
+        return plugin.getWorldManager().isSkyWorld(world) ? "overworld" : "other";
+    }
+
+    /**
+     * Sends an entity that travels from the overworld island into the end to that island's own arrival point.
+     *
+     * @param event     Entity portal event to rewrite.
+     * @param from      Entity location before the teleport (inside the portal on the overworld island).
+     * @param fromWorld World the portal event happens in.
+     */
+    private void handleEntityEnteringEnd(@NotNull EntityPortalEvent event, @NotNull Location from,
+                                         @NotNull World fromWorld) {
         @Nullable World endWorld = plugin.getWorldManager().getEndWorld();
         if (endWorld == null) {
             return;
         }
-        IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(event.getFrom()));
+        // Resolve the island from the portal block itself when it is known, not from where the entity happens to stand.
+        @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
+        Location reference = portalBlock != null ? portalBlock : from;
+        IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(reference));
         if (islandInfo == null) {
             // No island could be resolved - send the entity to the shared end fallback point.
             event.setTo(getEndEntityFallbackLocation(endWorld));
+            debugPortalEvent(event, from, fromWorld, "ENTERING -> no island, end fallback");
             return;
         }
         @Nullable Location to = getEndEntityLocation(endWorld, islandInfo);
@@ -264,6 +388,140 @@ public class EndPortalEvents implements Listener {
         if (arrival != null) {
             ensureArrivalPlatformLater(arrival);
         }
+        debugPortalEvent(event, from, fromWorld,
+            "ENTERING island=" + islandInfo.getName() + " -> arrival=" + describe(to));
+    }
+
+    /**
+     * Remembers which end portal block an entity actually walked into.
+     *
+     * <p>{@link EntityPortalEvent} cannot answer that: it describes the teleport and knows nothing about the portal
+     * block that caused it, and the overworld end portal and the return portal built in the end are the very same
+     * block (both report {@link PortalType#ENDER}). This event is fired from the portal block's own entity collision
+     * check, so it also carries the block position and is independent of where the entity's reference point happens to
+     * be - falling blocks, boats, passengers and mobs with unusual hitboxes are recognised exactly like players.</p>
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityPortalEnter(EntityPortalEnterEvent event) {
+        if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
+            return;
+        }
+        Location portalBlock = event.getLocation();
+        World world = portalBlock.getWorld();
+        if (world == null) {
+            return;
+        }
+        if (!plugin.getWorldManager().isSkyWorld(world) && !plugin.getWorldManager().isSkyEnd(world)) {
+            return;
+        }
+        int now = Bukkit.getCurrentTick();
+        Location block = new Location(world, portalBlock.getBlockX(), portalBlock.getBlockY(),
+            portalBlock.getBlockZ());
+        endPortalEntries.put(event.getEntity().getUniqueId(), new PortalEntry(world.getName(), block, now));
+        // Drop expired entries, but at most once per tick: this handler fires every tick for every entity that stays
+        // inside a portal, so purging per event would be O(entities in portals^2).
+        if (lastEntryPurgeTick != now) {
+            lastEntryPurgeTick = now;
+            endPortalEntries.values().removeIf(entry -> now - entry.tick() > PORTAL_ENTRY_TTL_TICKS);
+        }
+    }
+
+    /**
+     * Sends an entity that leaves the island's end region through a return portal back to the island's return point.
+     *
+     * <p><b>Only a portal the entity really entered counts as "leaving the end".</b> Two things make this necessary:
+     * the overworld end portal and the return portal built in the end are the same block, and an entity keeps the
+     * portal it went through after changing dimension, so the destination dimension evaluates that portal again. A
+     * portal event is therefore also fired for an entity that has just arrived in the end and is standing on the
+     * obsidian arrival platform, without it being inside any portal. Rewriting such an event to the return point would
+     * teleport the entity straight back to the overworld (that was the "entity entering the end ends up at the island
+     * return point" bug), so it is cancelled instead: a portal event that was not caused by a portal block must not
+     * move the entity at all.</p>
+     *
+     * <p>The check uses the recorded portal entry of this entity in the same world (see
+     * {@link #onEntityPortalEnter(EntityPortalEnterEvent)}); the block below/at/above the entity is only a fallback for
+     * the rare case where the entry event was missed.</p>
+     */
+    private void handleEntityLeavingEnd(@NotNull EntityPortalEvent event, @NotNull Location from,
+                                        @NotNull World fromWorld) {
+        @Nullable Location portalBlock = getRecentEndPortalBlock(event.getEntity(), fromWorld);
+        if (portalBlock == null && !isInsideEndPortalBlock(from)) {
+            debugPortalEvent(event, from, fromWorld, "LEAVING without a portal block -> cancelled");
+            event.setCancelled(true);
+            return;
+        }
+        // Resolve the island from the portal block itself when it is known, not from where the entity happens to stand.
+        Location reference = portalBlock != null ? portalBlock : from;
+        IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(reference));
+        if (islandInfo == null) {
+            debugPortalEvent(event, from, fromWorld, "LEAVING -> no island, vanilla behaviour");
+            return; // Not inside an island region (e.g. the shared main city) - leave vanilla behaviour.
+        }
+        @Nullable Location returnPoint = islandInfo.getReturnPoint();
+        if (returnPoint != null) {
+            event.setTo(returnPoint);
+        }
+        debugPortalEvent(event, from, fromWorld,
+            "LEAVING island=" + islandInfo.getName() + " -> returnPoint=" + describe(returnPoint));
+    }
+
+    /**
+     * Gets the end portal block the given entity entered recently in the given world.
+     *
+     * @param entity Entity to look up.
+     * @param world  World the portal event is happening in; entries from another world are ignored, which is what
+     *               separates "the entity just used this portal" from "the entity still carries the portal it used in
+     *               the other dimension".
+     * @return The portal block, or null when the entity did not enter an end portal block in that world recently.
+     */
+    @Nullable
+    private Location getRecentEndPortalBlock(@NotNull Entity entity, @NotNull World world) {
+        PortalEntry entry = endPortalEntries.get(entity.getUniqueId());
+        if (entry == null || !entry.worldName().equals(world.getName())) {
+            return null;
+        }
+        if (Bukkit.getCurrentTick() - entry.tick() > PORTAL_ENTRY_TTL_TICKS) {
+            return null;
+        }
+        return entry.block();
+    }
+
+    /**
+     * Checks whether the given location is inside an {@code END_PORTAL} block.
+     *
+     * <p>Fallback for {@link #getRecentEndPortalBlock(Entity, World)}: whether the entity's reference position is in
+     * the portal block depends on the entity's hitbox, so this is only used when no portal entry was recorded.</p>
+     *
+     * <p>The blocks above and below the entity are checked as well, because entities of different sizes and sizes of
+     * their bounding boxes can have their reference position in the block above or below the portal column.</p>
+     *
+     * @param location Entity location to inspect.
+     * @return True when the entity stands in an end portal block.
+     */
+    private static boolean isInsideEndPortalBlock(@NotNull Location location) {
+        World world = location.getWorld();
+        if (world == null) {
+            return false;
+        }
+        int x = location.getBlockX();
+        int y = location.getBlockY();
+        int z = location.getBlockZ();
+        for (int offset = -1; offset <= 1; offset++) {
+            if (world.getBlockAt(x, y + offset, z).getType() == Material.END_PORTAL) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * An end portal block an entity entered, with the tick it was entered.
+     *
+     * @param worldName Name of the world the portal block is in.
+     * @param block     Portal block location.
+     * @param tick      Tick the entry was recorded in, used to expire stale entries.
+     */
+    private record PortalEntry(@NotNull String worldName, @NotNull Location block, int tick) {
     }
 
     /**
