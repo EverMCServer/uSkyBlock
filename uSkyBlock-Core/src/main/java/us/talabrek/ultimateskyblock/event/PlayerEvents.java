@@ -678,6 +678,12 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent event) {
+        // The beginner gate is the "enter the nether" tutorial gate. End portals are handled by
+        // EndPortalEvents (destination rewrite + island requirements) and must not be blocked here,
+        // otherwise no entity can ever travel through an island's end portal.
+        if (event.getPortalType() != PortalType.NETHER) {
+            return;
+        }
         IslandInfo islandInfo = plugin.getIslandInfo(event.getFrom());
         if (islandInfo != null) {
             PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeader());
@@ -690,6 +696,13 @@ public class PlayerEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
+            // The end is handled by EndPortalEvents (destination rewrite + island requirements).
+            // TODO: award the "enter_end" challenge once the portal is actually accepted (e.g. on arrival);
+            //       deliberately not done here because this listener runs before EndPortalEvents validates
+            //       or cancels the portal.
+            return;
+        }
         Player player = event.getPlayer();
         PlayerInfo playerInfo = plugin.getPlayerInfo(player);
         boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
@@ -699,13 +712,6 @@ public class PlayerEvents implements Listener {
             if (rateLimiter.tryAcquire()) {
                 player.sendMessage("\u00a7c你需要完成海岛入门任务，才能进入下界！");
             }
-            return;
-        }
-        if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
-            // The end is handled by EndPortalEvents (destination rewrite + island requirements).
-            // TODO: award the "enter_end" challenge once the portal is actually accepted. Deliberately not done
-            //       here: this listener runs before EndPortalEvents validates/cancels the portal, and it also
-            //       fires for end portals outside the plugin's worlds.
             return;
         }
         plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_nether");

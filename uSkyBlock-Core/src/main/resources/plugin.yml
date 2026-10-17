@@ -69,6 +69,7 @@ permissions:
       usb.island.perm: true
       usb.island.restart: true
       usb.island.sethome: true
+      usb.island.setreturn: true
       usb.island.slime: true
       usb.island.signs.place: true
       usb.island.signs.use: true
@@ -229,6 +230,7 @@ permissions:
       usb.island.makeleader: true
       usb.island.restart: true
       usb.island.sethome: true
+      usb.island.setreturn: true
       usb.island.setwarp: true
       usb.island.signs: true
       usb.island.slime: true
@@ -581,6 +583,9 @@ permissions:
 
   usb.island.sethome:
     description: 'Grants access to /island sethome - set the island-home'
+
+  usb.island.setreturn:
+    description: 'Grants access to /island setreturn - set the island return point used by entities leaving the end'
 
   usb.island.slime:
     description: 'Grants access to /is slime - check slime chunks around you'

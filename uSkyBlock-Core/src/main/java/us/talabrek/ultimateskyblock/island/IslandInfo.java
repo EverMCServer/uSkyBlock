@@ -63,6 +63,11 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
     private static final Pattern OLD_LOG_PATTERN = Pattern.compile("\u00a7d\\[(?<date>[^\\]]+)\\]\u00a77 (?<msg>.*)");
     private static final int YML_VERSION = 3;
 
+    /**
+     * Default Y of the island return point when the island leader has not set one ({@code (X, 64, Z)}).
+     */
+    private static final int DEFAULT_RETURN_POINT_Y = 64;
+
     private final uSkyBlock plugin;
     private File file;
     private FileConfiguration config;
@@ -158,6 +163,9 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
         config.set("general.warpLocationY", 0);
         config.set("general.warpLocationZ", 0);
         config.set("general.warpActive", false);
+        config.set("general.returnPointX", null);
+        config.set("general.returnPointY", null);
+        config.set("general.returnPointZ", null);
         config.set("blocks.leafBreaks", 0);
         config.set("version", YML_VERSION);
         config.set("party", null);
@@ -1017,6 +1025,38 @@ public class IslandInfo implements us.talabrek.ultimateskyblock.api.IslandInfo {
                 (float) config.getDouble("general.warpPitch", 0));
         }
         return null;
+    }
+
+    /**
+     * Gets the island's return point, i.e. the location entities are sent back to when they leave the end through an
+     * end portal. Defaults to the center of the island's block at {@code (X, 64, Z)}; the island leader can change it
+     * with {@code /is setreturn}.
+     *
+     * @return The return point, or null when the island location is unknown.
+     */
+    @Nullable
+    public Location getReturnPoint() {
+        Location islandLocation = getIslandLocation();
+        if (islandLocation == null || islandLocation.getWorld() == null) {
+            return null;
+        }
+        int x = config.getInt("general.returnPointX", islandLocation.getBlockX());
+        int y = config.getInt("general.returnPointY", DEFAULT_RETURN_POINT_Y);
+        int z = config.getInt("general.returnPointZ", islandLocation.getBlockZ());
+        return new Location(islandLocation.getWorld(), x + 0.5, y, z + 0.5);
+    }
+
+    /**
+     * Sets the island's return point (used by entities leaving the end through an end portal).
+     *
+     * @param location New return point.
+     */
+    public void setReturnPoint(@NotNull Location location) {
+        Validate.notNull(location, "Location cannot be null");
+        config.set("general.returnPointX", location.getBlockX());
+        config.set("general.returnPointY", location.getBlockY());
+        config.set("general.returnPointZ", location.getBlockZ());
+        save();
     }
 
     @Override

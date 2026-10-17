@@ -121,6 +121,8 @@
 
 **实现要点**：优先在**世界创建后同步移除**（`world.getEntitiesByClass(EnderDragon.class)`），并加一个低频巡检兜底；同时拦截末地水晶的放置/引爆。不要在第一个玩家进末地时才处理（可能已被看见/互动）。
 
+> **bossbar 坑（已实测）**：末影龙 bossbar 属于世界的 `DragonBattle`（`world.getEnderDragonBattle().getBossBar()`），**不是**龙实体的附属物；用 `Entity#remove()` 移除龙不会移除 bossbar，它会一直显示（重新进末地还会被重新加回）。修复：`WorldManager.clearDragonBossBar()` 对 `DragonBattle` 的 bossbar 调 `setVisible(false)` + `removeAll()`，并在每次有人进入末地时立即清、每 20 tick 兜底；同时用 `EntitySpawnEvent` 取消末地世界的末影龙生成。
+
 ### 4.3 【用户已问】实体穿过末地传送门的行为 —— **已决策：D4=放开所有实体（生电玩法）**
 
 > 这是本设计里**约束最强**的一条：因为要支持刷沙机（生电），我们不能用"禁止实体过门"这个最省事的做法，必须正面设计**每个岛自己的到达平台**。
@@ -139,18 +141,23 @@
 
 #### 4.3.2 推荐实现（到达点 = **每个岛屿自己那块独立的**黑曜石平台）
 
-> **已决策 D12（口径已澄清）**：每个玩家岛屿在末地都有**自己的、独立的**到达黑曜石平台 —— 即"原版的 5×5 黑曜石平台机制，但每个岛一份"，**不是**全世界共用一个公共平台。平台坐标由 `setTo()` 决定，落在该岛自己的 X/Z 区域上；岛屿蓝图 `acidIslandEnd.schem` 负责在其附近建造**返回传送门**。
+> **已决策 D12（口径已澄清）**：每个玩家岛屿在末地都有**自己的、独立的**到达黑曜石平台 —— 即"原版的 5×5 黑曜石平台机制，但每个岛一份"，**不是**全世界共用一个公共平台。平台由插件按该岛自己的 X/Z 铺设（`setTo()` 只决定实体落点，原版平台不跟随落点）；岛屿蓝图 `acidIslandEnd.schem` 负责在其附近建造**返回传送门**。
+>
+> ⚠️ **已核实的服务端事实（与最初假设不同）**：Paper 的 `EndPortalBlock#getPortalDestination` 是**先按原版 `ServerLevel.END_SPAWN_POINT` 建平台，再触发 `PlayerPortalEvent`/`EntityPortalEvent`**；事件里改 `to` 只改实体落点，**平台不会跟着 `setTo` 移动**。因此每岛平台必须由插件自己铺（`EndPortalEvents.buildArrivalPlatform`），并且重建时按"被玩家挖掘"掉落方块（含容器内容物）。P0 第 1 项若要验证原版行为，必须先临时关掉插件自己的平台重建，否则测到的是我们铺的平台。
 
 1. **不改写 = 出事故**：所有实体（`EntityPortalEvent`，`PortalType.ENDER`）都必须改写为 `setTo(本岛末地到达点)`，否则所有岛的玩家/实体都会汇聚到同一个世界出生点
-2. **到达点坐标约定**：X/Z = 该岛屿在主世界的 X/Z（与下界一致的同坐标模型），Y = `end.height`（D9=A）
+2. **到达点坐标约定**：
+   - 玩家：`(islandX + 0.5, end.height, islandZ + 0.5)`，面朝西（原版玩家居中落在平台上）
+   - 非玩家实体：`(islandX + 0.5, end.height + 1, islandZ + 0.5)`（与玩家同 X/Z，**高 1 格**，对应原版"实体比玩家高 1 格"的落点差）
+   - 平台本体：中心 `(islandX, end.height - 1, islandZ)`，5×5 黑曜石；玩家脚在 `end.height`
 3. **平台正上方 3 格必须保持清空**（蓝图与后续建造的硬约束）：
-   - 平台每次重建都会"破坏上方 3 格并掉落成物品"，因此到达平台上方的 3×5×5 空间**不能放任何方块**，尤其不能放箱子（会连内容物一起被炸出来）
+   - 平台重建会把上方 3 格（`end.height .. end.height + 2`）内的方块按**挖掘掉落**处理（容器连内容物一起掉），因此该 3×5×5 空间**不能放任何方块**，尤其不能放箱子
    - 反过来看，这个空腔正好是**刷沙机等装置的天然工作空间**，与生电需求自洽
-   - **落地判定要复核**：`setTo` 的 Y 需要让玩家落点位于平台上而不是平台内。原版玩家落点是 `平台 Y + 1`、实体落点是 `平台 Y + 2`，实现时要在 P0 实测确定（§4.3.3）
-4. **返回传送门的位置（蓝图职责，已决策 D12，但具体位置待定，见 §5.2 D15）**：
-   - 建岛时随 `acidIslandEnd.schem` 一起建在该岛区域内，**与到达平台保持一小段距离**（避免"进入 → 立刻被送回"，同时避免被平台重建波及）
-   - 触发方式：**推荐直接复用"进入末地传送门 → 回主世界"的 `PlayerPortalEvent` 路径**（实现最省，与进入共用同一套改写逻辑），即蓝图里放一个可用的末地传送门
-   - 返回目的地：按末地侧区域名（`<name>end`）反查岛屿 → 回到该岛主世界到达点
+   - 平台重建在**每次玩家/实体到达后**执行（下一 tick，聚合同一 tick 的多次到达），不再要求"附近有玩家"
+4. **返回（末地 → 主世界）**：
+   - **玩家**：Paper 对玩家从末地返回走 `PlayerRespawnEvent`（reason `END_PORTAL`），**不触发 `PlayerPortalEvent`**；现有 `PlayerEvents.onPlayerRespawn` 会按 `extras.respawnAtIsland` 送到岛 home
+   - **非玩家实体**：`EntityPortalEvent` 改写为**本岛返回点**；返回点默认 `(islandX, 64, islandZ)`，岛主可用 `/is setreturn` 修改（聊天框显示坐标 + 二次确认）
+   - 返回传送门仍由 `acidIslandEnd.schem` 建在该岛区域内，**与到达平台保持距离**；蓝图里应直接放 `end_portal` 方块（只放"框架+眼睛"粘贴不会触发激活）
    - ⚠️ **不要把返回门建在到达平台同一格**：那会让"到达"和"立刻返回"重叠，且平台重建的破坏范围会波及它
 5. **装置的兼容性结论**：刷沙机等装置只要建在**本岛到达点所在的区块**即可正常工作；服务端需要保证：
    - 实体目的地点 = 本岛到达点（第 1 点）
@@ -416,7 +423,7 @@
 |------|------|
 | `Settings.java` | 新增 `end_enabled / end_height / end_activateAtLevel / end_schematicName / end_chunkGenerator / end_fallbackX / end_fallbackZ` + `general_defaultEndBiome`；读 `end.*` 配置；末地启用前同样检查 `WorldEditHandler.isOuterPossible()` |
 | `world/AcidEndChunkGenerator.java`（新增） | 纯虚空生成器 + 单群系（`general_defaultEndBiome`）+ 兜底出生点 |
-| `world/WorldManager.java` | `getEndWorld()`（世界名 `<worldName>_the_end`，`Environment.THE_END`，`generateStructures(false)`）、`getEndWorldName()`、`isSkyEnd()`、`getEndGenerator()`、`getDefaultWorldGenerator()` 识别 end、`isSkyAssociatedWorld()` 纳入末地、末地出生点=原点主城（**不建方块**）+ 末影龙定时清除 |
+| `world/WorldManager.java` | `getEndWorld()`（世界名 `<worldName>_the_end`，`Environment.THE_END`，`generateStructures(false)`）、`getEndWorldName()`、`isSkyEnd()`、`getEndGenerator()`、`getDefaultWorldGenerator()` 识别 end、`isSkyAssociatedWorld()` 纳入末地、末地出生点=原点主城（**不建方块**）+ 末影龙定时清除 + **末影龙 bossbar 清理**（`DragonBattle#getBossBar()` 的 `setVisible(false)`/`removeAll()`，每 20 tick 兜底；进入末地时立即清） |
 | `handler/WorldGuardHandler.java` | 区域 id `<name>end`（Y 0..255）、`updateRegion()` 同步创建、`removeIslandRegion()` 一并删除、`getEndRegionAt()`、`getIslandNameAt/getIslandRegionAt` 抽出 `getIslandNameFromRegion()` 统一后缀处理（**顺手修掉了原来的 `substring(length-6)` 硬编码**）、岛屿上锁同时锁下界与末地、**区域版本 `VERSION` 14 → 15**（`general.regionVersion` 不匹配时 `protectIsland()` 会重建 island/nether/end 三套区域） |
 | `hook/world/MultiverseHook.java` | `registerEndWorld()`；`linkNetherInventory()` 重构为通用 `linkInventories()`（**末地加入 `skyblock` 组，避免丢装备**） |
 | `island/IslandGenerator.java` | 建岛时读 `end.schematicName` + `<scheme>End` 兜底并粘贴末地蓝图；额外世界蓝图不再出现在可选岛屿蓝图列表 |
@@ -431,9 +438,11 @@
 
 | 位置 | 内容 |
 |------|------|
-| `event/EndPortalEvents.java`（新增） | ①`PlayerPortalEvent`（`END_PORTAL`）双向改写目的地：主世界岛屿 → 本岛末地到达点、末地 → 本岛主世界回家点；无岛/未链接的传送门直接拒绝 ②`EntityPortalEvent`（`ENDER`）**不取消**，改写目的地到本岛到达点（无法解析时送兜底点，丢进虚空前留手）③`buildArrivalPlatform()`：在到达点重建 5×5 黑曜石平台并清空上方 3 格 ④末地水晶放置拦截 + 末地水晶/末影龙爆炸取消 ⑤**末影珍珠跨区域拦截**：珍珠落点不在任何岛屿区域内时取消（防止掉虚空，也防止用珍珠跳过区域隔离） |
+| `event/EndPortalEvents.java`（新增） | ①`PlayerPortalEvent`（`END_PORTAL`，主世界岛屿 → 末地）：改写为本岛玩家到达点 `(X+0.5, end.height, Z+0.5)`，无岛/未链接直接拒绝；玩家**离开**末地不在这里处理（Paper 触发的是 `PlayerRespawnEvent(END_PORTAL)`，由 `PlayerEvents.onPlayerRespawn` 送岛 home） ②`EntityPortalEvent`（`ENDER`）：主世界 → 末地改写到本岛实体到达点 `(X+0.5, end.height+1, Z+0.5)`；末地 → 主世界改写到**本岛返回点**（默认 `(X,64,Z)`，`/is setreturn` 可改）；无法解析时送兜底点 ③`buildArrivalPlatform()`：在到达点重建 5×5 黑曜石平台，清空上方 3 格并**按挖掘掉落**（含容器内容物），每次到达后下一 tick 重建（聚合同 tick 多次到达） ④末地水晶放置拦截 + 末地水晶/末影龙爆炸取消 + **取消末影龙生成**（`EntitySpawnEvent`） ⑤**末影珍珠跨区域拦截**：珍珠落点不在任何岛屿区域内时取消（防止掉虚空，也防止用珍珠跳过区域隔离） ⑥玩家进入末地时立即清 bossbar |
+| `island/IslandInfo.java` | 新增 `getReturnPoint()`/`setReturnPoint()`（`general.returnPointX/Y/Z`，默认 `(X,64,Z)`；`resetIslandConfig()` 一并清除） |
+| `command/island/SetReturnCommand.java`（新增） | `/is setreturn`：岛主在自己主世界岛上使用，聊天框显示"所在方块中心"坐标，点击 `[确认]`（或 `/is setreturn confirm`）二次确认后写入岛返回点；60 秒超时，另支持 `cancel` |
 | `bootstrap/Listeners.java` | 按 `Settings.end_enabled` 条件注册 `EndPortalEvents` |
-| `event/PlayerEvents.java` | `onPlayerPortal` 拆分：`END_PORTAL` 归 `EndPortalEvents` 处理，本监听器不再发 `enter_end`（**触发点已临时移除，留 TODO**，原因：会在校验/取消之前误完成） |
+| `event/PlayerEvents.java` | `onPlayerPortal` 的 beginner 门槛只对下界门生效（`END_PORTAL` 直接归 `EndPortalEvents`）；`onEntityPortal` 的 beginner 门槛也只对 `NETHER` 生效，避免拦掉末地实体；`enter_end` 触发点仍留 TODO |
 | `event/SpawnEvents.java` | 新增末地幻翼开关 `phantomsInEnd` + `setPhantomsInEnd()` |
 
 **状态**：`./gradlew :uSkyBlock-Plugin:buildPlugin` 通过，产物 `uSkyBlock-Plugin/build/libs/uSkyBlock-Plugin.jar`。
@@ -449,21 +458,25 @@
 
 | 项 | 说明 |
 |----|------|
-| **`acidIslandEnd.schem` 蓝图** | **仓库与服务器 `uSkyBlock/schematics/` 里都没有**。缺它时插件不会报错（会跳过粘贴），但**返回传送门不存在**，玩家进末地后有去无回 —— 需要建造并放入蓝图 |
-| **P0 实测未做** | §4.3.3 的 5 项（平台是否跟随 `setTo()`、落点高度、破坏范围、实体是否跟随、刷沙机链路）必须在测试服验证；**逐项步骤见 [`END-P0-CHECKLIST.md`](END-P0-CHECKLIST.md)**。若"平台不跟随"，需要回到设计层面调整 D12 |
+| **`acidIslandEnd.schem` 蓝图** | **仓库与服务器 `uSkyBlock/schematics/` 里都没有**。缺它时插件不会报错（会跳过粘贴），但**返回传送门不存在**，玩家进末地后有去无回 —— 需要建造并放入蓝图。蓝图里要**直接放 `end_portal` 方块**（只放"框架+眼睛"粘贴不会触发激活），并避开到达平台正上方 5×5×4 空腔 |
+| **P0 实测未做** | §4.3.3 的 5 项（平台位置、落点高度、破坏范围、实体落点、刷沙机链路）必须在测试服验证；**逐项步骤见 [`END-P0-CHECKLIST.md`](END-P0-CHECKLIST.md)**。**平台是否跟随 `setTo()` 已有源码结论：不跟随**（Paper 在事件之前按原版 end spawn 建平台），所以现有实现改为插件自己铺平台；P0 第 1 项要**先临时关掉插件自己的平台重建**再测，否则测到的是我们铺的平台 |
 | **末地世界首次生成** | 需要重启服务器让新世界创建、Multiverse 导入、区域建立；上线前建议先确认旧世界命名不冲突 |
 | **现有岛屿补末地区域** | **已用「区域版本 bump」方案解决**：`WorldGuardHandler.VERSION` 14 → 15，老岛的 `general.regionVersion`（`14 zh_CN`）因此失配，`protectIsland()` 会重建 **island + nether + end 三套区域**。部署后执行一次 `/usb protectall` 即可覆盖全部老岛（数量 = `plugins/uSkyBlock/islands/` 下的岛屿文件数），输出 `N new regions were created` 应等于该数量；没跑之前老岛玩家在末地会被 `__global__` 的 BUILD DENY 挡住、且不算"在自己的岛上" |
 | 岛屿迁移后的末地重建 | **不需要**：仓库里没有岛屿迁移/重定位功能（`IslandLocatorLogic` 只负责分配新位置），岛屿位置不会变，因此末地区域随坐标天然稳定 |
 | 珍珠/紫颂果跨区域传送 | **已处理**：末影珍珠落点不在任何岛屿区域内时取消传送（`EndPortalEvents.onPearlTeleport`）；紫颂果在末地无紫颂植株自然生长的前提下影响很小 |
-| **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**待 P0 确认**：未归属岛屿的实体落到原点时，原版 5×5 平台重建是否会破坏主城方块；若是，需要把实体兜底改到主城旁空地或取消实体兜底 |
-| **`enter_end` 触发点（TODO）** | 挑战已定义，但**代码里暂时不发**：`PlayerEvents.onPlayerPortal` 的 `END_PORTAL` 分支与 `EndPortalEvents.onPlayerPortal` 各留了 TODO。旧实现会在传送门被校验/取消之前完成挑战（无岛、未链接、他人岛屿、大厅末地都会误完成）。后续应改成"传送真正被接受后（例如到达后的下一次传送/落下时）再发" |
+| **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**注意**：实体兜底（`getEndEntityFallbackLocation`）现在只改落点、不再铺平台；原版平台建在 `Level.END` 的 `(100,48,0)`，与主城/本岛无关，但需确认 `Level.END` 指向哪个世界（大厅的 `world_the_end` 还是我们的 `_the_end`） |
+| **`enter_end` 触发点（TODO）** | 挑战已定义，但**代码里暂时不发**：`EndPortalEvents.onPlayerPortal` 留了 TODO。旧实现会在传送门被校验/取消之前完成挑战（无岛、未链接、他人岛屿、大厅末地都会误完成）。后续应改成"传送真正被接受后（例如到达后 / `PlayerChangedWorldEvent`）再发" |
 | `WorldEditHandler.isOuterPossible()` | 末地启用沿用了下界的前置检查，需确认它在当前服务器配置下返回 true（否则末地会被自动禁用并打警告） |
 
 ---
 
 ## 8. 参考
 
-- [PlayerPortalEvent (Paper 26.x Javadoc)](https://jd.papermc.io/paper/26.1.2/org/bukkit/event/player/PlayerPortalEvent.html) — `END_PORTAL` 的 `getTo()` 语义、"end portal target platforms always appear at the target location"
+- [PlayerPortalEvent (Paper 26.x Javadoc)](https://jd.papermc.io/paper/26.1.2/org/bukkit/event/player/PlayerPortalEvent.html) — `END_PORTAL` 的 `getTo()` 语义；注意 `setCreationRadius` 的 "end portal target platforms always appear at the target location" 容易被误读，实际平台在事件之前按原版 end spawn 创建（见下条）
+- [Paper `EndPortalBlock` 补丁](https://github.com/PaperMC/Paper/blob/main/paper-server/patches/sources/net/minecraft/world/level/block/EndPortalBlock.java.patch) — 平台创建先于 `handlePortalEvents`；玩家从末地返回走 `findRespawnPositionAndUseSpawnBlock(..., RespawnReason.END_PORTAL)`
+- [Paper `EndPlatformFeature` 补丁](https://github.com/PaperMC/Paper/blob/main/paper-server/patches/sources/net/minecraft/world/level/levelgen/feature/EndPlatformFeature.java.patch) — 5×5 平台 + 清空上方 3 格 + `PortalCreateEvent(END_PLATFORM)`
+- [PlayerRespawnEvent.RespawnReason](https://jd.papermc.io/paper/1.21.9/org/bukkit/event/player/PlayerRespawnEvent.RespawnReason.html) — `END_PORTAL`：玩家通过末地门离开末地
+- [SPIGOT-4770](https://hub.spigotmc.org/jira/browse/SPIGOT-4770) — "PlayerPortalEvent doesn't fire from End"
 - [EntityPortalEvent (Paper 26.x Javadoc)](https://jd.papermc.io/paper/26.1.2/org/bukkit/event/entity/EntityPortalEvent.html) — 非玩家实体过门、`PortalType.ENDER`
 - [End Platform (Minecraft Wiki)](https://minecraft.wiki/w/End_Platform) — 5×5 黑曜石平台、每次实体进入都重建、破坏上方 3 格并掉落、Java 版非玩家实体同样触发、1.20.5 起到达后区块保持加载 15 秒
 - [EnderDragonChangePhaseEvent (Paper Javadoc)](https://jd.papermc.io/paper/1.21.9/org/bukkit/event/entity/EnderDragonChangePhaseEvent.html) — 若将来改选 B/C 方案会用到

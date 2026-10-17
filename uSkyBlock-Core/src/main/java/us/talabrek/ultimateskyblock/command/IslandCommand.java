@@ -59,6 +59,7 @@ public class IslandCommand extends BaseCommandExecutor {
         @NotNull LogCommand logCommand,
         @NotNull CreateCommand createCommand,
         @NotNull SetHomeCommand setHomeCommand,
+        @NotNull SetReturnCommand setReturnCommand,
         @NotNull SetWarpCommand setWarpCommand,
         @NotNull WarpCommand warpCommand,
         @NotNull ToggleWarp toggleWarpCommand,
@@ -94,6 +95,7 @@ public class IslandCommand extends BaseCommandExecutor {
         add(logCommand);
         add(createCommand);
         add(setHomeCommand);
+        add(setReturnCommand);
         add(homeCommand);
         add(setWarpCommand);
         add(warpCommand);

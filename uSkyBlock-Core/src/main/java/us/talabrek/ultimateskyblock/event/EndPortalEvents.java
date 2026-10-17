@@ -6,6 +6,7 @@ import com.google.inject.Singleton;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.PortalType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EnderCrystal;
@@ -19,9 +20,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.Settings;
@@ -29,6 +31,11 @@ import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
 import us.talabrek.ultimateskyblock.uSkyBlock;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
 
@@ -42,6 +49,11 @@ import static dk.lockfuglsang.minecraft.po.I18nUtil.tr;
  * <p>Every entity is allowed through the portal (technical Minecraft), so the destination is rewritten for entities
  * as well. This makes redstone contraptions that rely on entities travelling through an end portal (such as sand
  * duplication) work at the island's own arrival point.</p>
+ *
+ * <p><b>Important:</b> Paper builds the vanilla end platform at {@code ServerLevel.END_SPAWN_POINT} <i>before</i>
+ * the portal events are fired, and {@link PlayerPortalEvent#setTo(Location)} only changes the location the entity is
+ * teleported to. The platform therefore has to be built (and repaired) by this plugin at the island's own arrival
+ * point - it does not follow the rewritten destination.</p>
  */
 @Singleton
 public class EndPortalEvents implements Listener {
@@ -59,6 +71,13 @@ public class EndPortalEvents implements Listener {
 
     private final uSkyBlock plugin;
     private final RateLimiter rateLimiter = RateLimiter.create(1);
+
+    /**
+     * Arrival platforms that still have to be (re)built in the next tick. Coalesced so a burst of entities entering
+     * the same island does not build the same platform dozens of times per tick.
+     */
+    private final Set<Location> pendingPlatformRebuilds = new LinkedHashSet<>();
+    private boolean platformRebuildScheduled;
 
     @Inject
     public EndPortalEvents(@NotNull uSkyBlock plugin) {
@@ -119,31 +138,30 @@ public class EndPortalEvents implements Listener {
         return false;
     }
 
+    /**
+     * Rewrites the destination of players entering the end from their overworld island.
+     *
+     * <p>Players leaving the end are not handled here: Paper fires {@link org.bukkit.event.player.PlayerRespawnEvent}
+     * (reason {@code END_PORTAL}) instead of {@code PlayerPortalEvent} for them, and the existing respawn handling in
+     * {@link PlayerEvents#onPlayerRespawn(org.bukkit.event.player.PlayerRespawnEvent)} sends them back to their island
+     * home.</p>
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (!Settings.end_enabled || event.getCause() != PlayerTeleportEvent.TeleportCause.END_PORTAL) {
             return;
+        }
+        World fromWorld = event.getFrom().getWorld();
+        if (fromWorld == null || !plugin.getWorldManager().isSkyWorld(fromWorld)) {
+            return; // Only portals leaving the overworld island are handled here.
         }
         @Nullable World endWorld = plugin.getWorldManager().getEndWorld();
         if (endWorld == null) {
             return;
         }
 
-        Location from = event.getFrom();
         Player player = event.getPlayer();
-        if (plugin.getWorldManager().isSkyEnd(from.getWorld())) {
-            // Returning from the end to the overworld island the region belongs to.
-            Location target = getOverworldDestination(from, player);
-            if (target != null) {
-                event.setTo(target);
-            }
-            return;
-        }
-        if (!plugin.getWorldManager().isSkyWorld(from.getWorld())) {
-            return; // Not our portal (e.g. a portal in an unrelated world).
-        }
-
-        @Nullable String islandName = WorldGuardHandler.getIslandNameAt(from);
+        @Nullable String islandName = WorldGuardHandler.getIslandNameAt(event.getFrom());
         if (islandName == null) {
             // E.g. the world spawn or the island lobby - there is no island to link to.
             event.setCancelled(true);
@@ -158,39 +176,131 @@ public class EndPortalEvents implements Listener {
             return;
         }
 
-        Location to = new Location(endWorld, islandInfo.getIslandLocation().getBlockX(),
-            Settings.end_height, islandInfo.getIslandLocation().getBlockZ());
+        @Nullable Location to = getEndArrivalLocation(endWorld, islandInfo);
+        if (to == null) {
+            event.setCancelled(true);
+            player.sendMessage(tr("\u00a7cThis end portal is not linked to an island."));
+            return;
+        }
         event.setTo(to);
-        ensureArrivalPlatformLater(to);
+        // The platform rebuild itself is scheduled in onPlayerPortalMonitor so a portal that is cancelled later
+        // (e.g. by the visitor protection at MONITOR) does not rebuild another island's platform.
         // TODO: award the "enter_end" challenge here (destination validated, player about to enter) once the
         //       challenge semantics are finalised - intentionally disabled for now.
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onEntityPortal(EntityPortalEvent event) {
-        World fromWorld = event.getFrom().getWorld();
-        if (!Settings.end_enabled || event.getPortalType() != org.bukkit.PortalType.ENDER) {
+    /**
+     * Schedules the arrival platform rebuild after all portal validations have run.
+     *
+     * <p>{@link ExploitEvents} cancels "using another island's portal" at {@link EventPriority#MONITOR}; running
+     * after it (same priority, registered later) makes sure a cancelled teleport does not touch the target island's
+     * platform.</p>
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerPortalMonitor(PlayerPortalEvent event) {
+        if (!Settings.end_enabled || event.getCause() != PlayerTeleportEvent.TeleportCause.END_PORTAL) {
             return;
         }
-        if (event.getTo() == null || fromWorld == null || !plugin.getWorldManager().isSkyWorld(fromWorld)) {
-            return; // We only rewrite portals leaving the overworld island.
+        World fromWorld = event.getFrom().getWorld();
+        if (fromWorld == null || !plugin.getWorldManager().isSkyWorld(fromWorld)) {
+            return;
+        }
+        @Nullable World endWorld = plugin.getWorldManager().getEndWorld();
+        if (endWorld == null) {
+            return;
+        }
+        IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(event.getFrom()));
+        if (islandInfo == null) {
+            return;
+        }
+        @Nullable Location arrival = getEndArrivalLocation(endWorld, islandInfo);
+        if (arrival != null) {
+            ensureArrivalPlatformLater(arrival);
+        }
+    }
+
+    /**
+     * Rewrites the destination of non-player entities travelling between the overworld and the end.
+     *
+     * <p>Overworld -> end: entities arrive one block above the obsidian platform (vanilla offset) so the platform
+     * never has to be entered from inside. End -> overworld: entities are sent to the island's configured return
+     * point instead of the world spawn.</p>
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityPortal(EntityPortalEvent event) {
+        if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
+            return;
+        }
+        World fromWorld = event.getFrom().getWorld();
+        if (fromWorld == null) {
+            return;
+        }
+
+        if (plugin.getWorldManager().isSkyEnd(fromWorld)) {
+            // Returning from the island's end region: use the island's return point (default X, 64, Z).
+            IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(event.getFrom()));
+            if (islandInfo == null) {
+                return; // Not inside an island region (e.g. the shared main city) - leave vanilla behaviour.
+            }
+            @Nullable Location returnPoint = islandInfo.getReturnPoint();
+            if (returnPoint != null) {
+                event.setTo(returnPoint);
+            }
+            return;
+        }
+        if (!plugin.getWorldManager().isSkyWorld(fromWorld)) {
+            return; // Only portals leaving the overworld island are handled here.
         }
 
         @Nullable World endWorld = plugin.getWorldManager().getEndWorld();
         if (endWorld == null) {
             return;
         }
-
-        @Nullable String islandName = WorldGuardHandler.getIslandNameAt(event.getFrom());
-        Location to = islandName != null
-            ? getEndLocation(endWorld, plugin.getIslandInfo(islandName))
-            : getEndFallbackLocation(endWorld);
-        if (to == null) {
-            return; // No island could be resolved - better to let vanilla handle it than to drop it in the void.
+        IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(event.getFrom()));
+        if (islandInfo == null) {
+            // No island could be resolved - send the entity to the shared end fallback point.
+            event.setTo(getEndEntityFallbackLocation(endWorld));
+            return;
         }
-
+        @Nullable Location to = getEndEntityLocation(endWorld, islandInfo);
+        if (to == null) {
+            return;
+        }
         event.setTo(to);
-        ensureArrivalPlatformLater(to);
+        @Nullable Location arrival = getEndArrivalLocation(endWorld, islandInfo);
+        if (arrival != null) {
+            ensureArrivalPlatformLater(arrival);
+        }
+    }
+
+    /**
+     * The end world has no dragon fight, but the world's {@link org.bukkit.boss.DragonBattle} still owns a boss bar
+     * and re-adds it to players entering the dimension. Clear it immediately when a player arrives; the periodic
+     * cleanup in {@code WorldManager.clearDragonBossBar(World)} keeps it hidden.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        if (!Settings.end_enabled) {
+            return;
+        }
+        World world = event.getPlayer().getWorld();
+        if (plugin.getWorldManager().isSkyEnd(world)) {
+            plugin.getWorldManager().clearDragonBossBar(world);
+        }
+    }
+
+    /**
+     * Blocks the ender dragon spawn in the island end world. The world has no dragon fight; letting the fight spawn
+     * a dragon only creates a boss bar and a mob that would have to be removed again.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEnderDragonSpawn(EntitySpawnEvent event) {
+        if (!Settings.end_enabled || event.getEntityType() != EntityType.ENDER_DRAGON) {
+            return;
+        }
+        if (plugin.getWorldManager().isSkyEnd(event.getLocation().getWorld())) {
+            event.setCancelled(true);
+        }
     }
 
     /**
@@ -223,13 +333,16 @@ public class EndPortalEvents implements Listener {
     }
 
     /**
-     * Builds (or repairs) the arrival platform at the given location. The vanilla generator recreates a 5x5 obsidian
-     * platform whenever an entity enters the end, but only at the destination it knows about. Building it ourselves
-     * makes sure the arrival point is always safe, and keeps the platform at exactly the same place so players can
-     * rely on it for their contraptions.
+     * Builds (or repairs) the arrival platform at the given location.
      *
-     * @param location Center of the arrival platform.
-     */    public static void buildArrivalPlatform(@NotNull Location location) {
+     * <p>Paper builds the vanilla platform at the vanilla end spawn point <i>before</i> the portal event is fired, so
+     * the platform does not follow a rewritten {@code setTo} destination. This method is what actually creates the
+     * per island platform. Blocks that have to be removed are broken the same way vanilla does it (dropped as if
+     * mined, including container contents), so the behaviour matches the vanilla platform regeneration.</p>
+     *
+     * @param location Center of the arrival platform (the location players are teleported to).
+     */
+    public static void buildArrivalPlatform(@NotNull Location location) {
         World world = location.getWorld();
         if (world == null) {
             return;
@@ -239,101 +352,148 @@ public class EndPortalEvents implements Listener {
         int centerZ = location.getBlockZ();
         for (int x = -PLATFORM_RADIUS; x <= PLATFORM_RADIUS; x++) {
             for (int z = -PLATFORM_RADIUS; z <= PLATFORM_RADIUS; z++) {
-                world.getBlockAt(centerX + x, centerY - 1, centerZ + z).setType(Material.OBSIDIAN);
+                Block platform = world.getBlockAt(centerX + x, centerY - 1, centerZ + z);
+                if (platform.getType() != Material.OBSIDIAN) {
+                    breakAndDrop(platform);
+                    platform.setType(Material.OBSIDIAN);
+                }
                 for (int y = 0; y < PLATFORM_CLEARANCE; y++) {
-                    Block above = world.getBlockAt(centerX + x, centerY + y, centerZ + z);
-                    if (above.getType() != Material.AIR) {
-                        above.setType(Material.AIR);
-                    }
+                    breakAndDrop(world.getBlockAt(centerX + x, centerY + y, centerZ + z));
                 }
             }
         }
     }
 
     /**
-     * Gets the end arrival location of the given island.
+     * Removes a block and drops it the same way vanilla's platform regeneration does (as if it was mined by a player,
+     * which also drops the contents of containers).
+     *
+     * @param block Block to remove.
+     */
+    private static void breakAndDrop(@NotNull Block block) {
+        if (block.getType().isAir()) {
+            return;
+        }
+        if (block.isLiquid()) {
+            block.setType(Material.AIR);
+            return;
+        }
+        block.breakNaturally();
+        if (!block.getType().isAir()) {
+            block.setType(Material.AIR);
+        }
+    }
+
+    /**
+     * Gets the location players are teleported to when entering the end through an island portal.
+     *
+     * <p>The location is centered on the island's block (vanilla spawns players centered on the platform) and uses
+     * {@code end.height} as the feet level; the obsidian platform is built at {@code end.height - 1}.</p>
      *
      * @param endWorld End world.
      * @param island   Island to get the arrival location for, may be null.
      * @return Arrival location, or null when the island is unknown.
      */
     @Nullable
-    public static Location getEndLocation(@NotNull World endWorld, @Nullable IslandInfo island) {
-        if (island == null || island.getIslandLocation() == null) {
+    public static Location getEndArrivalLocation(@NotNull World endWorld, @Nullable IslandInfo island) {
+        if (island == null) {
             return null;
         }
         Location islandLocation = island.getIslandLocation();
-        return new Location(endWorld, islandLocation.getBlockX(), Settings.end_height, islandLocation.getBlockZ());
+        if (islandLocation == null) {
+            return null;
+        }
+        // Yaw 90 is west, matching the vanilla arrival direction.
+        return new Location(endWorld, islandLocation.getBlockX() + 0.5, Settings.end_height,
+            islandLocation.getBlockZ() + 0.5, 90.0f, 0.0f);
     }
 
     /**
-     * Gets the fallback location in the end world, used when no island can be resolved for a portal. It is the
-     * world spawn / shared end "main city" around the origin (config {@code end.fallback.x/z}); the plugin places
-     * no blocks there, so until the city has a floor falling entities are lost.
+     * Gets the location non-player entities are teleported to when entering the end through an island portal.
+     *
+     * <p>Vanilla offsets the entity arrival point by one block upwards compared to the player arrival point: the
+     * player stands on the platform, other entities are placed one block above the player's feet.</p>
+     *
+     * @param endWorld End world.
+     * @param island   Island to get the arrival location for, may be null.
+     * @return Arrival location, or null when the island is unknown.
+     */
+    @Nullable
+    public static Location getEndEntityLocation(@NotNull World endWorld, @Nullable IslandInfo island) {
+        if (island == null) {
+            return null;
+        }
+        Location islandLocation = island.getIslandLocation();
+        if (islandLocation == null) {
+            return null;
+        }
+        return new Location(endWorld, islandLocation.getBlockX() + 0.5, Settings.end_height + 1.0,
+            islandLocation.getBlockZ() + 0.5, 90.0f, 0.0f);
+    }
+
+    /**
+     * Gets the fallback location in the end world, used for players when no island can be resolved for a portal. It is
+     * the world spawn / shared end "main city" around the origin (config {@code end.fallback.x/z}); the plugin places
+     * no blocks there.
      *
      * @param endWorld End world.
      * @return Fallback location.
      */
     @NotNull
     public static Location getEndFallbackLocation(@NotNull World endWorld) {
-        return new Location(endWorld, Settings.end_fallbackX, Settings.end_height, Settings.end_fallbackZ);
+        return new Location(endWorld, Settings.end_fallbackX + 0.5, Settings.end_height, Settings.end_fallbackZ + 0.5);
     }
 
-    @Nullable
-    private Location getOverworldDestination(Location from, Player player) {
-        IslandInfo islandInfo = plugin.getIslandInfo(WorldGuardHandler.getIslandNameAt(from));
-        if (islandInfo != null) {
-            @Nullable Location home = islandInfo.getWarpLocation();
-            if (home != null) {
-                return home;
-            }
-            PlayerInfo leader = plugin.getPlayerInfo(islandInfo.getLeader());
-            if (leader != null && leader.getHomeLocation() != null) {
-                return leader.getHomeLocation();
-            }
-            return islandInfo.getIslandLocation();
-        }
-
-        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
-        if (playerInfo != null && playerInfo.getHasIsland() && playerInfo.getHomeLocation() != null) {
-            return playerInfo.getHomeLocation();
-        }
-        return plugin.getWorldManager().getWorld().getSpawnLocation();
+    /**
+     * Gets the fallback location in the end world for non-player entities. Entities are one block above the player
+     * fallback point, matching the vanilla offset.
+     *
+     * @param endWorld End world.
+     * @return Fallback location.
+     */
+    @NotNull
+    public static Location getEndEntityFallbackLocation(@NotNull World endWorld) {
+        return new Location(endWorld, Settings.end_fallbackX + 0.5, Settings.end_height + 1.0,
+            Settings.end_fallbackZ + 0.5);
     }
 
     /**
      * Makes sure the arrival platform exists right after the teleport has been processed. Building it immediately
-     * would force a synchronous chunk load; the teleport itself loads the destination chunk anyway.
+     * would force a synchronous chunk load; the teleport itself loads the destination chunk anyway. All arrivals in
+     * the same tick are coalesced into a single task, and the platform is rebuilt on every arrival (like vanilla),
+     * even when no player is nearby.
      *
-     * @param destination Destination of the teleport.
+     * @param destination Destination of the teleport (player arrival point, i.e. the platform center).
      */
     private void ensureArrivalPlatformLater(@NotNull Location destination) {
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            World world = destination.getWorld();
-            if (world == null || !world.isChunkLoaded(destination.getBlockX() >> 4, destination.getBlockZ() >> 4)) {
-                return;
-            }
-            if (!hasNearbyObserver(destination)) {
-                // Nobody is around to see it - the vanilla platform (or the platform built when the island was
-                // created) covers this case, and we avoid keeping chunks alive for nothing.
-                return;
-            }
-            buildArrivalPlatform(destination);
-        });
-    }
-
-    private boolean hasNearbyObserver(@NotNull Location location) {
-        World world = location.getWorld();
+        World world = destination.getWorld();
         if (world == null) {
-            return false;
+            return;
         }
-        Vector center = location.toVector();
-        for (Player player : world.getPlayers()) {
-            if (player.getLocation().toVector().distanceSquared(center) < 128 * 128) {
-                return true;
+        Location key = new Location(world, destination.getBlockX(), destination.getBlockY(), destination.getBlockZ());
+        synchronized (pendingPlatformRebuilds) {
+            pendingPlatformRebuilds.add(key);
+            if (platformRebuildScheduled) {
+                return;
             }
+            platformRebuildScheduled = true;
         }
-        return false;
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            List<Location> rebuilds;
+            synchronized (pendingPlatformRebuilds) {
+                rebuilds = new ArrayList<>(pendingPlatformRebuilds);
+                pendingPlatformRebuilds.clear();
+                platformRebuildScheduled = false;
+            }
+            for (Location rebuild : rebuilds) {
+                World targetWorld = rebuild.getWorld();
+                if (targetWorld == null
+                    || !targetWorld.isChunkLoaded(rebuild.getBlockX() >> 4, rebuild.getBlockZ() >> 4)) {
+                    continue;
+                }
+                buildArrivalPlatform(rebuild);
+            }
+        });
     }
 
     /**
