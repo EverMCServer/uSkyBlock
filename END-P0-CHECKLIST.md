@@ -171,3 +171,5 @@
 2. **到达平台上方 3 格会被破坏并按挖掘掉落**：这是原版末地平台机制（含容器内容物）；装置的"工作空间"正好利用它，但**不要**把箱子等容器放在这 3 格里。
 3. **末影龙/龙战不做任何处理**：插件不删龙、不拦水晶/爆炸、不清 bossbar；上线后管理员手动击杀原点的龙。**击杀龙会在原点附近生成原版 Exit Portal（基岩/末地门方块）和龙蛋**，可能覆盖主城 —— 建议先杀龙再建主城，或杀完清理。
 4. **末地是共享世界**：所有岛屿在同一个 `_the_end` 世界里，靠 WorldGuard 区域隔离 + 虚空隔断。
+5. **`Multiverse-NetherPortals` 会在末地 `(100,50,0)` 铺一块 5×5 黑曜石平台**（`end-platform-drop-blocks: true`，被替换的方块按物品掉出）。这是它把 `world_acidisland` ↔ `world_acidisland_the_end` 自动链接（`portal-auto-link-when.end.suffix: _the_end`）后的副作用；实体/玩家的目的地已被本插件在 HIGHEST 覆盖成"本岛到达点"，不会去那里，**功能无影响**。只是别在末地主城 `(100,50,0)` 附近规划建筑。同理不要为了清掉它把 `end.suffix` 改成不命中的值——那会让 MV 直接取消过门事件（详见 `END-DESIGN.md` §4.13）。
+6. **末地门的"所有权"归本插件**：`EntityPortalEvent` / `PlayerPortalEvent` 都按 `ignoreCancelled = false` 处理，并在解析出本岛目的地后 `setCancelled(false)`。所以换过门事件被别的插件取消（MV 无链接世界时的行为）时，岛屿末地门仍然可用。

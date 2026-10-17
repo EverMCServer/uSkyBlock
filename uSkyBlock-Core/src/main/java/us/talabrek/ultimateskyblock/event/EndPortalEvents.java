@@ -16,7 +16,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
-import io.papermc.paper.event.entity.EntityPortalReadyEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -123,19 +122,6 @@ public class EndPortalEvents implements Listener {
      * Tick the expired {@link #endPortalEntries} were last purged in, so the purge runs at most once per tick.
      */
     private int lastEntryPurgeTick = -1;
-
-    /**
-     * Maximum number of end portal events the diagnostic logs before it goes quiet.
-     *
-     * <p>TODO(diagnostic): remove together with {@link #debugPortalEvent(String, EntityPortalEvent, String)};
-     * the cap keeps a busy entity contraption from flooding the server log.</p>
-     */
-    private static final int DEBUG_PORTAL_EVENT_LIMIT = 500;
-
-    /**
-     * Number of end portal events logged by the diagnostic so far.
-     */
-    private int debugPortalEventCount;
 
     @Inject
     public EndPortalEvents(@NotNull uSkyBlock plugin) {
@@ -303,8 +289,6 @@ public class EndPortalEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onEntityPortal(EntityPortalEvent event) {
-        // TODO(diagnostic): remove the debug call together with the diagnostic section below.
-        debugPortalEvent("HIGHEST", event, "-");
         if (!Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
             return;
         }
@@ -351,159 +335,30 @@ public class EndPortalEvents implements Listener {
         return from != null ? from.getWorld() : null;
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-    // TODO(diagnostic): temporary instrumentation for the "entity entering the end ends up at the island return point"
-    //                   issue. Logs every end portal event at three priorities plus the portal enter/ready events, so we
-    //                   can see whether something (e.g. Multiverse-NetherPortals) cancels or redirects it before the
-    //                   plugin runs. Remove this whole section (and its calls) once the issue is understood.
-    // ---------------------------------------------------------------------------------------------------------------
-
     /**
-     * Snapshots the world an entity portal event comes from before any plugin can rewrite it, and logs the event.
+     * Snapshots the world an entity portal event comes from, before any other plugin can rewrite it.
      *
-     * <p>The snapshot is required for the direction decision, see {@link #portalFromSnapshots}. The log line is the
-     * diagnostic part of this handler.</p>
+     * <p>The snapshot drives the direction decision in {@link #onEntityPortal(EntityPortalEvent)}, see
+     * {@link #portalFromSnapshots}.</p>
      *
-     * @param event Event to log.
+     * @param event Event to snapshot.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
-    public void onEntityPortalRaw(EntityPortalEvent event) {
+    public void onEntityPortalSnapshot(EntityPortalEvent event) {
         @Nullable Location from = event.getFrom();
         @Nullable World fromWorld = from != null ? from.getWorld() : null;
-        if (fromWorld != null) {
-            int now = Bukkit.getCurrentTick();
-            portalFromSnapshots.put(event.getEntity().getUniqueId(),
-                new FromSnapshot(fromWorld.getName(), now));
-            // Drop expired snapshots at most once per tick.
-            if (lastSnapshotPurgeTick != now) {
-                lastSnapshotPurgeTick = now;
-                portalFromSnapshots.values().removeIf(entry -> now - entry.tick() > PORTAL_ENTRY_TTL_TICKS);
-            }
-        }
-        debugPortalEvent("LOWEST", event, "-");
-    }
-
-    /**
-     * Logs the state of every entity portal event after all plugins (including this one) are done with it.
-     *
-     * @param event Event to log.
-     */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
-    public void onEntityPortalFinal(EntityPortalEvent event) {
-        debugPortalEvent("MONITOR", event, "-");
-    }
-
-    /**
-     * Logs every Paper {@code EntityPortalReadyEvent} (Multiverse-NetherPortals redirects entities through it).
-     *
-     * @param event Event to log.
-     */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
-    public void onEntityPortalReady(EntityPortalReadyEvent event) {
-        if (!takeDebugSlot()) {
+        if (fromWorld == null) {
             return;
         }
-        debugLog("READY entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
-            + " portal=" + event.getPortalType()
-            + " target=" + (event.getTargetWorld() != null ? event.getTargetWorld().getName() : "null")
-            + " cancelled=" + event.isCancelled());
-    }
-
-    /**
-     * Logs an entity portal event with everything the plugin can know about it.
-     *
-     * @param stage Stage of the event pipeline the line is logged at.
-     * @param event Event to log.
-     * @param note  Short description of what the plugin is going to do.
-     */
-    private void debugPortalEvent(@NotNull String stage, @NotNull EntityPortalEvent event, @NotNull String note) {
-        if (!takeDebugSlot()) {
-            return;
+        int now = Bukkit.getCurrentTick();
+        portalFromSnapshots.put(event.getEntity().getUniqueId(), new FromSnapshot(fromWorld.getName(), now));
+        // Drop expired snapshots at most once per tick.
+        if (lastSnapshotPurgeTick != now) {
+            lastSnapshotPurgeTick = now;
+            portalFromSnapshots.values().removeIf(entry -> now - entry.tick() > PORTAL_ENTRY_TTL_TICKS);
         }
-        @Nullable Location from = event.getFrom();
-        @Nullable World fromWorld = from != null ? from.getWorld() : null;
-        @Nullable World snapshotWorld = getPortalWorld(event);
-        @Nullable Location recent = fromWorld != null ? getRecentEndPortalBlock(event.getEntity(), fromWorld) : null;
-        debugLog(stage
-            + " entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
-            + " portal=" + event.getPortalType()
-            + " cancelled=" + event.isCancelled()
-            + " from=" + describe(from)
-            + " block=" + (from != null ? from.getBlock().getType() : "?")
-            + " to=" + describe(event.getTo())
-            + " fromKind=" + (fromWorld != null ? worldKind(fromWorld) : "?")
-            + " resolvedFrom=" + (snapshotWorld != null ? snapshotWorld.getName() : "null")
-            + " entityWorld=" + event.getEntity().getWorld().getName()
-            + " recentEntry=" + describe(recent)
-            + " | " + note);
     }
 
-    /**
-     * Takes a diagnostic log slot, so a busy contraption cannot flood the server log.
-     *
-     * @return True when a line may be logged.
-     */
-    private boolean takeDebugSlot() {
-        if (debugPortalEventCount > DEBUG_PORTAL_EVENT_LIMIT) {
-            return false;
-        }
-        debugPortalEventCount++;
-        if (debugPortalEventCount == DEBUG_PORTAL_EVENT_LIMIT) {
-            plugin.getLogger().info("[end-debug] " + DEBUG_PORTAL_EVENT_LIMIT
-                + " diagnostic lines logged, further end portal events are suppressed.");
-        }
-        return debugPortalEventCount <= DEBUG_PORTAL_EVENT_LIMIT;
-    }
-
-    /**
-     * Writes a diagnostic line.
-     *
-     * @param message Message to log.
-     */
-    private void debugLog(@NotNull String message) {
-        plugin.getLogger().info("[end-debug] #" + debugPortalEventCount + " " + message);
-    }
-
-    /**
-     * Formats the short id of an entity for the diagnostic log.
-     *
-     * @param entity Entity to format.
-     * @return First 8 characters of the entity UUID.
-     */
-    @NotNull
-    private static String shortId(@NotNull Entity entity) {
-        return entity.getUniqueId().toString().substring(0, 8);
-    }
-
-    /**
-     * Formats a location for the diagnostic log.
-     *
-     * @param location Location to format, may be null.
-     * @return {@code world@(x,y,z)}, or {@code null}.
-     */
-    @NotNull
-    private static String describe(@Nullable Location location) {
-        if (location == null) {
-            return "null";
-        }
-        World world = location.getWorld();
-        String worldName = world != null ? world.getName() : "?";
-        return worldName + "@(" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ() + ")";
-    }
-
-    /**
-     * Classifies a world for the diagnostic log.
-     *
-     * @param world World to classify.
-     * @return {@code end}, {@code overworld} or {@code other}.
-     */
-    @NotNull
-    private String worldKind(@NotNull World world) {
-        if (plugin.getWorldManager().isSkyEnd(world)) {
-            return "end";
-        }
-        return plugin.getWorldManager().isSkyWorld(world) ? "overworld" : "other";
-    }
 
     /**
      * Sends an entity that travels from the overworld island into the end to that island's own arrival point.
