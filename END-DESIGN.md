@@ -298,6 +298,8 @@
   - **后果**：任何依赖 `event.getFrom().getWorld()` 判断方向的实现，都会把"从主世界进末地"误判成"从末地返回"，从而 `setTo(本岛返回点)` —— 这正是"实体进末地却出现在主世界返回点"的根因。
   - **对策（已实现）**：方向判定改用 **LOWEST 优先级快照**（`portalFromSnapshots`，记录进入事件流水线之前 `from` 的世界名，按实体 UUID+5 tick 过期），并用 `EntityPortalEnterEvent` 的记录兜底；目的地在本插件 HIGHEST（晚于 MV 的 NORMAL）最后一次覆盖成本岛到达点。**不要**用 `teleport-entities: false` 来关 MV——那会让它对所有实体过门事件直接 `setCancelled(true)`，刷沙机链路直接失效。
   - 残留副作用：MV 的 `end-platform-drop-blocks: true` 会让它在**自己的**目的地（`(100,50,0)`，即末地主城）铺 5×5 平台并按物品掉方块；如果要彻底避免，只能在**停服后**把 `portal-auto-link-when.end.suffix` 改成不命中的值再启动（在线 reload 时 MV 会重写 config.yml，手改会被覆盖）。
+  - **改成不命中的后缀（如 `__none__`）会带来新问题**：MV 找不到链接世界时**直接取消**过门事件（`bounceback` / no destination），而本插件原先 `ignoreCancelled = true`，于是 HIGHEST 根本不会被调用 —— 表现就是"末地门完全不能用、人/物品卡在门里"（实测日志里只有 LOWEST 与 `cancelled=true` 的 MONITOR，没有 HIGHEST 行）。
+  - 因此**推荐保持默认 `end.suffix: _the_end`**（MV 只做"同坐标链接世界"这种无害改写，目的地由本插件在 HIGHEST 覆盖），同时插件自身对**自家世界**的过门事件改成 `ignoreCancelled = false` 并在解析出目的地后 `setCancelled(false)`，这样即使管理员把 MV 改成不链接也不会把末地门彻底废掉。**不要**用 `teleport-entities: false` 关 MV——那会让它对所有实体过门事件 `setCancelled(true)`。
 - 其他须复核的插件行为：WorldGuard 全局区域（`setupGlobal()` 需要为末地世界调用）、WorldEdit 的 `isOuterPossible()` 前置检查（下界启用前会检查，末地是否也要）
 
 ### 4.14 【补充】运维与可观测性

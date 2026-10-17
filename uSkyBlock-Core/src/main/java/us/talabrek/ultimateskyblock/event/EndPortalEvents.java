@@ -203,8 +203,13 @@ public class EndPortalEvents implements Listener {
      * (reason {@code END_PORTAL}) instead of {@code PlayerPortalEvent} for them, and the existing respawn handling in
      * {@link PlayerEvents#onPlayerRespawn(org.bukkit.event.player.PlayerRespawnEvent)} sends them back to their island
      * home.</p>
+     *
+     * <p>The handler runs for cancelled events as well (and lifts the cancellation once the destination is known):
+     * Multiverse-NetherPortals cancels portals it has no linked world for (its {@code portal-auto-link-when} suffix no
+     * longer matching this plugin's end world, or {@code bounceback}), which would otherwise disable every island end
+     * portal - players and contraptions alike. The island end portals belong to this plugin, so its destination wins.</p>
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (!Settings.end_enabled || event.getCause() != PlayerTeleportEvent.TeleportCause.END_PORTAL) {
             return;
@@ -240,6 +245,8 @@ public class EndPortalEvents implements Listener {
             player.sendMessage(tr("\u00a7cThis end portal is not linked to an island."));
             return;
         }
+        // Destination known: take the portal over even if another plugin cancelled it (see the class comment above).
+        event.setCancelled(false);
         event.setTo(to);
         // The platform rebuild itself is scheduled in onPlayerPortalMonitor so a portal that is cancelled later
         // (e.g. by the visitor protection at MONITOR) does not rebuild another island's platform.
@@ -290,8 +297,11 @@ public class EndPortalEvents implements Listener {
      * runs. The portal the entity really entered is tracked from {@link EntityPortalEnterEvent} and used to tell a
      * genuine portal exit apart from a portal event the destination dimension fires for the portal the entity came
      * through.</p>
+     *
+     * <p>Cancelled events are handled as well and the cancellation is lifted once the destination is known: see
+     * {@link #onPlayerPortal(PlayerPortalEvent)} for why (Multiverse-NetherPortals cancels portals it cannot route).</p>
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onEntityPortal(EntityPortalEvent event) {
         // TODO(diagnostic): remove the debug call together with the diagnostic section below.
         debugPortalEvent("HIGHEST", event, "-");
@@ -302,12 +312,19 @@ public class EndPortalEvents implements Listener {
         if (fromWorld == null) {
             return;
         }
-        if (plugin.getWorldManager().isSkyEnd(fromWorld)) {
+        boolean leaving = plugin.getWorldManager().isSkyEnd(fromWorld);
+        if (!leaving && !plugin.getWorldManager().isSkyWorld(fromWorld)) {
+            return; // Not a portal of the plugin worlds.
+        }
+        if (event.isCancelled()) {
+            // The plugin owns the island end portals, so a cancellation by another plugin (Multiverse-NetherPortals
+            // cancels portals it has no linked world for) must not disable them. The destination set below is the
+            // island's own arrival point / return point, which is what the island model expects anyway.
+            event.setCancelled(false);
+        }
+        if (leaving) {
             handleEntityLeavingEnd(event, event.getFrom());
             return;
-        }
-        if (!plugin.getWorldManager().isSkyWorld(fromWorld)) {
-            return; // Not a portal of the plugin worlds.
         }
         handleEntityEnteringEnd(event, event.getFrom(), fromWorld);
     }
@@ -540,13 +557,6 @@ public class EndPortalEvents implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void onEntityPortalEnter(EntityPortalEnterEvent event) {
-        // TODO(diagnostic): remove this log together with the diagnostic section below.
-        if (takeDebugSlot()) {
-            debugLog("ENTER entity=" + event.getEntityType() + "/" + shortId(event.getEntity())
-                + " portal=" + event.getPortalType()
-                + " cancelled=" + event.isCancelled()
-                + " world=" + describe(event.getLocation()));
-        }
         if (event.isCancelled() || !Settings.end_enabled || event.getPortalType() != PortalType.ENDER) {
             return;
         }
