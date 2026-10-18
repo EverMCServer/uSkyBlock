@@ -718,6 +718,53 @@ public class PlayerEvents implements Listener {
     }
 
     /**
+     * Blocks a dimension the player has not unlocked yet, on every teleport into it.
+     *
+     * <p>Only listening to {@link PlayerPortalEvent} is not enough: players also reach the nether/end when another
+     * player teleports them there (e.g. via /tpa), which fires a plain {@link PlayerTeleportEvent} with the
+     * {@code PLUGIN} cause. The nether needs the {@code beginner} rank, the end the {@code advanced} rank (see the
+     * {@code ranks} section of challenges.yml).</p>
+     *
+     * <p>The handler runs at {@link EventPriority#MONITOR} on purpose: {@link EndPortalEvents} lifts a cancellation
+     * and rewrites the destination of an island end portal at {@link EventPriority#HIGHEST}, so a gate that ran
+     * earlier would simply be overridden again.</p>
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerTeleportGate(PlayerTeleportEvent event) {
+        Location to = event.getTo();
+        if (to == null || to.getWorld() == null) {
+            return;
+        }
+        World target = to.getWorld();
+        if (event.getFrom().getWorld() == target) {
+            return; // Same world: not a dimension change.
+        }
+        Player player = event.getPlayer();
+        if (player.isOp() || player.hasPermission("usb.mod.bypassprotection")) {
+            return;
+        }
+        String requiredChallenge;
+        String message;
+        if (plugin.getWorldManager().isSkyNether(target)) {
+            requiredChallenge = "beginner";
+            message = "\u00a7c你需要完成海岛入门任务，才能进入下界！";
+        } else if (plugin.getWorldManager().isSkyEnd(target)) {
+            requiredChallenge = "advanced";
+            message = "\u00a7c你需要完成海岛进阶任务，才能进入末地！";
+        } else {
+            return;
+        }
+        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+        if (playerInfo == null || playerInfo.checkChallenge(requiredChallenge) != 0) {
+            return; // Rank done: dimension unlocked.
+        }
+        event.setCancelled(true);
+        if (rateLimiter.tryAcquire()) {
+            player.sendMessage(message);
+        }
+    }
+
+    /**
      * budding amethyst is allowed to drop its item when broken.
      * @param event
      */

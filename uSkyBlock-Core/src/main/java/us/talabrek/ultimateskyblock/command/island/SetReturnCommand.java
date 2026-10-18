@@ -44,16 +44,16 @@ public class SetReturnCommand extends RequireIslandCommand {
         }
         if (sub.equals("cancel")) {
             pending.remove(player.getUniqueId());
-            player.sendMessage(Component.text("已取消设置岛屿返回点。", NamedTextColor.YELLOW));
+            player.sendMessage(Component.text("已取消设置本岛末地传送门的返回点。", NamedTextColor.YELLOW));
             return true;
         }
 
         if (!island.isLeader(player)) {
-            player.sendMessage(Component.text("只有岛主可以设置岛屿返回点。", NamedTextColor.RED));
+            player.sendMessage(Component.text("只有岛主可以设置本岛末地传送门的返回点。", NamedTextColor.RED));
             return true;
         }
         if (!plugin.getWorldManager().isSkyWorld(player.getWorld()) || !plugin.playerIsOnOwnIsland(player)) {
-            player.sendMessage(Component.text("你需要站在自己的主世界岛屿上才能设置返回点。", NamedTextColor.RED));
+            player.sendMessage(Component.text("你需要站在自己的主世界岛屿上才能设置末地传送门的返回点。", NamedTextColor.RED));
             return true;
         }
 
@@ -61,28 +61,26 @@ public class SetReturnCommand extends RequireIslandCommand {
         Location target = new Location(location.getWorld(), location.getBlockX() + 0.5, location.getBlockY(),
             location.getBlockZ() + 0.5);
         if (!LocationUtil.isSafeLocation(target)) {
-            player.sendMessage(Component.text("当前位置不是一个安全的返回点。", NamedTextColor.RED));
+            player.sendMessage(Component.text("当前位置不能作为末地传送门的返回点。", NamedTextColor.RED));
             return true;
         }
 
         pending.put(player.getUniqueId(), new PendingReturnPoint(island.getName(), target, System.currentTimeMillis()));
-        Component message = Component.text("将把本岛返回点设置为 ", NamedTextColor.YELLOW)
-            .append(Component.text(format(target), NamedTextColor.AQUA))
-            .append(Component.text("（你所在方块的中心）。确认请点击 ", NamedTextColor.YELLOW))
+        player.sendMessage(Component.text(
+            "本岛末地传送门的返回点将设置为 " + format(target) + "（所在方块中心）。", NamedTextColor.GREEN));
+        player.sendMessage(Component.text("请点击 ", NamedTextColor.YELLOW)
             .append(Component.text("[确认]", NamedTextColor.GREEN)
                 .clickEvent(ClickEvent.runCommand("/is setreturn confirm")))
-            .append(Component.text("，或输入 /is setreturn confirm；取消请点击 ", NamedTextColor.YELLOW))
+            .append(Component.text(" ", NamedTextColor.YELLOW))
             .append(Component.text("[取消]", NamedTextColor.RED)
-                .clickEvent(ClickEvent.runCommand("/is setreturn cancel")))
-            .append(Component.text("。60 秒内有效。", NamedTextColor.GRAY));
-        player.sendMessage(message);
+                .clickEvent(ClickEvent.runCommand("/is setreturn cancel"))));
         return true;
     }
 
     private boolean confirm(Player player, IslandInfo island) {
         PendingReturnPoint pendingPoint = pending.remove(player.getUniqueId());
         if (pendingPoint == null) {
-            player.sendMessage(Component.text("没有待确认的返回点，请先执行 /is setreturn。", NamedTextColor.RED));
+            player.sendMessage(Component.text("没有待确认的末地传送门返回点，请先执行 /is setreturn。", NamedTextColor.RED));
             return true;
         }
         if (System.currentTimeMillis() - pendingPoint.createdAt() > CONFIRM_TIMEOUT_MILLIS) {
@@ -90,12 +88,12 @@ public class SetReturnCommand extends RequireIslandCommand {
             return true;
         }
         if (!island.isLeader(player) || !island.getName().equals(pendingPoint.islandName())) {
-            player.sendMessage(Component.text("只有岛主可以设置岛屿返回点。", NamedTextColor.RED));
+            player.sendMessage(Component.text("只有岛主可以设置本岛末地传送门的返回点。", NamedTextColor.RED));
             return true;
         }
         island.setReturnPoint(pendingPoint.location());
-        player.sendMessage(Component.text("本岛返回点已设置为 " + format(pendingPoint.location()) + "。",
-            NamedTextColor.GREEN));
+        player.sendMessage(Component.text(
+            "本岛末地传送门的返回点已设置为 " + format(pendingPoint.location()) + "。", NamedTextColor.GREEN));
         return true;
     }
 
