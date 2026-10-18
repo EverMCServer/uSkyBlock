@@ -452,7 +452,9 @@ end:
 
   # The Y coordinate used for the end arrival platforms and for the per island region content.
   # Unlike the nether, the end does not use coordinate scaling, so this is an absolute height.
-  height: 64
+  # 49 matches vanilla: the obsidian platform sits at end.height - 1 = 48 and players stand on 49
+  # (vanilla end platform is at y=48, its arrival point at y=49).
+  height: 49
 
   # The minimum island level required before the end blocks are added to the island level.
   activate-at:
