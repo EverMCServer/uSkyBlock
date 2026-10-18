@@ -389,7 +389,7 @@
    - `EntityPortalEvent`（`ENDER`）**不取消**，改写目的地到**本岛到达平台**（§4.3）
 2. 到达平台落地：确认每岛平台的坐标约定（X/Z = 岛屿坐标，Y = `end.height`）+ 落点高度；按 P0 结论决定是否需要"进入后 1 tick 修复"兜底
 3. 与既有 `PlayerEvents.onPlayerPortal`（任务门槛/挑战）、`ExploitEvents.onPortalEvent`（他人岛屿限制）打通优先级
-4. **`enter_end` 的触发点（暂缓）**：挑战已在 `uSkyBlock/challenges.yml` 里定义，但代码里的触发**已临时移除**（`PlayerEvents.onPlayerPortal` 的 `END_PORTAL` 分支、`EndPortalEvents.onPlayerPortal` 各留 TODO）；旧实现会在大厅末地/被取消的传送门/无岛玩家上误完成。后续改成“传送真正被接受后再发”，见 §7.2
+4. **`enter_end` 的触发点（已实装）**：在 `EndPortalEvents.onPlayerPortalMonitor` 发（目的地校验、他人岛屿拦截、`advanced` 门槛都已通过且事件不会再被取消）；旧的“在 `onPlayerPortal` 里发”会在大厅末地/被取消的传送门/无岛玩家上误完成，已弃用，见 §7.2
 5. 蓝图返回传送门（D15 位置）+ 末地兜底点（D18）+ `/is end` 类命令兜底（可选）
 
 **P3 — 防破坏与生态**
@@ -417,7 +417,7 @@
 - 岛主进末地 → **落到自己岛上那块独立的到达平台**；访客 → 被拦；无岛屿 → 被拒绝（D6）
 - **实体（沙子/掉落物/箭/船）过门 → 落到本岛到达平台；刷沙机可复现复制；到达平台上方永远保持 3 格空气**
 - 返回门 → 回到自己岛（不是世界出生点）；`/island home` 正常
-- 进入末地 → **（暂缓，触发点已移除）** `enter_end` 挑战被标记完成
+- 进入末地 → `enter_end` 挑战被标记完成（只有传送真正生效才算）
 - 删除岛屿 → 主世界/下界/末地三处区域与方块全部清空，区域玩家被送回
 - 服务器重启后 → 末地世界、区域、Multiverse 注册、背包共享均恢复
 
@@ -478,7 +478,7 @@
 | **刷沙机 / 原版下落方块复制（已定根因，暂缓）** | **2026-10-18 测试服实测结论：自定义末地维度下永远无法复制，与 `allow-unsafe-end-portal-teleportation` 无关。** Paper 的 `FallingBlockEntity#teleport()` 只在 `oldDimension == Level.END || newDimension == Level.END`（跨**原版** `minecraft:the_end` 维度）时才置 `forceTickAfterTeleportToDuplicate`，随后 `tick()` 里 `if (isAlive() || forceTickAfterTeleportToDuplicate)` 才会在传送后再执行"放方块/掉物品"那一段 —— 这就是复制。我们的末地是**自定义维度** `minecraft:world_acidisland_the_end`（见服务器 `world/dimensions/minecraft/` 下的目录名），`Level.END` 判定为 false，所以开关开了也不复制。实测：临时把实体目的地改到 `world_the_end`（原版 `the_end`）后**复制立刻正常**。**结论/后续**：要让原版刷沙可用，末地必须落在原版 `minecraft:the_end` 维度（`world_the_end`），每岛一块末地区域仍可用 WorldGuard 按岛 X/Z 切 —— 这推翻了 D1=A 的一部分前提；等末地上线后若要支持刷沙，再评估把末地迁到原版 the_end 世界（含地形/生成器、与大厅末地共用的取舍）。相关临时诊断代码已全部回滚（commit `b5ce12e3`/`66e43253` 之后） |
 | **`Level.END` 指向哪个世界（已确认）** | `Level.END` = 原版 `minecraft:the_end` 维度 = `world_the_end`，**不是**我们的 `_the_end`（`world_acidisland_the_end` 是自定义维度）。因此 Paper 的 `getPortalDestination` 建的 5×5 平台永远落在大厅末地 `(100,48,0)`，与本岛无关；岛上的平台只能由 `EndPortalEvents.buildArrivalPlatform()` 自己铺（与 §4.3.2 结论一致）。另：MV-NetherPortals 的 `EndPlatformCreator` 也会在**链接世界**里铺一块 `(100,48,0)` 平台（实测中看到的那块就是它铺的） |
 | **末影龙 / 龙战（最新口径）** | 插件**不做任何处理**（不删龙、不拦水晶/爆炸、不清 bossbar）。vanilla 龙战会生成龙和 bossbar，上线后由管理员手动击杀原点附近的龙。⚠️ **击杀龙会触发原版 Exit Portal（基岩/末地门方块）和龙蛋生成**，位置通常在原点附近，可能覆盖主城；建议**先杀龙、再建主城**，或杀完后清理/改建 |
-| **`enter_end` 触发点（TODO）** | 挑战已定义，但**代码里暂时不发**：`EndPortalEvents.onPlayerPortal` 留了 TODO。旧实现会在传送门被校验/取消之前完成挑战（无岛、未链接、他人岛屿、大厅末地都会误完成）。后续应改成"传送真正被接受后（例如到达后 / `PlayerChangedWorldEvent`）再发" |
+| **`enter_end` 触发点（已实装）** | 在 **`EndPortalEvents.onPlayerPortalMonitor`**（`MONITOR` + `ignoreCancelled`，注册晚于 `PlayerEvents` 的维度门槛）里发：此时插件目的地校验、他人岛屿拦截、`advanced` 维度门槛都已通过，事件也不会再被取消，因此不会出现旧实现那种"无岛 / 未链接 / 他人岛屿 / 大厅末地"误完成。**不要**挪回 `onPlayerPortal`（`HIGHEST`，那时还能被后续插件取消）。走 `completeChallengeIfNotDone`，与 `enter_nether` 同一条低层路径（只标记完成 + 更新排名；`enter_end` 的奖励本来就是 0/0） |
 | `WorldEditHandler.isOuterPossible()` | 末地启用沿用了下界的前置检查，需确认它在当前服务器配置下返回 true（否则末地会被自动禁用并打警告） |
 
 ---

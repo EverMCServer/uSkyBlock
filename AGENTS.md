@@ -190,7 +190,7 @@ public class XxxEvents implements Listener {
 - 末地维度模型：同样是"每人一块独立区域"，但世界是**自定义虚空世界**（`AcidEndChunkGenerator`，无底部、单群系、`generateStructures(false)`），世界名 `<主世界>_the_end`、`Environment.THE_END`；区域 id = `<islandName>end`，Y 固定 `0..255`
 - 末地到达点是每个岛屿自己那块 **5×5 黑曜石平台**：`EndPortalEvents` 改写 `setTo()` 后再由 `buildArrivalPlatform()` 重建平台并清空上方 3 格（生电装置依赖这个"每次进入都重建"的原版行为）
 - 三个维度分别通过 `MultiverseHook.registerOverworld()` / `registerNetherworld()` / `registerEndWorld()` 导入 Multiverse，`linkInventories()` 把三者放进同一个 `skyblock` 组共享背包（避免切维度丢装备）
-- 传送门拦截逻辑分散在 `ExploitEvents.onPortalEvent`（访客/他人岛屿限制）、`PlayerEvents.onPlayerPortal`（新手任务门槛，含 `enter_nether` 挑战触发；`enter_end` 触发点**已临时移除，见 TODO**）、`EndPortalEvents`（`END_PORTAL` / `ENDER` 目的地改写、实体过门、末影珍珠跨区域）、`PlayerEvents.onEntityPortal`（实体门户）
+- 传送门拦截逻辑分散在 `ExploitEvents.onPortalEvent`（访客/他人岛屿限制）、`PlayerEvents.onPlayerPortal`（新手任务门槛，含 `enter_nether` 挑战触发）、`EndPortalEvents.onPlayerPortalMonitor`（末地门通过全部校验后发 `enter_end` 挑战）、`EndPortalEvents`（`END_PORTAL` / `ENDER` 目的地改写、实体过门、末影珍珠跨区域）、`PlayerEvents.onEntityPortal`（实体门户）
 - 岛屿删除：`IslandLogic.clearIsland()` 串联为 主世界 → 下界 → 末地 → `afterDeletion`
 
 ## 当前工作方向
@@ -239,7 +239,7 @@ public class XxxEvents implements Listener {
 | `i18n/zh_CN.po` | 中文本地化文件 |
 | `schematics/` | 岛屿蓝图：`acidIsland.schem`、`acidIslandNether.schem`、`skySMP.schematic`、`spawn.schem`（末地蓝图 `acidIslandEnd` 待新增） |
 
-> 说明：`enter_end` 挑战已在 `uSkyBlock/challenges.yml` 定义，但**代码里的触发点目前被有意移除**（`PlayerEvents.onPlayerPortal` / `EndPortalEvents.onPlayerPortal` 处各留了一个 TODO），因为旧实现会在传送门被校验/取消之前就完成任务（无岛、未链接、他人岛屿、大厅末地都会误完成）。后续做“确认进入成功后再发挑战”时再接上。
+> 说明：`enter_end` 挑战在 `uSkyBlock/challenges.yml` 定义，触发点在 **`EndPortalEvents.onPlayerPortalMonitor`**（MONITOR + ignoreCancelled，注册晚于 `PlayerEvents` 的维度门槛）：只有经过插件目的地校验、他人岛屿拦截、`advanced` 维度门槛后仍然有效的末地门传送才发挑战，所以不会出现旧实现那种“无岛 / 未链接 / 他人岛屿 / 大厅末地”误完成。**不要**把它挪回 `onPlayerPortal`（HIGHEST），那里事件还能被后续插件取消。
 
 ### `acidisland-recipes/` — 自定义数据包
 

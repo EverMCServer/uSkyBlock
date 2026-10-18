@@ -697,10 +697,10 @@ public class PlayerEvents implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
-            // The end is handled by EndPortalEvents (destination rewrite + island requirements).
-            // TODO: award the "enter_end" challenge once the portal is actually accepted (e.g. on arrival);
-            //       deliberately not done here because this listener runs before EndPortalEvents validates
-            //       or cancels the portal.
+            // The end is handled by EndPortalEvents: destination rewrite + island requirements + the enter_end
+            // challenge, which is awarded in EndPortalEvents.onPlayerPortalMonitor once the portal survived every
+            // validation (this listener runs before that validation, so awarding it here would also fire for
+            // players without an island, unlinked portals, other islands' portals and the lobby's end portal).
             return;
         }
         Player player = event.getPlayer();

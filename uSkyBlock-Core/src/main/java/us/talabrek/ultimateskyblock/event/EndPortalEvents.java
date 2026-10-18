@@ -234,18 +234,24 @@ public class EndPortalEvents implements Listener {
         // Destination known: take the portal over even if another plugin cancelled it (see the class comment above).
         event.setCancelled(false);
         event.setTo(to);
-        // The platform rebuild itself is scheduled in onPlayerPortalMonitor so a portal that is cancelled later
-        // (e.g. by the visitor protection at MONITOR) does not rebuild another island's platform.
-        // TODO: award the "enter_end" challenge here (destination validated, player about to enter) once the
-        //       challenge semantics are finalised - intentionally disabled for now.
+        // The platform rebuild and the "enter_end" challenge are handled in onPlayerPortalMonitor: this handler runs
+        // before other plugins can still cancel the portal (e.g. the visitor protection at MONITOR), and awarding a
+        // challenge for a teleport that never happens is exactly the bug the old implementation had.
     }
 
     /**
-     * Schedules the arrival platform rebuild after all portal validations have run.
+     * Awards the {@code enter_end} challenge and schedules the arrival platform rebuild, after all portal validations
+     * have run.
      *
      * <p>{@link ExploitEvents} cancels "using another island's portal" at {@link EventPriority#MONITOR}; running
      * after it (same priority, registered later) makes sure a cancelled teleport does not touch the target island's
      * platform.</p>
+     *
+     * <p>This is also the only place the {@code enter_end} challenge is awarded: the portal is no longer cancellable
+     * here (the plugin's own validation, the "another island's portal" check and the dimension gate all ran before),
+     * so a challenge is never granted for a teleport that does not happen - which is what the old implementation
+     * did (it also completed for players without an island, portals without a link, other islands' portals and the
+     * lobby's end portal).</p>
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerPortalMonitor(PlayerPortalEvent event) {
@@ -267,6 +273,10 @@ public class EndPortalEvents implements Listener {
         @Nullable Location arrival = getEndArrivalLocation(endWorld, islandInfo);
         if (arrival != null) {
             ensureArrivalPlatformLater(arrival);
+        }
+        @Nullable PlayerInfo playerInfo = plugin.getPlayerInfo(event.getPlayer());
+        if (playerInfo != null) {
+            plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_end");
         }
     }
 
