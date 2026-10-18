@@ -73,6 +73,16 @@ public class IslandBorderEvent implements Listener {
     private static uSkyBlock plugin = null;
     private final Map<UUID, Location> lastPosition = new HashMap<>();
 
+    /**
+     * TEMPORARY DEBUG SWITCH - see {@code bootstrap.Listeners.END_PORTAL_REDIRECTION}.
+     *
+     * <p>{@code false} turns the "entities may not cross an island border" bounce into log only. Needed while
+     * debugging the end portal: the bounce otherwise pulls a falling block or a dropped item that just left an island
+     * (and is now somewhere without an island region) straight back to where it came from, which hides what the
+     * portal actually did.</p>
+     */
+    private static final boolean DENY_CROSS_BORDER = false;
+
     public static boolean denyCrossBorder(Entity e) {
         return !(e instanceof Player) &&
             (e instanceof Item
@@ -104,6 +114,17 @@ public class IslandBorderEvent implements Listener {
                     Location last = lastPosition.get(e.getUniqueId());
                     Location now = e.getLocation();
                     if (last == null || isBothTrusted(plugin.getIslandInfo(last), plugin.getIslandInfo(now))) {
+                        lastPosition.put(e.getUniqueId(), now);
+                        continue;
+                    }
+                    if (!DENY_CROSS_BORDER) {
+                        // Debug build: report dimension changes only (those are the portal cases) and let the entity
+                        // go, so the end portal pipeline can be observed without this protection reverting it.
+                        if (last.getWorld() != now.getWorld()) {
+                            plugin.getLogger().info("[border-debug] would bounce " + e.getType() + " "
+                                + (last.getWorld() != null ? last.getWorld().getName() : "?") + " -> "
+                                + (now.getWorld() != null ? now.getWorld().getName() : "?"));
+                        }
                         lastPosition.put(e.getUniqueId(), now);
                         continue;
                     }

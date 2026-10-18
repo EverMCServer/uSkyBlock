@@ -33,6 +33,16 @@ public class Listeners {
      */
     private static final boolean END_PORTAL_REDIRECTION = false;
 
+    /**
+     * TEMPORARY DEBUG SWITCH - end portal diagnostics.
+     *
+     * <p>Registers {@link EndPortalDebugEvents}, which writes the end portal pipeline of falling blocks and dropped
+     * items (portal block touched, portal event at lowest/highest priority, every cross world teleport) to the log.
+     * Only useful together with {@link #END_PORTAL_REDIRECTION} being {@code false}. Turn it off (and delete the
+     * class) once the end portal investigation is over.</p>
+     */
+    private static final boolean END_PORTAL_DEBUG = true;
+
     private final PluginConfig config;
 
     private final GuiListener guiListener;
@@ -52,6 +62,7 @@ public class Listeners {
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
     private final EndPortalEvents endPortalEvents;
+    private final EndPortalDebugEvents endPortalDebugEvents;
     private final ToolMenuEvents toolMenuEvents;
     private final SignEvents signEvents;
     private final ChatEvents chatEvents;
@@ -78,6 +89,7 @@ public class Listeners {
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
         @NotNull EndPortalEvents endPortalEvents,
+        @NotNull EndPortalDebugEvents endPortalDebugEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
         @NotNull SignEvents signEvents,
         @NotNull ChatEvents chatEvents,
@@ -102,6 +114,7 @@ public class Listeners {
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
         this.endPortalEvents = endPortalEvents;
+        this.endPortalDebugEvents = endPortalDebugEvents;
         this.toolMenuEvents = toolMenuEvents;
         this.signEvents = signEvents;
         this.chatEvents = chatEvents;
@@ -148,6 +161,11 @@ public class Listeners {
             // redirection is switched off (see END_PORTAL_REDIRECTION).
             plugin.getLogger().warning("End portal redirection is DISABLED (debug switch in Listeners) - "
                 + "end portals are NOT rewritten to the island's own arrival platform");
+        }
+        if (END_PORTAL_DEBUG) {
+            manager.registerEvents(endPortalDebugEvents, plugin);
+            plugin.getLogger().warning("End portal debug logging is ENABLED (EndPortalDebugEvents) - "
+                + "expect [end-debug] lines for falling blocks and dropped items");
         }
         if (config.getYamlConfig().getBoolean("tool-menu.enabled", true)) {
             manager.registerEvents(toolMenuEvents, plugin);
