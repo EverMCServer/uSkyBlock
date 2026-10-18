@@ -18,31 +18,6 @@ import us.talabrek.ultimateskyblock.uuid.PlayerDB;
 @Singleton
 public class Listeners {
 
-    /**
-     * TEMPORARY DEBUG SWITCH - leave at {@code true} unless you are debugging the end portal.
-     *
-     * <p>When {@code false} the {@link EndPortalEvents} listener is not registered at all: the plugin stops rewriting
-     * the destination of players and entities that use an island end portal, stops rebuilding the arrival platform
-     * and stops the ender pearl region check. End portals then behave exactly the way Paper and
-     * Multiverse-NetherPortals leave them.</p>
-     *
-     * <p>This exists to tell a "does not work on the server but works in single player" problem apart from this
-     * plugin's own end portal handling (e.g. sand duplication). Do not ship a build with this set to {@code false}:
-     * without the redirection every player and entity that enters an island end portal ends up at the shared end
-     * fallback instead of the island's own arrival platform.</p>
-     */
-    private static final boolean END_PORTAL_REDIRECTION = false;
-
-    /**
-     * TEMPORARY DEBUG SWITCH - end portal diagnostics.
-     *
-     * <p>Registers {@link EndPortalDebugEvents}, which writes the end portal pipeline of falling blocks and dropped
-     * items (portal block touched, portal event at lowest/highest priority, every cross world teleport) to the log.
-     * Only useful together with {@link #END_PORTAL_REDIRECTION} being {@code false}. Turn it off (and delete the
-     * class) once the end portal investigation is over.</p>
-     */
-    private static final boolean END_PORTAL_DEBUG = true;
-
     private final PluginConfig config;
 
     private final GuiListener guiListener;
@@ -62,7 +37,6 @@ public class Listeners {
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
     private final EndPortalEvents endPortalEvents;
-    private final EndPortalDebugEvents endPortalDebugEvents;
     private final ToolMenuEvents toolMenuEvents;
     private final SignEvents signEvents;
     private final ChatEvents chatEvents;
@@ -89,7 +63,6 @@ public class Listeners {
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
         @NotNull EndPortalEvents endPortalEvents,
-        @NotNull EndPortalDebugEvents endPortalDebugEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
         @NotNull SignEvents signEvents,
         @NotNull ChatEvents chatEvents,
@@ -114,7 +87,6 @@ public class Listeners {
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
         this.endPortalEvents = endPortalEvents;
-        this.endPortalDebugEvents = endPortalDebugEvents;
         this.toolMenuEvents = toolMenuEvents;
         this.signEvents = signEvents;
         this.chatEvents = chatEvents;
@@ -154,18 +126,8 @@ public class Listeners {
         if (Settings.nether_enabled) {
             manager.registerEvents(netherTerraFormEvents, plugin);
         }
-        if (Settings.end_enabled && END_PORTAL_REDIRECTION) {
+        if (Settings.end_enabled) {
             manager.registerEvents(endPortalEvents, plugin);
-        } else if (Settings.end_enabled) {
-            // Loud on purpose: it must be obvious from the log which build is running and that the end portal
-            // redirection is switched off (see END_PORTAL_REDIRECTION).
-            plugin.getLogger().warning("End portal redirection is DISABLED (debug switch in Listeners) - "
-                + "end portals are NOT rewritten to the island's own arrival platform");
-        }
-        if (END_PORTAL_DEBUG) {
-            manager.registerEvents(endPortalDebugEvents, plugin);
-            plugin.getLogger().warning("End portal debug logging is ENABLED (EndPortalDebugEvents) - "
-                + "expect [end-debug] lines for falling blocks and dropped items");
         }
         if (config.getYamlConfig().getBoolean("tool-menu.enabled", true)) {
             manager.registerEvents(toolMenuEvents, plugin);

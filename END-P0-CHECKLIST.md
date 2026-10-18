@@ -115,6 +115,8 @@
 
 **记录**：是否复制成功 = `______`；是否需要玩家在末地附近 = `______`
 
+> ⚠️ **2026-10-18 已验证的结论**：**自定义末地维度下原版刷沙永远不会复制**，与 `allow-unsafe-end-portal-teleportation` 无关 —— Paper 的 `FallingBlockEntity#teleport()` 只在跨**原版** `minecraft:the_end` 维度时才置 `forceTickAfterTeleportToDuplicate`，我们的 `world_acidisland_the_end` 是自定义维度，判定必为 false。测试服实测：临时把实体目的地改到 `world_the_end`（原版 the_end）后复制立刻正常。详见 [`END-DESIGN.md`](END-DESIGN.md) §7.2。**本项不再是"能不能复制"的验收，而是"末地要不要迁到原版 the_end 世界"的后续决策。**
+
 ---
 
 ## 6. WorldGuard / 权限是否影响实体落地与装置

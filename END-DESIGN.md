@@ -139,7 +139,7 @@
 - **1.20.5 起**：实体到达末地后，平台周围区块会**保持加载 15 秒**（对齐下界传送门行为）→ 这对"装置依靠加载"的场景是利好
 - **世界出生点**：原版末地的世界出生点就在平台处；**我们的实现把世界出生点设在原点 (0, `end.height`, 0)**，即全服共用的末地"主城"（见 §4.9），它同时承担兜底点。由于每岛都有自己的到达平台，正常路径下不会有人落到世界出生点；它只承担"目的地点改写失败/管理员传送"的兜底 —— 但**实体也必须改写目的地**，否则沙子/掉落物会全部堆到主城
 
-**刷沙机为什么依赖上述机制（我们的理解，需在 P0 实机验证）**：把下落方块实体送进末地传送门后，实体在末地被"落地变回方块"，而主世界那一份沙子/沙砾仍然成立，于是产生复制；同时"到达点上方 3 格被破坏并掉落"这一条，是同类装置（以及"吞掉建筑"的风险）的根因。**装置本身不需要服务端配合，服务端必须做的是"让到达点落在本岛、位置固定、不破坏玩家建筑"**。
+**刷沙机机制（2026-10-18 已核对 Paper 源码并在测试服实测）**：跨维度传送的做法是"在新维度复制一个实体 + 把原实体标记 removed"，而 Paper 的 `FallingBlockEntity#tick()` 在 `handlePortal()` **之后**还有一段"落地就放方块 / 掉成物品"，它是否执行取决于 `isAlive() || forceTickAfterTeleportToDuplicate`；而 `forceTickAfterTeleportToDuplicate` 只有在**跨越原版 `minecraft:the_end` 维度**（`oldDimension == Level.END || newDimension == Level.END`）且 `unsupported-settings.allow-unsafe-end-portal-teleportation: true` 时才被置为 true。所以复制多出来的那一份是**主世界那侧**放下的方块/物品，不是末地那侧。**我们现在的末地是自定义维度 `minecraft:world_acidisland_the_end`，因此永远不复制**（详见 §7.2）。同时"到达点上方 3 格被破坏并掉落"这一条，是同类装置（以及"吞掉建筑"的风险）的根因。**装置本身不需要服务端配合，服务端必须做的是"让到达点落在本岛、位置固定、不破坏玩家建筑"**。
 
 #### 4.3.2 推荐实现（到达点 = **每个岛屿自己那块独立的**黑曜石平台）
 
@@ -474,7 +474,9 @@
 | **现有岛屿补末地区域** | **已用「区域版本 bump」方案解决**：`WorldGuardHandler.VERSION` 14 → 15，老岛的 `general.regionVersion`（`14 zh_CN`）因此失配，`protectIsland()` 会重建 **island + nether + end 三套区域**。部署后执行一次 `/usb protectall` 即可覆盖全部老岛（数量 = `plugins/uSkyBlock/islands/` 下的岛屿文件数），输出 `N new regions were created` 应等于该数量；没跑之前老岛玩家在末地会被 `__global__` 的 BUILD DENY 挡住、且不算"在自己的岛上" |
 | 岛屿迁移后的末地重建 | **不需要**：仓库里没有岛屿迁移/重定位功能（`IslandLocatorLogic` 只负责分配新位置），岛屿位置不会变，因此末地区域随坐标天然稳定 |
 | 珍珠/紫颂果跨区域传送 | **已处理**：末影珍珠落点不在任何岛屿区域内时取消传送（`EndPortalEvents.onPearlTeleport`）；紫颂果在末地无紫颂植株自然生长的前提下影响很小 |
-| **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**注意**：实体兜底（`getEndEntityFallbackLocation`）现在只改落点、不再铺平台；原版平台建在 `Level.END` 的 `(100,48,0)`，与主城/本岛无关，但需确认 `Level.END` 指向哪个世界（大厅的 `world_the_end` 还是我们的 `_the_end`） |
+| **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**注意**：实体兜底（`getEndEntityFallbackLocation`）现在只改落点、不再铺平台；Paper 建的原版平台固定落在 `Level.END`（= `world_the_end`）的 `(100,48,0)`，与主城/本岛无关（见下一条） |
+| **刷沙机 / 原版下落方块复制（已定根因，暂缓）** | **2026-10-18 测试服实测结论：自定义末地维度下永远无法复制，与 `allow-unsafe-end-portal-teleportation` 无关。** Paper 的 `FallingBlockEntity#teleport()` 只在 `oldDimension == Level.END || newDimension == Level.END`（跨**原版** `minecraft:the_end` 维度）时才置 `forceTickAfterTeleportToDuplicate`，随后 `tick()` 里 `if (isAlive() || forceTickAfterTeleportToDuplicate)` 才会在传送后再执行"放方块/掉物品"那一段 —— 这就是复制。我们的末地是**自定义维度** `minecraft:world_acidisland_the_end`（见服务器 `world/dimensions/minecraft/` 下的目录名），`Level.END` 判定为 false，所以开关开了也不复制。实测：临时把实体目的地改到 `world_the_end`（原版 `the_end`）后**复制立刻正常**。**结论/后续**：要让原版刷沙可用，末地必须落在原版 `minecraft:the_end` 维度（`world_the_end`），每岛一块末地区域仍可用 WorldGuard 按岛 X/Z 切 —— 这推翻了 D1=A 的一部分前提；等末地上线后若要支持刷沙，再评估把末地迁到原版 the_end 世界（含地形/生成器、与大厅末地共用的取舍）。相关临时诊断代码已全部回滚（commit `b5ce12e3`/`66e43253` 之后） |
+| **`Level.END` 指向哪个世界（已确认）** | `Level.END` = 原版 `minecraft:the_end` 维度 = `world_the_end`，**不是**我们的 `_the_end`（`world_acidisland_the_end` 是自定义维度）。因此 Paper 的 `getPortalDestination` 建的 5×5 平台永远落在大厅末地 `(100,48,0)`，与本岛无关；岛上的平台只能由 `EndPortalEvents.buildArrivalPlatform()` 自己铺（与 §4.3.2 结论一致）。另：MV-NetherPortals 的 `EndPlatformCreator` 也会在**链接世界**里铺一块 `(100,48,0)` 平台（实测中看到的那块就是它铺的） |
 | **末影龙 / 龙战（最新口径）** | 插件**不做任何处理**（不删龙、不拦水晶/爆炸、不清 bossbar）。vanilla 龙战会生成龙和 bossbar，上线后由管理员手动击杀原点附近的龙。⚠️ **击杀龙会触发原版 Exit Portal（基岩/末地门方块）和龙蛋生成**，位置通常在原点附近，可能覆盖主城；建议**先杀龙、再建主城**，或杀完后清理/改建 |
 | **`enter_end` 触发点（TODO）** | 挑战已定义，但**代码里暂时不发**：`EndPortalEvents.onPlayerPortal` 留了 TODO。旧实现会在传送门被校验/取消之前完成挑战（无岛、未链接、他人岛屿、大厅末地都会误完成）。后续应改成"传送真正被接受后（例如到达后 / `PlayerChangedWorldEvent`）再发" |
 | `WorldEditHandler.isOuterPossible()` | 末地启用沿用了下界的前置检查，需确认它在当前服务器配置下返回 true（否则末地会被自动禁用并打警告） |
