@@ -42,6 +42,28 @@ Windows 下用 `gradlew.bat`（本机没有 `pwsh`，`gradlew` 需要 Java 25；
 
 **注意:** 根 `build.gradle.kts` 中 `tasks.withType<Test>().configureEach { enabled = false }` 默认禁用了**所有**测试任务（包括 `:uSkyBlock-Core`）。要运行测试，需临时移除那 3 行（或用 init script 重新启用），跑完再恢复。测试依赖（JUnit 4 + Mockito + Hamcrest，`uSkyBlock-Core/build.gradle.kts`）仅在 `:uSkyBlock-Core` 子模块中配置，`uSkyBlock-Core/src/test/java/` 下有 33 个文件、其中 30 个含 `@Test`/`TestCase`。
 
+## 权限与推送约定
+
+### 权限：「完全权限」只为 git / gradlew 开
+
+- `git` 操作（commit、branch、fetch、拉取、推送等）和 `gradlew` 构建需要额外权限，用户通常**以「完全权限」模式开启会话**，但这只是为了让这两类操作能顺利进行。
+- **「完全权限」不等于放开一切写入。** 除 git / gradlew 之外，任何**工作区（本仓库根目录）以外**的写入、覆盖、删除操作，仍然要先征求用户意见；工作区内的常规改动不受此限。
+
+### 推送：默认不推，推送即部署
+
+本工作区涉及两个被流水线接管的仓库，**一次 push 就会跑流水线，让测试服立刻更新**：
+
+| 仓库 | 远程 / 当前分支 | 推送后果 |
+|------|-----------------|----------|
+| 插件代码（本仓库根目录） | `origin` = `github.com:EverMCServer/uSkyBlock.git`，`everisland` | 测试服通过仓库 hook 自动拉取并替换 jar（日志里能看到 `[Rcon] 开始更新空岛主插件配置（commit: ...）`） |
+| 插件运行配置 `uSkyBlock/`（独立仓库） | `origin` = `codeup.aliyun.com:evermc/acidisland2/uSkyBlock.git`，`test` | 配置流水线把 `plugins/uSkyBlock/` 同步到测试服 |
+
+因此：
+
+- **除非用户明确要求推送，否则一律不要 `git push`**（两个仓库都算）。改完留在工作区、或按用户要求本地 commit 即可，由用户自己决定何时推送、何时上线。
+- 也不要替用户做会反过来影响测试服的操作：`push --force`、`commit --amend` 已推送的提交、删除远端分支等。
+- 另一处注意：`acidisland-recipes/` 是被主仓库 `.gitignore` 忽略的普通目录（本身也不是 git 仓库），推送不会带上它，改了它需要另行同步。
+
 ## 项目架构
 
 ### 多模块结构
@@ -248,7 +270,7 @@ public class XxxEvents implements Listener {
 
 默认连接参数写在脚本 param 里：`gj999@gw.evermc.net`（**SSH 密钥认证已可用**，脚本带 `BatchMode=yes`，密钥失效时立即报错而不是卡在密码提示）、远程日志目录 `/nfs/3406e49acd/minecraft/acidisland-test/logs`。可用 `-User` / `-SshHost` / `-Port` / `-RemoteLogDir` / `-OutDir` 覆盖。
 
-> **不要写本地自动上传/部署脚本。** 测试服的插件更新走 **GitHub 仓库 hook**（push 后服务器自己拉取并替换 jar，日志里能看到 `[Rcon] 开始更新空岛主插件配置（commit: ...）`），服务器重启由人工完成。另外 `gj999` 对 `plugins/` 目录只有读权限（`drwxr-sr-x kjiang:minecraft`，同组其他目录才是 2775），本来也覆盖不了 `uSkyBlock-Plugin.jar`。
+> **不要写本地自动上传/部署脚本。** 测试服的插件更新走 **GitHub 仓库 hook**（push 后服务器自己拉取并替换 jar，日志里能看到 `[Rcon] 开始更新空岛主插件配置（commit: ...）`），服务器重启由人工完成。也就是说 **push 就等于部署**，所以推送前必须先拿到用户明确要求，详见上文「权限与推送约定」。另外 `gj999` 对 `plugins/` 目录只有读权限（`drwxr-sr-x kjiang:minecraft`，同组其他目录才是 2775），本来也覆盖不了 `uSkyBlock-Plugin.jar`。
 
 ### `server-logs/` — 拉回来的服务器日志
 
@@ -262,6 +284,8 @@ public class XxxEvents implements Listener {
 
 ## 注意事项
 
+- **权限边界：** 会话开「完全权限」只是为了 git / gradlew 能跑通；工作区以外的写入仍须先征得用户同意（见「权限与推送约定」）
+- **默认不推送：** 插件仓库和配置文件仓库一 push 就会跑流水线、测试服立刻更新 —— 除非用户明确要求，不要 `git push`
 - 本地依赖 jar 放在 **`uSkyBlock-Core/libs/`**（不是仓库根），例如 `SignShop-5.2.2.jar`；`uSkyBlock-Core/build.gradle.kts` 用 `compileOnly(files("libs/SignShop-5.2.2.jar"))` 引用它，缺这个文件核心模块编不过
 - 配置文件版本号通过 `config.yml` 的 `version` 字段管理（当前 **111**，末地功能把它从 110 提到 111）；新增配置项时注意同时更新 `uSkyBlock/config.yml` 快照
 - 国际化使用 gettext `.po` 格式，工具类为 `dk.lockfuglsang.minecraft.po.I18nUtil`；但**部分新增功能直接硬编码中文提示**（如 `PlayerEvents.onPlayerPortal` 的下界门槛提示），改文案时两处都要找
