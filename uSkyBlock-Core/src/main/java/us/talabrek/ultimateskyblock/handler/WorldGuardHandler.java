@@ -103,9 +103,16 @@ public class WorldGuardHandler {
 
     /**
      * The suffixes of island regions in the plugin managed extra dimensions (nether and end). Regions in these
-     * dimensions span the full world height.
+     * dimensions span the fixed vertical range {@link #EXTRA_WORLD_REGION_MIN_Y}..{@link #EXTRA_WORLD_REGION_MAX_Y}
+     * instead of the world height, so they stay independent of the dimension type of the world.
      */
     private static final List<String> EXTRA_WORLD_SUFFIXES = List.of("nether", "end");
+
+    /**
+     * Vertical range used for the island regions of the extra dimensions (nether and end).
+     */
+    private static final int EXTRA_WORLD_REGION_MIN_Y = 0;
+    private static final int EXTRA_WORLD_REGION_MAX_Y = 255;
 
     /**
      * The suffixes of all island regions. {@code island} is the overworld region, the others are extra dimensions.
@@ -183,8 +190,8 @@ public class WorldGuardHandler {
         BlockVector3 minPoint = getProtectionVectorRight(islandLocation);
         BlockVector3 maxPoint = getProtectionVectorLeft(islandLocation);
         if (isExtraWorldRegion(regionName)) {
-            minPoint = minPoint.withY(0);
-            maxPoint = maxPoint.withY(255);
+            minPoint = minPoint.withY(EXTRA_WORLD_REGION_MIN_Y);
+            maxPoint = maxPoint.withY(EXTRA_WORLD_REGION_MAX_Y);
         }
         ProtectedCuboidRegion region = new ProtectedCuboidRegion(regionName, minPoint, maxPoint);
         final DefaultDomain owners = new DefaultDomain();
@@ -308,6 +315,47 @@ public class WorldGuardHandler {
         return BlockVector3.at(island.getX() - Settings.island_radius, world.getMinHeight(), island.getZ() - Settings.island_radius);
     }
 
+    /**
+     * Gets a Y coordinate that is guaranteed to be inside the island regions of the given world.
+     *
+     * <p>Island regions are full height columns, so the island a location belongs to is decided by its X/Z column
+     * alone. {@link #getIslandNameAt(Location)} resolves at this Y instead of the real Y, so locations that left the
+     * buildable area vertically - an entity that fell below the bottom of the region, or something pushed above its
+     * top - still resolve to their island column instead of resolving to no island at all. Resolving them as
+     * "no island" used to make the cross island protection bounce such entities back to their last in range
+     * position, which froze a falling entity in mid air at the bottom of the region.</p>
+     *
+     * <p>The overworld regions span the whole world height, while the nether/end regions span the fixed range
+     * {@code 0..255}. The intersection of both is used so that the returned Y is inside an island region of any
+     * dimension, no matter which dimension type the world actually has.</p>
+     *
+     * @param world World to get the lookup Y for, may be null.
+     * @return A Y coordinate inside the island regions of the world.
+     */
+    public static int getIslandLookupY(@Nullable World world) {
+        if (world == null) {
+            return (EXTRA_WORLD_REGION_MIN_Y + EXTRA_WORLD_REGION_MAX_Y) / 2;
+        }
+        int min = Math.max(world.getMinHeight(), EXTRA_WORLD_REGION_MIN_Y);
+        int max = Math.min(world.getMaxHeight() - 1, EXTRA_WORLD_REGION_MAX_Y);
+        if (max < min) {
+            // The world does not overlap the extra dimension range at all - fall back to its own middle.
+            min = world.getMinHeight();
+            max = world.getMaxHeight() - 1;
+        }
+        return min + (max - min) / 2;
+    }
+
+    /**
+     * Gets the name of the island whose region covers the given location, or null when there is none.
+     *
+     * <p>The lookup is column based: it uses {@link #getIslandLookupY(World)} instead of the location's own Y,
+     * because island regions are full height columns and a location that fell out of the buildable area must still
+     * belong to its island. Use {@link #getIslandRegionAt(Location)} when the real region geometry matters.</p>
+     *
+     * @param location Location to look up, may be null.
+     * @return Island name, or null when the location is not inside any island column.
+     */
     public static String getIslandNameAt(Location location) {
         if (location == null || location.getWorld() == null) {
             return null;
@@ -316,7 +364,9 @@ public class WorldGuardHandler {
         if (regionManager == null) {
             return null;
         }
-        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(toVector(location));
+        BlockVector3 lookup = BlockVector3.at(location.getBlockX(), getIslandLookupY(location.getWorld()),
+            location.getBlockZ());
+        Iterable<ProtectedRegion> applicableRegions = regionManager.getApplicableRegions(lookup);
         for (ProtectedRegion region : applicableRegions) {
             String islandName = getIslandNameFromRegion(region.getId());
             if (islandName != null) {

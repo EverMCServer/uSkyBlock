@@ -53,6 +53,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSPreTransactionEvent;
 import org.wargamer2010.signshop.player.SignShopPlayer;
@@ -84,6 +85,28 @@ public class IslandBorderEvent implements Listener {
             || e instanceof TNTPrimed
             || (e instanceof Firework fw && fw.getShooter() == null));
     }
+
+    /**
+     * Whether the given location has left the vertical range of its world.
+     *
+     * <p>The island regions cover the whole buildable height of a world, so a location above or below that range is
+     * outside of every island area: an entity there - typically one that fell out of the world - cannot reach any
+     * block or entity of a neighbouring island. Bouncing it back to its last in range position would freeze it in
+     * mid air, so the vertical part of a crossing is ignored: only crossings that happen inside the buildable range
+     * are reverted.</p>
+     *
+     * @param location Location to check, may be null.
+     * @return True when the location is above or below the buildable range of its world.
+     */
+    private static boolean isOutsideWorldHeight(@Nullable Location location) {
+        if (location == null || location.getWorld() == null) {
+            return true;
+        }
+        World world = location.getWorld();
+        int blockY = location.getBlockY();
+        return blockY < world.getMinHeight() || blockY > world.getMaxHeight() - 1;
+    }
+
     @Inject
     public IslandBorderEvent(@NotNull uSkyBlock plugin) {
         this.plugin = plugin;
@@ -103,7 +126,9 @@ public class IslandBorderEvent implements Listener {
                 if (denyCrossBorder(e)) {
                     Location last = lastPosition.get(e.getUniqueId());
                     Location now = e.getLocation();
-                    if (last == null || isBothTrusted(plugin.getIslandInfo(last), plugin.getIslandInfo(now))) {
+                    if (last == null
+                        || isOutsideWorldHeight(now)
+                        || isBothTrusted(plugin.getIslandInfo(last), plugin.getIslandInfo(now))) {
                         lastPosition.put(e.getUniqueId(), now);
                         continue;
                     }
@@ -271,6 +296,10 @@ public class IslandBorderEvent implements Listener {
         }
         Location from = event.getFrom();
         Location to = event.getTo();
+        if (isOutsideWorldHeight(to)) {
+            // Fell out of the world: there is nothing to protect on the other island, do not freeze it in mid air.
+            return;
+        }
         IslandInfo ii = plugin.getIslandInfo(from);
         IslandInfo ii2 = plugin.getIslandInfo(to);
         if (!isBothTrusted(ii, ii2)) {
