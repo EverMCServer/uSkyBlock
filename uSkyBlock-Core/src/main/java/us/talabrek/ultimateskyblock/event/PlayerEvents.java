@@ -698,10 +698,10 @@ public class PlayerEvents implements Listener {
      * Nether tutorial gate: players who have not finished the {@code beginner} rank may not pass a nether portal,
      * and an allowed pass records the {@code enter_nether} progress.
      *
-     * <p>Creative and spectator players are let through - and still get the progress - so the mechanic can be
-     * tested. The bypass used to be {@code player.isOp()} followed by an immediate {@code return}, which meant an op
-     * account (the usual admin test account) entered the nether but never accumulated the progress. The gamemode
-     * rule is the same one {@link ToxicEvents#isImmune(Player)} uses for "this player is not really playing".</p>
+     * <p>Only survival players are gated (see {@link #isDimensionGateApplicable(Player)}); everyone else passes and
+     * still gets the progress, which is also how an admin tests the challenge. The bypass used to be
+     * {@code player.isOp()} followed by an immediate {@code return}, so an op account entered the nether but never
+     * accumulated the progress.</p>
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
@@ -715,7 +715,7 @@ public class PlayerEvents implements Listener {
         Player player = event.getPlayer();
         PlayerInfo playerInfo = plugin.getPlayerInfo(player);
         boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
-        if (isFirstCompletion && !isCreativeOrSpectator(player)) {
+        if (isFirstCompletion && isDimensionGateApplicable(player)) {
             event.setCancelled(true);
             if (rateLimiter.tryAcquire()) {
                 player.sendMessage("\u00a7c你需要完成海岛入门任务，才能进入下界！");
@@ -726,18 +726,18 @@ public class PlayerEvents implements Listener {
     }
 
     /**
-     * Whether the player is in a gamemode that is not actually playing the game (creative or spectator).
+     * Whether the nether/end unlock gate applies to the player.
      *
-     * <p>Mirrors the rule in {@link ToxicEvents#isImmune(Player)}, where those gamemodes mean "no gameplay rules
-     * apply". The nether gate uses it so admins building or testing in creative pass the tutorial gate while still
-     * having the challenge progress recorded.</p>
+     * <p>Only {@link GameMode#SURVIVAL} is gated: creative and spectator are not really playing, and adventure is
+     * used for maps/minigames rather than survival progression, so all three may enter the nether/end without the
+     * rank. Neither {@code isOp()} nor {@code usb.mod.bypassprotection} widen this - an operator in survival is
+     * gated like everyone else, and has to switch gamemode to test the dimensions.</p>
      *
      * @param player The player to check.
-     * @return True for creative and spectator, false for survival and adventure.
+     * @return True only for survival players.
      */
-    private static boolean isCreativeOrSpectator(@NotNull Player player) {
-        GameMode gameMode = player.getGameMode();
-        return gameMode != GameMode.SURVIVAL && gameMode != GameMode.ADVENTURE;
+    private static boolean isDimensionGateApplicable(@NotNull Player player) {
+        return player.getGameMode() == GameMode.SURVIVAL;
     }
 
     /**
@@ -748,9 +748,10 @@ public class PlayerEvents implements Listener {
      * {@code PLUGIN} cause. The nether needs the {@code beginner} rank, the end the {@code advanced} rank (see the
      * {@code ranks} section of challenges.yml).</p>
      *
-     * <p>The handler runs at {@link EventPriority#MONITOR} on purpose: {@link EndPortalEvents} lifts a cancellation
-     * and rewrites the destination of an island end portal at {@link EventPriority#HIGHEST}, so a gate that ran
-     * earlier would simply be overridden again.</p>
+     * <p>The gate only applies to {@link #isDimensionGateApplicable(Player) survival players}: creative, spectator
+     * and adventure players are never gated. The handler runs at {@link EventPriority#MONITOR} on purpose:
+     * {@link EndPortalEvents} lifts a cancellation and rewrites the destination of an island end portal at
+     * {@link EventPriority#HIGHEST}, so a gate that ran earlier would simply be overridden again.</p>
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleportGate(PlayerTeleportEvent event) {
@@ -762,10 +763,6 @@ public class PlayerEvents implements Listener {
         if (event.getFrom().getWorld() == target) {
             return; // Same world: not a dimension change.
         }
-        Player player = event.getPlayer();
-        if (player.isOp() || player.hasPermission("usb.mod.bypassprotection")) {
-            return;
-        }
         String requiredChallenge;
         String message;
         if (plugin.getWorldManager().isSkyNether(target)) {
@@ -776,6 +773,10 @@ public class PlayerEvents implements Listener {
             message = "\u00a7c你需要完成海岛进阶任务，才能进入末地！";
         } else {
             return;
+        }
+        Player player = event.getPlayer();
+        if (!isDimensionGateApplicable(player)) {
+            return; // Creative/spectator/adventure: no gate.
         }
         PlayerInfo playerInfo = plugin.getPlayerInfo(player);
         if (playerInfo == null || playerInfo.checkChallenge(requiredChallenge) != 0) {
