@@ -48,6 +48,10 @@ commands:
     description: 'talk to your island party'
     aliases: [ptalk, ptk]
     permission: usb.party.talk
+  handbook:
+    description: 'read the island handbook'
+    aliases: [hb]
+    permission: usb.handbook
   usb:
     description: 'Ultimate SkyBlock Admin'
 
@@ -59,6 +63,7 @@ permissions:
     description: The default group for normal uSkyBlock usage
     default: true
     children:
+      usb.handbook: true
       usb.island.challenges: true
       usb.island.create: true
       usb.island.home: true
@@ -142,6 +147,7 @@ permissions:
       usb.admin.ctop: true
       usb.admin.toxic: true
       usb.admin.detox: true
+      usb.admin.handbook: true
       usb.admin.version: true
       usb.exempt.ban: true
       usb.exempt.cooldown.biome: true
@@ -186,6 +192,7 @@ permissions:
       usb.admin.ctop: true
       usb.admin.toxic: true
       usb.admin.detox: true
+      usb.admin.handbook: true
       usb.admin.version: true
       usb.admin.wg: true
 
@@ -405,6 +412,15 @@ permissions:
 
   usb.admin.version:
     description: 'Grants access to /usb version - displays version information'
+
+  usb.admin.handbook:
+    description: |
+      Grants access to /handbook give|check|reload - hand the handbook to a player,
+      validate handbook.yml anchors and re-read the file after editing it
+
+  usb.handbook:
+    description: 'Grants access to /handbook - opens the island handbook'
+    default: true
 
   usb.admin.wg:
     description: |

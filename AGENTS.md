@@ -236,6 +236,7 @@ public class XxxEvents implements Listener {
 | `biomes.yml` | 运行时群系配置（含主世界岛屿群系覆盖，如 `the_end`） |
 | `challenges.yml` | 运行时挑战配置（**包含大量仓库内没有的定制挑战**：`ClassEnd` 末地之试炼章节发放 `end_portal_frame`、`phantom`/`phantom_100` 发放 `elytra`、`enter_end` 等） |
 | `levelConfig.yml` | 运行时岛屿等级计算配置 |
+| `handbook.yml` | 游戏内“海岛手册”的内容（`/handbook` 指令发书），见下文「海岛手册」 |
 | `i18n/zh_CN.po` | 中文本地化文件 |
 | `schematics/` | 岛屿蓝图：`acidIsland.schem`、`acidIslandNether.schem`、`skySMP.schematic`、`spawn.schem`（末地蓝图 `acidIslandEnd` 待新增） |
 
@@ -244,6 +245,18 @@ public class XxxEvents implements Listener {
 > **事件触发类挑战的统一写法（`type: progress` + 单次触发）**：`challenges.yml` 里这类挑战（`enter_nether` / `enter_end` / `build_altar` / `biome_frozen` / `biome_warm` / `biome_nether` / `biome_nether_all` / `anvilleaves` / `armor_protection` / `conduit_protection`）都写成 `type: progress` + `requiredProgress: <与挑战同名的键>:N`，**不要**再用 `type: onPlayer` + `requiredItems: bedrock:1` 那种占位写法（基岩不可得，只是让玩家点不动，而且绕过发奖逻辑）。触发点只调 `ChallengeLogic.markProgress(player|location, key)`（location 版自动归到岛主条目，供没有 Player 的定时任务使用），进度满后玩家在 `/c` 里点击领取，奖励统一走 `giveReward`。一个挑战可以带多条 `requiredProgress`（`biome_nether_all` 就是要求 5 种下界群系各 1 次，键名 `nether_biome_<群系>`）。
 >
 > 挑战描述可以在 `challenges.yml` 里用 `\n` 强制换行：`Challenge.getDescriptionLines()` 会按行展开成多条 lore（`FormatUtil.wordWrap` 只按空格断行，中文描述不换行会变成超长的一行）；聊天提示和木牌那种不能换行的地方用 `getDescriptionOnOneLine()`。
+
+### 海岛手册（`/handbook`）— 游戏内成书
+
+给玩家看的“海岛手册”不是用书与笔手写的：游戏内编辑器一页只有 14 行、每行约 12 个汉字，长文没法写。`/handbook` 从 `uSkyBlock/handbook.yml` 现场渲染成一本成书并直接 `openBook`（不占玩家背包，扔了重新 `/handbook`）。
+
+- **代码**：`handbook/HandbookRenderer.java`（排版/锚点/链接）、`handbook/HandbookLogic.java`（读 YAML + `WrittenBookContent` 生成物品）、`command/HandbookCommand.java`（`/handbook [id]`、`list`、`give`、`check`、`reload`）；注册在 `bootstrap/Commands.java` + `plugin.yml`（命令 `handbook`/`hb`，权限 `usb.handbook` 默认 true，`usb.admin.handbook` 管 give/check/reload）。
+- **内容文件**：真实内容在 **`uSkyBlock/handbook.yml`**（配置真相源）；`uSkyBlock-Core/src/main/resources/handbook.yml` 只是插件内模板，**仅在服务器上文件缺失时释放一次**。
+- **不走 `FileUtil` 的版本合并**：`handbook.yml` 是内容不是配置，合并/覆盖会毁掉作者写好的文案，所以它是直接 `YamlConfiguration` 读取、按需重读；改完用 `/handbook reload`（`/usb reload` 也已接上，`ReloadCommand` 会顺带重读）。
+- **排版规则**：按**像素宽度**折行（中文 9px、ASCII 6px、空格 4px，`line-width` 默认 114），不是按空格断行——`FormatUtil.wordWrap` 那套对中文没用；`pages:` 每个条目是一个章节、强制从新页开始，超过 `lines-per-page`（14）自动续页；成书上限 100 页，超出截断并告警。
+- **锚点与占位符**：`[[文字|章节id]]` 跳页、`[[文字|3]]` 跳第 3 页、`[[文字|cmd:/is home]]` 执行命令、`[[文字|url:...]]` 开网址；`{{章节id}}` 展开成该章节页码（写目录用），`%page%`/`%total%` 是当前页/总页数。渲染分两遍布局（先排版拿页码，再解析链接），所以目录可以放在最前面指向后面的章节，插入章节也不会打乱页码；这些标记都是**不可分割单元**，不会被折行切断。
+- **自检**：`/handbook check` 会列出每本书页数，并报告未知跳转章节、页码越界、重复章节 id、超页。
+- ⚠️ `uSkyBlock/handbook.yml` 目前是**初稿**：毒水/硫磺/祭坛等系统的具体数值与摆法还没写进去（只写了原则），上线前按实际玩法补。
 
 ### `acidisland-recipes/` — 自定义数据包
 
