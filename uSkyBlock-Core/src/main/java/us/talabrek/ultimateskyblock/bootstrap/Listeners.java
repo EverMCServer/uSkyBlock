@@ -37,6 +37,7 @@ public class Listeners {
     private final WorldGuardEvents worldGuardEvents;
     private final NetherTerraFormEvents netherTerraFormEvents;
     private final EndPortalEvents endPortalEvents;
+    private final EndermanCopyEvents endermanCopyEvents;
     private final ToolMenuEvents toolMenuEvents;
     private final SignEvents signEvents;
     private final ChatEvents chatEvents;
@@ -63,6 +64,7 @@ public class Listeners {
         @NotNull WorldGuardEvents worldGuardEvents,
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
         @NotNull EndPortalEvents endPortalEvents,
+        @NotNull EndermanCopyEvents endermanCopyEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
         @NotNull SignEvents signEvents,
         @NotNull ChatEvents chatEvents,
@@ -87,6 +89,7 @@ public class Listeners {
         this.worldGuardEvents = worldGuardEvents;
         this.netherTerraFormEvents = netherTerraFormEvents;
         this.endPortalEvents = endPortalEvents;
+        this.endermanCopyEvents = endermanCopyEvents;
         this.toolMenuEvents = toolMenuEvents;
         this.signEvents = signEvents;
         this.chatEvents = chatEvents;
@@ -128,6 +131,7 @@ public class Listeners {
         }
         if (Settings.end_enabled) {
             manager.registerEvents(endPortalEvents, plugin);
+            manager.registerEvents(endermanCopyEvents, plugin);
         }
         if (config.getYamlConfig().getBoolean("tool-menu.enabled", true)) {
             manager.registerEvents(toolMenuEvents, plugin);

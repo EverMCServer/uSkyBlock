@@ -473,6 +473,18 @@ end:
   fallback:
     x: 0
     z: 0
+
+  # End-game mechanic: an enderman that picks up a block picks up a COPY of it, the original block stays in place.
+  # The enderman then carries that copy around and puts it down somewhere as usual (vanilla behaviour), so a single
+  # source block produces an endless supply of it - limited only by how often endermen pick blocks up.
+  # Only applies in the end world and requires the mobGriefing game rule to be enabled.
+  enderman-copy:
+    # Whether the copy mechanic is enabled at all.
+    enabled: true
+
+    # If true, only blocks inside an island region are copied. The shared end "main city" around the origin is not
+    # an island, so it keeps vanilla behaviour.
+    only-on-islands: true
 tool-menu:
   enabled: true
   tool: OAK_SAPLING
@@ -508,7 +520,7 @@ placeholder:
   servercommandplaceholder: false
 
 # DO NOT TOUCH THE FIELDS BELOW
-version: 111
+version: 112
 force-replace:
   options.party.invite-timeout: 100
   options.island.islandTeleportDelay: 5

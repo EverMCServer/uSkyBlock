@@ -464,6 +464,16 @@
 | `island/level/CommonLevelLogic.java` | 新增 `getEndLocation()`（世界不可用时返回 null，避免 NPE） |
 | `island/level/ChunkSnapshotLevelLogic.java` | 快照链扩展为 主世界 → 下界 → 末地；抽出 `addRegionBlocks()`；末地方块在总分达到 `end.activate-at.level` 后计入等级 |
 
+**P5 末影人复制（后期玩法）**
+
+| 位置 | 内容 |
+|------|------|
+| `event/EndermanCopyEvents.java`（新增） | 末地里的末影人搬起方块时改为"搬起一份复制"：在 `EntityChangeBlockEvent`（`Enderman` + `to == AIR`，即搬起）里 `setCancelled(true)` 让原方块留在原地，再手动 `setCarriedBlock(block.getBlockData())` 把复制交给末影人（原版只在事件未被取消时才设置 carried，取消后不会自己拿）。之后完全走原版 AI：携带 → 随机放下（放下消耗携带物）→ 再搬起，因此**一个源方块可被无限复制**，节奏由原版 `EndermanLeaveBlockGoal`（每 tick 1/2000）决定。优先级 `LOWEST`，早于 WorldGuard 的 `enderman-grief` 判定；只作用于 `isSkyEnd()`，默认还要求方块在某个岛屿区域内（原点主城保持原版行为）。读 `end.enderman-copy.enabled` / `end.enderman-copy.only-on-islands` |
+| `bootstrap/Listeners.java` | 与 `EndPortalEvents` 一起按 `Settings.end_enabled` 注册 |
+| `config.yml`（默认 + `uSkyBlock/` 运行时） | `end` 节新增 `enderman-copy.enabled` / `enderman-copy.only-on-islands`；`version` 111 → 112 |
+
+**已核实的原版事实**（实现依据，来自 Minecraft Wiki 与 Paper `Enderman.java` 补丁）：搬起判定在"自身向上 4×3×4"内且要求视线可达；放置判定是"自身 2×2×2 内 + 目标格为空气 + 下方为完整碰撞方块（非空气/基岩）+ 携带方块能正常存在 + 目标区块已加载"；放置事件被取消时 carried 不会被清空（末影人会一直抱着，下一轮再试）。
+
 ### 7.2 尚未完成 / 阻塞项
 
 | 项 | 说明 |
