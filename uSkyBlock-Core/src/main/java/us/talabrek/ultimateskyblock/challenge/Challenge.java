@@ -224,12 +224,15 @@ public class Challenge {
                     break;
                 }
                 double requiredAmount = progressReq.amountForRepetitions(effectiveRepetitions);
+                // The progress key is a config identifier, so it is run through the
+                // translation table as its own msgid (e.g. "visit" -> "到访其他岛屿").
+                String progressName = tr(progressReq.key());
                 if (type == Challenge.Type.PROGRESS && progress != null) {
                     details.add(tr("\u00a7f{0}: \u00a7a{1}\u00a7f/\u00a77{2}",
-                        progressReq.key(), progress.getProgress(progressReq.key()), requiredAmount));
+                        progressName, progress.getProgress(progressReq.key()), requiredAmount));
                     details.add(tr("\u00a77Total progress: \u00a7f{0}", progress.getTotalProgress(progressReq.key())));
                 } else {
-                    details.add(tr("\u00a7f{0}: {1}", progressReq.key(), requiredAmount));
+                    details.add(tr("\u00a7f{0}: {1}", progressName, requiredAmount));
                 }
             }
         }

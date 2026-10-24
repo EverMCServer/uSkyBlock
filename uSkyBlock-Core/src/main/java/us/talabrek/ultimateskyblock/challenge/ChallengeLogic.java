@@ -400,7 +400,7 @@ public class ChallengeLogic implements Listener {
                     double requiredAmount = progressRequirement.amountForRepetitions(challenge.getEffectiveRepetitions(completion));
                     double currentProgress = progress.getProgress(progressRequirement.key());
                     if (currentProgress < requiredAmount) {
-                        sb.append(tr(" \u00a74{0}: {1}/{2}", progressRequirement.key(), currentProgress, requiredAmount));
+                        sb.append(tr(" \u00a74{0}: {1}/{2}", tr(progressRequirement.key()), currentProgress, requiredAmount));
                         hasAll = false;
                     }
                 }
@@ -489,7 +489,7 @@ public class ChallengeLogic implements Listener {
         for (Map.Entry<String, Double> required : requiredAmounts.entrySet()) {
             double currentProgress = progress.getProgress(required.getKey());
             if (currentProgress < required.getValue()) {
-                sb.append(tr(" §4{0}: {1}/{2}", required.getKey(), currentProgress, required.getValue()));
+                sb.append(tr(" §4{0}: {1}/{2}", tr(required.getKey()), currentProgress, required.getValue()));
                 hasAll = false;
             }
         }
