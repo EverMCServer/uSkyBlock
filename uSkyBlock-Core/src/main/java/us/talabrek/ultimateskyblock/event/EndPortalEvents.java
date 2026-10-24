@@ -234,24 +234,25 @@ public class EndPortalEvents implements Listener {
         // Destination known: take the portal over even if another plugin cancelled it (see the class comment above).
         event.setCancelled(false);
         event.setTo(to);
-        // The platform rebuild and the "enter_end" challenge are handled in onPlayerPortalMonitor: this handler runs
-        // before other plugins can still cancel the portal (e.g. the visitor protection at MONITOR), and awarding a
+        // The platform rebuild and the "enter_end" progress are handled in onPlayerPortalMonitor: this handler runs
+        // before other plugins can still cancel the portal (e.g. the visitor protection at MONITOR), and recording a
         // challenge for a teleport that never happens is exactly the bug the old implementation had.
     }
 
     /**
-     * Awards the {@code enter_end} challenge and schedules the arrival platform rebuild, after all portal validations
-     * have run.
+     * Records the {@code enter_end} challenge progress and schedules the arrival platform rebuild, after all portal
+     * validations have run.
      *
      * <p>{@link ExploitEvents} cancels "using another island's portal" at {@link EventPriority#MONITOR}; running
      * after it (same priority, registered later) makes sure a cancelled teleport does not touch the target island's
      * platform.</p>
      *
-     * <p>This is also the only place the {@code enter_end} challenge is awarded: the portal is no longer cancellable
+     * <p>This is also the only place the {@code enter_end} progress is recorded: the portal is no longer cancellable
      * here (the plugin's own validation, the "another island's portal" check and the dimension gate all ran before),
-     * so a challenge is never granted for a teleport that does not happen - which is what the old implementation
+     * so progress is never granted for a teleport that does not happen - which is what the old implementation
      * did (it also completed for players without an island, portals without a link, other islands' portals and the
-     * lobby's end portal).</p>
+     * lobby's end portal). The challenge itself is claimed by clicking it in {@code /c}, so rewards stay on the one
+     * giveReward path.</p>
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerPortalMonitor(PlayerPortalEvent event) {
@@ -276,7 +277,7 @@ public class EndPortalEvents implements Listener {
         }
         @Nullable PlayerInfo playerInfo = plugin.getPlayerInfo(event.getPlayer());
         if (playerInfo != null) {
-            plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_end");
+            plugin.getChallengeLogic().markProgress(event.getPlayer(), "enter_end");
         }
     }
 

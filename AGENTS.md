@@ -190,7 +190,7 @@ public class XxxEvents implements Listener {
 - 末地维度模型：同样是"每人一块独立区域"，但世界是**自定义虚空世界**（`AcidEndChunkGenerator`，无底部、单群系、`generateStructures(false)`），世界名 `<主世界>_the_end`、`Environment.THE_END`；区域 id = `<islandName>end`，Y 固定 `0..255`
 - 末地到达点是每个岛屿自己那块 **5×5 黑曜石平台**：`EndPortalEvents` 改写 `setTo()` 后再由 `buildArrivalPlatform()` 重建平台并清空上方 3 格（生电装置依赖这个"每次进入都重建"的原版行为）
 - 三个维度分别通过 `MultiverseHook.registerOverworld()` / `registerNetherworld()` / `registerEndWorld()` 导入 Multiverse，`linkInventories()` 把三者放进同一个 `skyblock` 组共享背包（避免切维度丢装备）
-- 传送门拦截逻辑分散在 `ExploitEvents.onPortalEvent`（访客/他人岛屿限制）、`PlayerEvents.onPlayerPortal`（新手任务门槛，含 `enter_nether` 挑战触发）、`EndPortalEvents.onPlayerPortalMonitor`（末地门通过全部校验后发 `enter_end` 挑战）、`EndPortalEvents`（`END_PORTAL` / `ENDER` 目的地改写、实体过门、末影珍珠跨区域）、`PlayerEvents.onEntityPortal`（实体门户）
+- 传送门拦截逻辑分散在 `ExploitEvents.onPortalEvent`（访客/他人岛屿限制）、`PlayerEvents.onPlayerPortal`（新手任务门槛，含 `enter_nether` 进度记录）、`EndPortalEvents.onPlayerPortalMonitor`（末地门通过全部校验后记录 `enter_end` 进度）、`EndPortalEvents`（`END_PORTAL` / `ENDER` 目的地改写、实体过门、末影珍珠跨区域）、`PlayerEvents.onEntityPortal`（实体门户）
 - 岛屿删除：`IslandLogic.clearIsland()` 串联为 主世界 → 下界 → 末地 → `afterDeletion`
 
 ## 当前工作方向
@@ -239,7 +239,9 @@ public class XxxEvents implements Listener {
 | `i18n/zh_CN.po` | 中文本地化文件 |
 | `schematics/` | 岛屿蓝图：`acidIsland.schem`、`acidIslandNether.schem`、`skySMP.schematic`、`spawn.schem`（末地蓝图 `acidIslandEnd` 待新增） |
 
-> 说明：`enter_end` 挑战在 `uSkyBlock/challenges.yml` 定义，触发点在 **`EndPortalEvents.onPlayerPortalMonitor`**（MONITOR + ignoreCancelled，注册晚于 `PlayerEvents` 的维度门槛）：只有经过插件目的地校验、他人岛屿拦截、`advanced` 维度门槛后仍然有效的末地门传送才发挑战，所以不会出现旧实现那种“无岛 / 未链接 / 他人岛屿 / 大厅末地”误完成。**不要**把它挪回 `onPlayerPortal`（HIGHEST），那里事件还能被后续插件取消。
+> 说明：`enter_end` 挑战在 `uSkyBlock/challenges.yml` 定义，触发点在 **`EndPortalEvents.onPlayerPortalMonitor`**（MONITOR + ignoreCancelled，注册晚于 `PlayerEvents` 的维度门槛）：只有经过插件目的地校验、他人岛屿拦截、`advanced` 维度门槛后仍然有效的末地门传送才记录进度，所以不会出现旧实现那种“无岛 / 未链接 / 他人岛屿 / 大厅末地”误完成。**不要**把它挪回 `onPlayerPortal`（HIGHEST），那里事件还能被后续插件取消。
+
+> **事件触发类挑战的统一写法（`type: progress` + 单次触发）**：`challenges.yml` 里这类挑战（`enter_nether` / `enter_end` / `build_altar` / `biome_frozen` / `biome_warm` / `biome_nether` / `biome_nether_all` / `anvilleaves` / `armor_protection` / `conduit_protection`）都写成 `type: progress` + `requiredProgress: <与挑战同名的键>:N`，**不要**再用 `type: onPlayer` + `requiredItems: bedrock:1` 那种占位写法（基岩不可得，只是让玩家点不动，而且绕过发奖逻辑）。触发点只调 `ChallengeLogic.markProgress(player|location, key)`（location 版自动归到岛主条目，供没有 Player 的定时任务使用；`biome_nether_all` 用 `raiseProgress` 把计数抬到已改造群系数），进度满后玩家在 `/c` 里点击领取，奖励统一走 `giveReward`。
 
 ### `acidisland-recipes/` — 自定义数据包
 

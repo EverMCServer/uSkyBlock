@@ -209,6 +209,8 @@ public class ToxicEvents implements Listener {
                             }
                         }
                     } else {
+                        // 防酸附魔挡下了毒水伤害（挑战 armor_protection: 在防毒附魔的庇护下不受伤）
+                        plugin.getChallengeLogic().markProgress(player, "armor_protection");
                         int n = antiToxicArmors.size();
                         java.util.Random random = new java.util.Random();
                         if (random.nextInt(n * 2) == 0) {
@@ -235,6 +237,10 @@ public class ToxicEvents implements Listener {
                     dmgTick.put(uuid, Pair.of(ticks - 1, false));
                 }
             } else {
+                if (inToxic && player.hasPotionEffect(PotionEffectType.CONDUIT_POWER)) {
+                    // 潮涌核心的庇护挡下了毒水伤害（挑战 conduit_protection）
+                    plugin.getChallengeLogic().markProgress(player, "conduit_protection");
+                }
                 toRemove.add(uuid);
             }
         }

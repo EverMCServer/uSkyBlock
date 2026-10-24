@@ -25,6 +25,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.api.event.MemberJoinedEvent;
 import us.talabrek.ultimateskyblock.block.BlockCollection;
 import us.talabrek.ultimateskyblock.hook.HookManager;
@@ -762,21 +763,71 @@ public class ChallengeLogic implements Listener {
         return completionLogic.getChallenges(playerInfo).values();
     }
 
-    public void completeLocationChallengeIfNotDone(Location loc, String challengeName) {
-        IslandInfo islandInfo = plugin.getIslandInfo(loc);
-        if (islandInfo == null) {
+    /**
+     * Marks a one-shot progress flag for the island of the given player: the stored progress key is
+     * raised to 1.
+     * <p>This is the entry point for event-driven challenges (a {@code type: progress} challenge
+     * requiring a single unit): the trigger records the progress, and the player claims the reward by
+     * clicking the challenge in {@code /c} (see {@link #tryCompleteProgress}). Recording progress
+     * instead of completing the challenge directly keeps rewards, broadcasts and the ranking on the
+     * one {@link #giveReward} path.
+     *
+     * @param player The player whose island progress is updated.
+     * @param key    The progress key to mark.
+     */
+    public void markProgress(@NotNull Player player, @NotNull String key) {
+        PlayerInfo playerInfo = plugin.getPlayerInfo(player);
+        if (playerInfo == null || !playerInfo.getHasIsland()) {
             return;
         }
-        PlayerInfo playerInfo = plugin.getPlayerInfo(islandInfo.getLeaderUniqueId());
-        if (completionLogic.checkChallenge(playerInfo, challengeName) == 0) {
-            completionLogic.completeChallenge(playerInfo, challengeName);
+        markProgress(progressLogic.getProgress(player), key);
+    }
+
+    /**
+     * Location variant of {@link #markProgress(Player, String)}: credits the island occupying the
+     * given location, so triggers that fire without a player (e.g. the biome temperature timer) still
+     * work. Island progress lives in the island leader's entry.
+     *
+     * @param loc The location belonging to the island.
+     * @param key The progress key to mark.
+     */
+    public void markProgress(@NotNull Location loc, @NotNull String key) {
+        PlayerProgress progress = getProgressForLocation(loc);
+        if (progress != null) {
+            markProgress(progress, key);
         }
     }
 
-    public void completeChallengeIfNotDone(PlayerInfo playerInfo, String challengeName) {
-        if (completionLogic.checkChallenge(playerInfo, challengeName) == 0) {
-            completionLogic.completeChallenge(playerInfo, challengeName);
+    private static void markProgress(@NotNull PlayerProgress progress, @NotNull String key) {
+        raiseProgress(progress, key, 1);
+    }
+
+    /**
+     * Raises the given stored progress key to {@code value}, never lowering it. Used for counters that
+     * aggregate one-shot flags (e.g. the number of nether biomes already created on an island).
+     *
+     * @param progress The progress entry to update.
+     * @param key      The progress key to raise.
+     * @param value    The value the key should reach.
+     */
+    public static void raiseProgress(@NotNull PlayerProgress progress, @NotNull String key, double value) {
+        if (progress.getProgress(key) < value) {
+            progress.setProgress(key, value);
         }
+    }
+
+    /**
+     * Returns the island-shared progress of the island occupying the given location, or {@code null}
+     * when the location does not belong to an island.
+     *
+     * @param loc The location to resolve the island for.
+     * @return The island leader's progress entry, or {@code null}.
+     */
+    @Nullable
+    public PlayerProgress getProgressForLocation(@NotNull Location loc) {
+        IslandInfo islandInfo = plugin.getIslandInfo(loc);
+        UUID leaderUUID = islandInfo != null ? islandInfo.getLeaderUniqueId() : null;
+        return leaderUUID != null ? progressLogic.getProgress(leaderUUID) : null;
     }
 
     public void completeChallenge(PlayerInfo playerInfo, String challengeName) {

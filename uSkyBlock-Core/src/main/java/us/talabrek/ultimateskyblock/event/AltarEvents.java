@@ -1435,7 +1435,7 @@ public class AltarEvents implements Listener {
                             block.getWorld().dropItemNaturally(player.getLocation(), stoneOfPeace());
                             block.getWorld().dropItemNaturally(player.getLocation(), stoneOfEternity());
                             block.getWorld().dropItemNaturally(player.getLocation(), stoneOfWealth());
-                            plugin.getChallengeLogic().completeChallengeIfNotDone(plugin.getPlayerInfo(player), "build_altar");
+                            plugin.getChallengeLogic().markProgress(player, "build_altar");
                         } else {
                             player.sendMessage(tr("\u00a7c需要5个钻石和50000g来建造 富饶之祭坛。"));
                             return;
@@ -1460,7 +1460,7 @@ public class AltarEvents implements Listener {
                     player.getWorld().playSound(block.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
                     player.getWorld().dropItemNaturally(player.getLocation(), scytheOfHarvest());
                     islandInfo.setAltarBuffLevel(AltarBuffType.THRIVE, 1);
-                    plugin.getChallengeLogic().completeChallengeIfNotDone(plugin.getPlayerInfo(player), "build_altar");
+                    plugin.getChallengeLogic().markProgress(player, "build_altar");
                 } else {
                     player.sendMessage(tr("\u00a7c需要64个金苹果来建造 收获之祭坛。"));
                     return;

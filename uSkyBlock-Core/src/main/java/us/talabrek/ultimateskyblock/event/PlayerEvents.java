@@ -34,11 +34,13 @@ import org.jetbrains.annotations.NotNull;
 import us.talabrek.ultimateskyblock.Settings;
 import us.talabrek.ultimateskyblock.api.async.Callback;
 import us.talabrek.ultimateskyblock.api.event.IslandInfoEvent;
+import us.talabrek.ultimateskyblock.challenge.ChallengeLogic;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.island.BlockLimitLogic;
 import us.talabrek.ultimateskyblock.island.IslandInfo;
 import us.talabrek.ultimateskyblock.player.PatienceTester;
 import us.talabrek.ultimateskyblock.player.PlayerInfo;
+import us.talabrek.ultimateskyblock.progress.PlayerProgress;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 import us.talabrek.ultimateskyblock.util.LocationUtil;
 import us.talabrek.ultimateskyblock.util.TranslationUtil;
@@ -698,8 +700,8 @@ public class PlayerEvents implements Listener {
     public void onPlayerPortal(PlayerPortalEvent event) {
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.END_PORTAL) {
             // The end is handled by EndPortalEvents: destination rewrite + island requirements + the enter_end
-            // challenge, which is awarded in EndPortalEvents.onPlayerPortalMonitor once the portal survived every
-            // validation (this listener runs before that validation, so awarding it here would also fire for
+            // progress, which is recorded in EndPortalEvents.onPlayerPortalMonitor once the portal survived every
+            // validation (this listener runs before that validation, so recording it here would also credit
             // players without an island, unlinked portals, other islands' portals and the lobby's end portal).
             return;
         }
@@ -714,7 +716,7 @@ public class PlayerEvents implements Listener {
             }
             return;
         }
-        plugin.getChallengeLogic().completeChallengeIfNotDone(playerInfo, "enter_nether");
+        plugin.getChallengeLogic().markProgress(player, "enter_nether");
     }
 
     /**
@@ -936,7 +938,7 @@ public class PlayerEvents implements Listener {
                 loc.getWorld().setBiome(loc.getBlockX(), y, loc.getBlockZ(), AcidBiomeProvider.tempToBiome[i]);
             }
             if (i == 0) {
-                plugin.getChallengeLogic().completeLocationChallengeIfNotDone(loc, "biome_frozen");
+                plugin.getChallengeLogic().markProgress(loc, "biome_frozen");
             }
         }
     }
@@ -990,7 +992,7 @@ public class PlayerEvents implements Listener {
             p.sendMessage("Temperature changed!");
         }
         if (temperature == 4) {
-            plugin.getChallengeLogic().completeLocationChallengeIfNotDone(loc, "biome_warm");
+            plugin.getChallengeLogic().markProgress(loc, "biome_warm");
         }
     }
 
@@ -1085,7 +1087,8 @@ public class PlayerEvents implements Listener {
             else if (record == Material.WARPED_NYLIUM) biome = Biome.WARPED_FOREST;
             else if (record == Material.SOUL_SOIL) biome = Biome.SOUL_SAND_VALLEY;
             else biome = Biome.NETHER_WASTES;
-            plugin.getChallengeLogic().completeLocationChallengeIfNotDone(location, "biome_nether");
+            plugin.getChallengeLogic().markProgress(location, "biome_nether");
+            recordNetherBiome(location, biome);
             for (int k = y - 4; k < y + 12; k += 4) {
                 if (k < 0 || k > 255) continue;
                 world.setBiome(x, k, z, biome);
@@ -1093,6 +1096,35 @@ public class PlayerEvents implements Listener {
             Player player = event.getPlayer();
             player.sendMessage("changed biome to " + biome.translationKey());
         }
+    }
+
+    /**
+     * 下界可改造出的 5 种群系, 供 {@code biome_nether_all} 进度统计使用。
+     */
+    private static final List<Biome> NETHER_BIOMES = List.of(
+        Biome.NETHER_WASTES, Biome.SOUL_SAND_VALLEY, Biome.CRIMSON_FOREST, Biome.WARPED_FOREST, Biome.BASALT_DELTAS);
+
+    /**
+     * 记录本岛已经改造出过的下界群系: 每种群系只在首次出现时打一个 {@code nether_biome_<群系>} 标记,
+     * 然后把 {@code biome_nether_all} 进度的值抬到"已改造群系数"。
+     * <p>这两个键只用于展示 {@code biome_nether_all} 挑战(0/5 -> 5/5), 不参与其他挑战。
+     *
+     * @param location 触发改造的方块位置, 用于定位所属岛屿。
+     * @param biome    本次改造出的群系。
+     */
+    private void recordNetherBiome(Location location, Biome biome) {
+        PlayerProgress progress = plugin.getChallengeLogic().getProgressForLocation(location);
+        if (progress == null) {
+            return;
+        }
+        ChallengeLogic.raiseProgress(progress, "nether_biome_" + biome.getKey().getKey(), 1);
+        int count = 0;
+        for (Biome netherBiome : NETHER_BIOMES) {
+            if (progress.getProgress("nether_biome_" + netherBiome.getKey().getKey()) >= 1) {
+                count++;
+            }
+        }
+        ChallengeLogic.raiseProgress(progress, "biome_nether_all", count);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -1109,7 +1141,7 @@ public class PlayerEvents implements Listener {
                 BlockData changed = change.getBlockData();
                 if (changed instanceof Leaves){
                     change.setType(Material.AIR);
-                    plugin.getChallengeLogic().completeLocationChallengeIfNotDone(block.getLocation(), "anvilleaves");
+                    plugin.getChallengeLogic().markProgress(block.getLocation(), "anvilleaves");
                     return;
                 }
                 if (changeType == Material.STONE_BRICKS){
