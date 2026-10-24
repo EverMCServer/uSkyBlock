@@ -250,7 +250,7 @@ public class SignLogic {
             if (challengeLocked) {
                 lines.add(tr("\u00a74\u00a7lLocked Challenge"));
             } else {
-                lines.addAll(wordWrap(challenge.getDescription(), SIGN_LINE_WIDTH, SIGN_LINE_WIDTH));
+                lines.addAll(wordWrap(challenge.getDescriptionOnOneLine(), SIGN_LINE_WIDTH, SIGN_LINE_WIDTH));
             }
             for (int i = 0; i < 3; i++) {
                 if (i < lines.size()) {

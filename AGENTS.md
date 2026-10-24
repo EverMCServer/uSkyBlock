@@ -241,7 +241,9 @@ public class XxxEvents implements Listener {
 
 > 说明：`enter_end` 挑战在 `uSkyBlock/challenges.yml` 定义，触发点在 **`EndPortalEvents.onPlayerPortalMonitor`**（MONITOR + ignoreCancelled，注册晚于 `PlayerEvents` 的维度门槛）：只有经过插件目的地校验、他人岛屿拦截、`advanced` 维度门槛后仍然有效的末地门传送才记录进度，所以不会出现旧实现那种“无岛 / 未链接 / 他人岛屿 / 大厅末地”误完成。**不要**把它挪回 `onPlayerPortal`（HIGHEST），那里事件还能被后续插件取消。
 
-> **事件触发类挑战的统一写法（`type: progress` + 单次触发）**：`challenges.yml` 里这类挑战（`enter_nether` / `enter_end` / `build_altar` / `biome_frozen` / `biome_warm` / `biome_nether` / `biome_nether_all` / `anvilleaves` / `armor_protection` / `conduit_protection`）都写成 `type: progress` + `requiredProgress: <与挑战同名的键>:N`，**不要**再用 `type: onPlayer` + `requiredItems: bedrock:1` 那种占位写法（基岩不可得，只是让玩家点不动，而且绕过发奖逻辑）。触发点只调 `ChallengeLogic.markProgress(player|location, key)`（location 版自动归到岛主条目，供没有 Player 的定时任务使用；`biome_nether_all` 用 `raiseProgress` 把计数抬到已改造群系数），进度满后玩家在 `/c` 里点击领取，奖励统一走 `giveReward`。
+> **事件触发类挑战的统一写法（`type: progress` + 单次触发）**：`challenges.yml` 里这类挑战（`enter_nether` / `enter_end` / `build_altar` / `biome_frozen` / `biome_warm` / `biome_nether` / `biome_nether_all` / `anvilleaves` / `armor_protection` / `conduit_protection`）都写成 `type: progress` + `requiredProgress: <与挑战同名的键>:N`，**不要**再用 `type: onPlayer` + `requiredItems: bedrock:1` 那种占位写法（基岩不可得，只是让玩家点不动，而且绕过发奖逻辑）。触发点只调 `ChallengeLogic.markProgress(player|location, key)`（location 版自动归到岛主条目，供没有 Player 的定时任务使用），进度满后玩家在 `/c` 里点击领取，奖励统一走 `giveReward`。一个挑战可以带多条 `requiredProgress`（`biome_nether_all` 就是要求 5 种下界群系各 1 次，键名 `nether_biome_<群系>`）。
+>
+> 挑战描述可以在 `challenges.yml` 里用 `\n` 强制换行：`Challenge.getDescriptionLines()` 会按行展开成多条 lore（`FormatUtil.wordWrap` 只按空格断行，中文描述不换行会变成超长的一行）；聊天提示和木牌那种不能换行的地方用 `getDescriptionOnOneLine()`。
 
 ### `acidisland-recipes/` — 自定义数据包
 

@@ -25,7 +25,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import us.talabrek.ultimateskyblock.api.event.MemberJoinedEvent;
 import us.talabrek.ultimateskyblock.block.BlockCollection;
 import us.talabrek.ultimateskyblock.hook.HookManager;
@@ -242,7 +241,7 @@ public class ChallengeLogic implements Listener {
             tryComplete(player, challengeName, "onPlayer");
         } else if (challenge.getType() == Challenge.Type.ISLAND) {
             if (!tryComplete(player, challengeName, "onIsland")) {
-                player.sendMessage(tr("\u00a74{0}", challenge.getDescription()));
+                player.sendMessage(tr("\u00a74{0}", challenge.getDescriptionOnOneLine()));
                 player.sendMessage(tr("\u00a74You must be standing within {0} blocks of all required items.", challenge.getRadius()));
             }
         } else if (challenge.getType() == Challenge.Type.ISLAND_LEVEL) {
@@ -792,42 +791,21 @@ public class ChallengeLogic implements Listener {
      * @param key The progress key to mark.
      */
     public void markProgress(@NotNull Location loc, @NotNull String key) {
-        PlayerProgress progress = getProgressForLocation(loc);
-        if (progress != null) {
-            markProgress(progress, key);
-        }
-    }
-
-    private static void markProgress(@NotNull PlayerProgress progress, @NotNull String key) {
-        raiseProgress(progress, key, 1);
-    }
-
-    /**
-     * Raises the given stored progress key to {@code value}, never lowering it. Used for counters that
-     * aggregate one-shot flags (e.g. the number of nether biomes already created on an island).
-     *
-     * @param progress The progress entry to update.
-     * @param key      The progress key to raise.
-     * @param value    The value the key should reach.
-     */
-    public static void raiseProgress(@NotNull PlayerProgress progress, @NotNull String key, double value) {
-        if (progress.getProgress(key) < value) {
-            progress.setProgress(key, value);
-        }
-    }
-
-    /**
-     * Returns the island-shared progress of the island occupying the given location, or {@code null}
-     * when the location does not belong to an island.
-     *
-     * @param loc The location to resolve the island for.
-     * @return The island leader's progress entry, or {@code null}.
-     */
-    @Nullable
-    public PlayerProgress getProgressForLocation(@NotNull Location loc) {
         IslandInfo islandInfo = plugin.getIslandInfo(loc);
         UUID leaderUUID = islandInfo != null ? islandInfo.getLeaderUniqueId() : null;
-        return leaderUUID != null ? progressLogic.getProgress(leaderUUID) : null;
+        if (leaderUUID != null) {
+            markProgress(progressLogic.getProgress(leaderUUID), key);
+        }
+    }
+
+    /**
+     * Raises the key to 1 unless it already is; the value goes through
+     * {@link PlayerProgress#addToProgress} so the lifetime total stays in sync with the current value.
+     */
+    private static void markProgress(@NotNull PlayerProgress progress, @NotNull String key) {
+        if (progress.getProgress(key) < 1) {
+            progress.addToProgress(key, 1);
+        }
     }
 
     public void completeChallenge(PlayerInfo playerInfo, String challengeName) {

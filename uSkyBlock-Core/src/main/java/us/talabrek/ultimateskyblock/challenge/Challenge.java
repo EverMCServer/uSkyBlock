@@ -116,6 +116,30 @@ public class Challenge {
         return description != null ? description : "";
     }
 
+    /**
+     * The description split into the lines it should be displayed on.
+     * <p>{@link FormatUtil#wordWrap} only breaks at spaces, and Chinese descriptions contain none, so a
+     * long Chinese description would end up as one over-long lore line. Authors can therefore put
+     * {@code \n} in {@code challenges.yml} to force a line break, which is honoured here.
+     *
+     * @return The description lines, never empty.
+     */
+    @NotNull
+    public List<String> getDescriptionLines() {
+        return List.of(getDescription().split("\\R"));
+    }
+
+    /**
+     * The description flattened to a single line, for contexts that cannot break lines (chat messages
+     * and signs).
+     *
+     * @return The description on one line.
+     */
+    @NotNull
+    public String getDescriptionOnOneLine() {
+        return String.join(" ", getDescriptionLines());
+    }
+
     public int getRadius() {
         return radius;
     }
@@ -178,7 +202,10 @@ public class Challenge {
         int effectiveRepetitions = getEffectiveRepetitions(completion);
         ItemStack currentChallengeItem = getDisplayItem();
         ItemMeta meta = currentChallengeItem.getItemMeta();
-        List<String> lores = new ArrayList<>(prefix(wordWrap(getDescription(), MAX_LINE), "\u00a77"));
+        List<String> lores = new ArrayList<>();
+        for (String descriptionLine : getDescriptionLines()) {
+            lores.addAll(prefix(wordWrap(descriptionLine, MAX_LINE), "\u00a77"));
+        }
         Reward reward = getReward();
         if (completion.getTimesCompleted() > 0 && isRepeatable()) {
             currentChallengeItem.setAmount(completion.getTimesCompleted() < currentChallengeItem.getMaxStackSize() ? completion.getTimesCompleted() : currentChallengeItem.getMaxStackSize());
@@ -228,9 +255,14 @@ public class Challenge {
                 // translation table as its own msgid (e.g. "visit" -> "到访其他岛屿").
                 String progressName = tr(progressReq.key());
                 if (type == Challenge.Type.PROGRESS && progress != null) {
-                    details.add(tr("\u00a7f{0}: \u00a7a{1}\u00a7f/\u00a77{2}",
-                        progressName, progress.getProgress(progressReq.key()), requiredAmount));
-                    details.add(tr("\u00a77Total progress: \u00a7f{0}", progress.getTotalProgress(progressReq.key())));
+                    double current = progress.getProgress(progressReq.key());
+                    double total = progress.getTotalProgress(progressReq.key());
+                    details.add(tr("\u00a7f{0}: \u00a7a{1}\u00a7f/\u00a77{2}", progressName, current, requiredAmount));
+                    // Only worth a line when the lifetime total differs from the current value (progress was
+                    // consumed or set by an admin); otherwise it just doubles every requirement line.
+                    if (total != current) {
+                        details.add(tr("\u00a77Total progress: \u00a7f{0}", total));
+                    }
                 } else {
                     details.add(tr("\u00a7f{0}: {1}", progressName, requiredAmount));
                 }
