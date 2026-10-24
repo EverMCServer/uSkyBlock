@@ -190,7 +190,7 @@ public class XxxEvents implements Listener {
 - 末地维度模型：同样是"每人一块独立区域"，但世界是**自定义虚空世界**（`AcidEndChunkGenerator`，无底部、单群系、`generateStructures(false)`），世界名 `<主世界>_the_end`、`Environment.THE_END`；区域 id = `<islandName>end`，Y 固定 `0..255`
 - 末地到达点是每个岛屿自己那块 **5×5 黑曜石平台**：`EndPortalEvents` 改写 `setTo()` 后再由 `buildArrivalPlatform()` 重建平台并清空上方 3 格（生电装置依赖这个"每次进入都重建"的原版行为）
 - 三个维度分别通过 `MultiverseHook.registerOverworld()` / `registerNetherworld()` / `registerEndWorld()` 导入 Multiverse，`linkInventories()` 把三者放进同一个 `skyblock` 组共享背包（避免切维度丢装备）
-- 传送门拦截逻辑分散在 `ExploitEvents.onPortalEvent`（访客/他人岛屿限制）、`PlayerEvents.onPlayerPortal`（下界新手任务门槛）、`PlayerEvents.onPlayerTeleportGate`（MONITOR 维度门槛，覆盖传送门/`/tpa`/插件传送）、`PlayerEvents.onPlayerChangedWorld`（真正落地到下界世界后才记 `enter_nether` 进度，op 也记）、`EndPortalEvents.onPlayerPortalMonitor`（末地门通过全部校验后记录 `enter_end` 进度）、`EndPortalEvents`（`END_PORTAL` / `ENDER` 目的地改写、实体过门、末影珍珠跨区域）、`PlayerEvents.onEntityPortal`（实体门户）
+- 传送门拦截逻辑分散在 `ExploitEvents.onPortalEvent`（访客/他人岛屿限制）、`PlayerEvents.onPlayerPortal`（下界新手任务门槛 + 记 `enter_nether` 进度；创造/旁观放行且照样记进度，**不要**再用 `isOp()` 做提前 return，否则 op 账号永远记不到进度）、`PlayerEvents.onPlayerTeleportGate`（MONITOR 维度门槛，覆盖 `/tpa`/插件传送）、`EndPortalEvents.onPlayerPortalMonitor`（末地门通过全部校验后记录 `enter_end` 进度）、`EndPortalEvents`（`END_PORTAL` / `ENDER` 目的地改写、实体过门、末影珍珠跨区域）、`PlayerEvents.onEntityPortal`（实体门户）
 - 岛屿删除：`IslandLogic.clearIsland()` 串联为 主世界 → 下界 → 末地 → `afterDeletion`
 
 ## 当前工作方向

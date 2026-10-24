@@ -695,12 +695,13 @@ public class PlayerEvents implements Listener {
     }
 
     /**
-     * Blocks the nether for players who have not finished the {@code beginner} rank yet (and lets ops through).
+     * Nether tutorial gate: players who have not finished the {@code beginner} rank may not pass a nether portal,
+     * and an allowed pass records the {@code enter_nether} progress.
      *
-     * <p>The {@code enter_nether} progress is <em>not</em> recorded here: it used to be, behind an {@code isOp()}
-     * early return, so ops never got the progress (and neither did players entering through {@code /tpa} or a plugin
-     * teleport, which do not fire a portal event). It is recorded in
-     * {@link #onPlayerChangedWorld(PlayerChangedWorldEvent)} once the player really is in the nether.</p>
+     * <p>Creative and spectator players are let through - and still get the progress - so the mechanic can be
+     * tested. The bypass used to be {@code player.isOp()} followed by an immediate {@code return}, which meant an op
+     * account (the usual admin test account) entered the nether but never accumulated the progress. The gamemode
+     * rule is the same one {@link ToxicEvents#isImmune(Player)} uses for "this player is not really playing".</p>
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
@@ -714,13 +715,29 @@ public class PlayerEvents implements Listener {
         Player player = event.getPlayer();
         PlayerInfo playerInfo = plugin.getPlayerInfo(player);
         boolean isFirstCompletion = playerInfo.checkChallenge("beginner") == 0;
-        if (player.isOp()) return;
-        if (isFirstCompletion){
+        if (isFirstCompletion && !isCreativeOrSpectator(player)) {
             event.setCancelled(true);
             if (rateLimiter.tryAcquire()) {
                 player.sendMessage("\u00a7c你需要完成海岛入门任务，才能进入下界！");
             }
+            return;
         }
+        plugin.getChallengeLogic().markProgress(player, "enter_nether");
+    }
+
+    /**
+     * Whether the player is in a gamemode that is not actually playing the game (creative or spectator).
+     *
+     * <p>Mirrors the rule in {@link ToxicEvents#isImmune(Player)}, where those gamemodes mean "no gameplay rules
+     * apply". The nether gate uses it so admins building or testing in creative pass the tutorial gate while still
+     * having the challenge progress recorded.</p>
+     *
+     * @param player The player to check.
+     * @return True for creative and spectator, false for survival and adventure.
+     */
+    private static boolean isCreativeOrSpectator(@NotNull Player player) {
+        GameMode gameMode = player.getGameMode();
+        return gameMode != GameMode.SURVIVAL && gameMode != GameMode.ADVENTURE;
     }
 
     /**
@@ -767,23 +784,6 @@ public class PlayerEvents implements Listener {
         event.setCancelled(true);
         if (rateLimiter.tryAcquire()) {
             player.sendMessage(message);
-        }
-    }
-
-    /**
-     * Records the {@code enter_nether} progress once a player really is in the nether.
-     *
-     * <p>{@link PlayerChangedWorldEvent} fires after the world change happened, so this covers every way in (nether
-     * portal, {@code /tpa}, a plugin teleport) exactly once, cannot credit a teleport that another listener still
-     * cancels, and does not skip ops - all of which the previous "record it in the portal handler" approach got
-     * wrong (ops returned early, so the challenge could not even be tested as an admin).</p>
-     *
-     * @param event the world change event.
-     */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-        if (plugin.getWorldManager().isSkyNether(event.getPlayer().getWorld())) {
-            plugin.getChallengeLogic().markProgress(event.getPlayer(), "enter_nether");
         }
     }
 
