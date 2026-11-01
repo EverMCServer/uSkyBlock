@@ -327,6 +327,12 @@ public class SpawnEvents implements Listener {
         if (entityType == null) {
             return; // Only happens on "other-plugins", i.e. EchoPet
         }
+        if (entityType == EntityType.ENDER_DRAGON) {
+            // The vanilla dragon fight is anchored to the world origin (0,0), which is not inside any island
+            // region. Cancelling its CreatureSpawnEvent leaves the fight with a ghost dragon UUID (a boss bar
+            // without a dragon), so the dragon must be exempt from the island spawn limits.
+            return;
+        }
         String islandName = WorldGuardHandler.getIslandNameAt(location);
         if (islandName == null) {
             event.setCancelled(true); // Only allow spawning on active islands...
