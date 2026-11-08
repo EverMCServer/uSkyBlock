@@ -66,6 +66,7 @@ permissions:
       usb.handbook: true
       usb.island.challenges: true
       usb.island.create: true
+      usb.island.enddragon: true
       usb.island.home: true
       usb.island.info: true
       usb.island.level: true
@@ -147,6 +148,7 @@ permissions:
       usb.admin.ctop: true
       usb.admin.toxic: true
       usb.admin.detox: true
+      usb.admin.enddragon: true
       usb.admin.handbook: true
       usb.admin.version: true
       usb.exempt.ban: true
@@ -192,6 +194,7 @@ permissions:
       usb.admin.ctop: true
       usb.admin.toxic: true
       usb.admin.detox: true
+      usb.admin.enddragon: true
       usb.admin.handbook: true
       usb.admin.version: true
       usb.admin.wg: true
@@ -226,6 +229,7 @@ permissions:
       usb.island.ban: true
       usb.island.challenges: true
       usb.island.create: true
+      usb.island.enddragon: true
       usb.island.home: true
       usb.island.info: true
       usb.island.info.other: true
@@ -410,6 +414,9 @@ permissions:
   usb.admin.detox:
     description: 'Grants access to /usb detox - remove toxic mark from WE selection'
 
+  usb.admin.enddragon:
+    description: 'Grants access to /usb enddragon status|reset|reload|check - manage the ender dragon challenge'
+
   usb.admin.version:
     description: 'Grants access to /usb version - displays version information'
 
@@ -566,6 +573,9 @@ permissions:
       /island auto - teleports you to your island (or create one)
       /island create - create an island
       /island party - show party information
+
+  usb.island.enddragon:
+    description: 'Grants access to /island enddragon - open the ender dragon challenge menu.'
 
   usb.island.home:
     description: 'Grants access to /island home - teleport to the island home'

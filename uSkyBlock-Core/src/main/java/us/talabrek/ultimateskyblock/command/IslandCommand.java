@@ -15,6 +15,7 @@ import us.talabrek.ultimateskyblock.command.completion.OnlinePlayerTabCompleter;
 import us.talabrek.ultimateskyblock.command.completion.PermissionTabCompleter;
 import us.talabrek.ultimateskyblock.command.completion.SchematicTabCompleter;
 import us.talabrek.ultimateskyblock.command.island.*;
+import us.talabrek.ultimateskyblock.enddragon.EndDragonCommand;
 import us.talabrek.ultimateskyblock.menu.SkyBlockMenu;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
@@ -71,7 +72,8 @@ public class IslandCommand extends BaseCommandExecutor {
         @NotNull GreetingCommand greetingCommand,
         @NotNull FarewellCommand farewellCommand,
         @NotNull BuyHopperLimitCommand buyHopperLimitCommand,
-        @NotNull SlimeCommand slimeCommand
+        @NotNull SlimeCommand slimeCommand,
+        @NotNull EndDragonCommand endDragonCommand
     ) {
         super("island|is", "usb.island.create", marktr("general island command"));
         this.plugin = plugin;
@@ -124,6 +126,7 @@ public class IslandCommand extends BaseCommandExecutor {
         add(greetingCommand);
         add(farewellCommand);
         add(buyHopperLimitCommand);
+        add(endDragonCommand);
     }
 
     @Override

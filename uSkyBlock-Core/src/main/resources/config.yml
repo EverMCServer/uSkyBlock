@@ -485,6 +485,104 @@ end:
     # If true, only blocks inside an island region are copied. The shared end "main city" around the origin is not
     # an island, so it keeps vanilla behaviour.
     only-on-islands: true
+
+  # Repeatable ender dragon challenge, started with /is enddragon inside the dragon_altar region.
+  dragon:
+    enabled: true
+    altar-region: dragon_altar
+    world: world_acidisland_the_end
+    timeout-seconds: 3600
+    summoning-timeout-seconds: 120
+    fail-cooldown-seconds: 30
+    keep-arena-loaded: true
+    protect-arena: true
+    keep-vanilla-xp: false
+    keep-vanilla-drops: false
+    difficulties:
+      1:
+        cost: 4
+        display-name: "原版"
+        max-health: 200.0
+        damage-multiplier: 1.0
+        reward:
+          items:
+            - dragon_breath:8
+          currency: 2000
+          xp: 1000
+      2:
+        cost: 8
+        display-name: "略强"
+        max-health: 300.0
+        damage-multiplier: 1.1
+        reward:
+          items:
+            - dragon_breath:16
+          currency: 3000
+          xp: 1500
+      3:
+        cost: 16
+        display-name: "进阶"
+        max-health: 400.0
+        damage-multiplier: 1.2
+        reward:
+          items:
+            - dragon_head:1
+          currency: 4500
+          xp: 2000
+      4:
+        cost: 32
+        display-name: "困难"
+        max-health: 500.0
+        damage-multiplier: 1.3
+        reward:
+          items:
+            - dragon_head:2
+          currency: 6500
+          xp: 3000
+      5:
+        cost: 64
+        display-name: "专家"
+        max-health: 600.0
+        damage-multiplier: 1.4
+        reward:
+          items:
+            - dragon_egg:1
+          currency: 9000
+          xp: 4000
+      6:
+        cost: 128
+        display-name: "大师"
+        max-health: 700.0
+        damage-multiplier: 1.5
+        reward:
+          items:
+            - dragon_egg:1
+            - dragon_head:1
+          currency: 12000
+          xp: 5500
+      7:
+        cost: 256
+        display-name: "宗师"
+        max-health: 850.0
+        damage-multiplier: 1.75
+        reward:
+          items:
+            - elytra:1
+            - dragon_egg:1
+          currency: 16000
+          xp: 7000
+      8:
+        cost: 512
+        display-name: "终局"
+        max-health: 1000.0
+        damage-multiplier: 2.0
+        reward:
+          items:
+            - elytra:1
+            - dragon_egg:2
+            - dragon_head:1
+          currency: 24000
+          xp: 10000
 tool-menu:
   enabled: true
   tool: OAK_SAPLING
@@ -520,7 +618,7 @@ placeholder:
   servercommandplaceholder: false
 
 # DO NOT TOUCH THE FIELDS BELOW
-version: 112
+version: 113
 force-replace:
   options.party.invite-timeout: 100
   options.island.islandTeleportDelay: 5

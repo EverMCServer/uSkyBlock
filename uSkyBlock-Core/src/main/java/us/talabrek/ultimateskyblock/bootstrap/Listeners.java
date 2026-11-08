@@ -13,6 +13,7 @@ import us.talabrek.ultimateskyblock.event.*;
 import us.talabrek.ultimateskyblock.gui.GuiListener;
 import us.talabrek.ultimateskyblock.signs.SignEvents;
 import us.talabrek.ultimateskyblock.command.InviteHandler;
+import us.talabrek.ultimateskyblock.enddragon.EndDragonEvents;
 import us.talabrek.ultimateskyblock.uuid.PlayerDB;
 
 @Singleton
@@ -38,6 +39,7 @@ public class Listeners {
     private final NetherTerraFormEvents netherTerraFormEvents;
     private final EndPortalEvents endPortalEvents;
     private final EndermanCopyEvents endermanCopyEvents;
+    private final EndDragonEvents endDragonEvents;
     private final ToolMenuEvents toolMenuEvents;
     private final SignEvents signEvents;
     private final ChatEvents chatEvents;
@@ -65,6 +67,7 @@ public class Listeners {
         @NotNull NetherTerraFormEvents netherTerraFormEvents,
         @NotNull EndPortalEvents endPortalEvents,
         @NotNull EndermanCopyEvents endermanCopyEvents,
+        @NotNull EndDragonEvents endDragonEvents,
         @NotNull ToolMenuEvents toolMenuEvents,
         @NotNull SignEvents signEvents,
         @NotNull ChatEvents chatEvents,
@@ -90,6 +93,7 @@ public class Listeners {
         this.netherTerraFormEvents = netherTerraFormEvents;
         this.endPortalEvents = endPortalEvents;
         this.endermanCopyEvents = endermanCopyEvents;
+        this.endDragonEvents = endDragonEvents;
         this.toolMenuEvents = toolMenuEvents;
         this.signEvents = signEvents;
         this.chatEvents = chatEvents;
@@ -132,6 +136,7 @@ public class Listeners {
         if (Settings.end_enabled) {
             manager.registerEvents(endPortalEvents, plugin);
             manager.registerEvents(endermanCopyEvents, plugin);
+            manager.registerEvents(endDragonEvents, plugin);
         }
         if (config.getYamlConfig().getBoolean("tool-menu.enabled", true)) {
             manager.registerEvents(toolMenuEvents, plugin);

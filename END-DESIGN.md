@@ -98,9 +98,11 @@
 
 **必须同时处理的边界**：跨维度传送会触发 `PlayerTeleportEvent`；`PlayerEvents.onTeleport`（`PlayerEvents.java:655`）里已有封禁/上锁岛屿拦截，末地目标也要走同一套校验，否则会出现"被封禁玩家绕过岛屿锁定、直接落到对方末地区域"。
 
-### 4.2 【用户已问】怎样处理末影龙 —— **最新口径：不做任何处理**
+### 4.2 【用户已问】怎样处理末影龙 —— **最新口径：首杀 vanilla，之后由 `/is enddragon` 管理**
 
-> **口径变更（最新，取代 D2=A）**：插件**不对末影龙/龙战做任何处理** —— 不删龙、不取消生成、不拦末地水晶/爆炸、不清 bossbar。vanilla 龙战照常运行；上线后由管理员手动击杀原点的龙。下面的 A/B/C 方案与"必须处理的事"保留作历史备查，**不再实施**。
+> **2026-11-08 更新**：已新增 `/is enddragon` 复活末影龙系统，见 [`END-DRAGON-DESIGN.md`](END-DRAGON-DESIGN.md)。原版首龙仍正常击杀（保留龙蛋/返回门），之后的重复挑战由该系统通过原版 `DragonBattle#initiateRespawn` 管理。
+>
+> 下面的旧口径（"插件不处理末影龙/龙战"）与 A/B/C 方案保留作历史备查，**不再作为当前实现**。
 >
 > ⚠️ 手动杀龙的副作用：原版会在末地祭坛位置（通常是原点附近）生成 Exit Portal（基岩/末地门方块）和龙蛋，可能覆盖原点主城；建议上线后**先杀龙、再建主城**，或杀完后清理/改建。龙战期间龙也会破坏方块。
 
@@ -487,7 +489,7 @@
 | **原点主城 / 兜底点** | 已改为：世界出生点 = 兜底点 = 原点 `(0, end.height, 0)`（config `end.fallback.x/z`），插件**不建任何方块**（原 9×9 黑曜石平台 + 清空上方 4 格已移除）。主城由服主建造维护。**注意**：实体兜底（`getEndEntityFallbackLocation`）现在只改落点、不再铺平台；Paper 建的原版平台固定落在 `Level.END`（= `world_the_end`）的 `(100,48,0)`，与主城/本岛无关（见下一条） |
 | **刷沙机 / 原版下落方块复制（已定根因，暂缓）** | **2026-10-18 测试服实测结论：自定义末地维度下永远无法复制，与 `allow-unsafe-end-portal-teleportation` 无关。** Paper 的 `FallingBlockEntity#teleport()` 只在 `oldDimension == Level.END || newDimension == Level.END`（跨**原版** `minecraft:the_end` 维度）时才置 `forceTickAfterTeleportToDuplicate`，随后 `tick()` 里 `if (isAlive() || forceTickAfterTeleportToDuplicate)` 才会在传送后再执行"放方块/掉物品"那一段 —— 这就是复制。我们的末地是**自定义维度** `minecraft:world_acidisland_the_end`（见服务器 `world/dimensions/minecraft/` 下的目录名），`Level.END` 判定为 false，所以开关开了也不复制。实测：临时把实体目的地改到 `world_the_end`（原版 `the_end`）后**复制立刻正常**。**结论/后续**：要让原版刷沙可用，末地必须落在原版 `minecraft:the_end` 维度（`world_the_end`），每岛一块末地区域仍可用 WorldGuard 按岛 X/Z 切 —— 这推翻了 D1=A 的一部分前提；等末地上线后若要支持刷沙，再评估把末地迁到原版 the_end 世界（含地形/生成器、与大厅末地共用的取舍）。相关临时诊断代码已全部回滚（commit `b5ce12e3`/`66e43253` 之后） |
 | **`Level.END` 指向哪个世界（已确认）** | `Level.END` = 原版 `minecraft:the_end` 维度 = `world_the_end`，**不是**我们的 `_the_end`（`world_acidisland_the_end` 是自定义维度）。因此 Paper 的 `getPortalDestination` 建的 5×5 平台永远落在大厅末地 `(100,48,0)`，与本岛无关；岛上的平台只能由 `EndPortalEvents.buildArrivalPlatform()` 自己铺（与 §4.3.2 结论一致）。另：MV-NetherPortals 的 `EndPlatformCreator` 也会在**链接世界**里铺一块 `(100,48,0)` 平台（实测中看到的那块就是它铺的） |
-| **末影龙 / 龙战（最新口径）** | 插件**不做任何处理**（不删龙、不拦水晶/爆炸、不清 bossbar）。vanilla 龙战会生成龙和 bossbar，上线后由管理员手动击杀原点附近的龙。⚠️ **击杀龙会触发原版 Exit Portal（基岩/末地门方块）和龙蛋生成**，位置通常在原点附近，可能覆盖主城；建议**先杀龙、再建主城**，或杀完后清理/改建 |
+| **末影龙 / 龙战（最新口径）** | 首杀仍 vanilla：管理员/玩家正常击杀原点附近的龙，保留 Exit Portal 与龙蛋。之后的重复挑战由 **`/is enddragon`** 管理（见 [`END-DRAGON-DESIGN.md`](END-DRAGON-DESIGN.md)）：调用原版 `DragonBattle#initiateRespawn`，只允许发起者+岛屿成员伤害，3600s 无伤害失败，成功后岛屿记录待领取奖励。⚠️ 首杀仍会生成 Exit Portal/龙蛋，建议**先杀龙、再建主城** |
 | **`enter_end` 触发点（已实装）** | 在 **`EndPortalEvents.onPlayerPortalMonitor`**（`MONITOR` + `ignoreCancelled`，注册晚于 `PlayerEvents` 的维度门槛）里发：此时插件目的地校验、他人岛屿拦截、`advanced` 维度门槛都已通过，事件也不会再被取消，因此不会出现旧实现那种"无岛 / 未链接 / 他人岛屿 / 大厅末地"误完成。**不要**挪回 `onPlayerPortal`（`HIGHEST`，那时还能被后续插件取消）。走 `ChallengeLogic.markProgress(player, "enter_end")`：挑战是 `type: progress` + `requiredProgress: enter_end:1`，触发只记进度，玩家在 `/c` 里点击领取（与 `enter_nether` 及所有事件触发类挑战同一套写法，奖励统一走 `giveReward`） |
 | `WorldEditHandler.isOuterPossible()` | 末地启用沿用了下界的前置检查，需确认它在当前服务器配置下返回 true（否则末地会被自动禁用并打警告） |
 

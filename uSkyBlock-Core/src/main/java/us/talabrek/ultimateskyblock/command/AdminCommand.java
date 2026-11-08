@@ -37,6 +37,7 @@ import us.talabrek.ultimateskyblock.command.completion.BiomeTabCompleter;
 import us.talabrek.ultimateskyblock.command.completion.ChallengeTabCompleter;
 import us.talabrek.ultimateskyblock.command.completion.OnlinePlayerTabCompleter;
 import us.talabrek.ultimateskyblock.command.completion.RankTabCompleter;
+import us.talabrek.ultimateskyblock.enddragon.EndDragonAdminCommand;
 import us.talabrek.ultimateskyblock.handler.ConfirmHandler;
 import us.talabrek.ultimateskyblock.uSkyBlock;
 
@@ -86,7 +87,8 @@ public class AdminCommand extends BaseCommandExecutor {
         @NotNull ChunkCommand chunkCommand,
         @NotNull ToxicCommand toxicCommand,
         @NotNull DetoxCommand detoxCommand,
-        @NotNull AdminProgressCommand adminProgressCommand
+        @NotNull AdminProgressCommand adminProgressCommand,
+        @NotNull EndDragonAdminCommand endDragonAdminCommand
 
     ) {
         super("usb", null, marktr("Ultimate SkyBlock Admin"));
@@ -126,5 +128,6 @@ public class AdminCommand extends BaseCommandExecutor {
         add(toxicCommand);
         add(detoxCommand);
         add(adminProgressCommand);
+        add(endDragonAdminCommand);
     }
 }

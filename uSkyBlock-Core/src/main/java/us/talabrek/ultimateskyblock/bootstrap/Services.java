@@ -8,6 +8,7 @@ import us.talabrek.ultimateskyblock.MetricsManager;
 import us.talabrek.ultimateskyblock.api.event.EventLogic;
 import us.talabrek.ultimateskyblock.challenge.ChallengeLogic;
 import us.talabrek.ultimateskyblock.command.admin.DebugCommand;
+import us.talabrek.ultimateskyblock.enddragon.DragonFightManager;
 import us.talabrek.ultimateskyblock.handler.AsyncWorldEditHandler;
 import us.talabrek.ultimateskyblock.handler.WorldGuardHandler;
 import us.talabrek.ultimateskyblock.handler.placeholder.PlaceholderModule;
@@ -33,6 +34,7 @@ public class Services {
     private final AutoIslandLevelRefresh autoIslandLevelRefresh;
     private final PlaceholderModule placeholderModule;
     private final ProgressLogic progressLogic;
+    private final DragonFightManager dragonFightManager;
 
     @Inject
     public Services(
@@ -46,7 +48,8 @@ public class Services {
         @NotNull HookManager hookManager,
         @NotNull AutoIslandLevelRefresh autoIslandLevelRefresh,
         @NotNull PlaceholderModule placeholderModule,
-        @NotNull ProgressLogic progressLogic
+        @NotNull ProgressLogic progressLogic,
+        @NotNull DragonFightManager dragonFightManager
     ) {
         this.animationHandler = animationHandler;
         this.challengeLogic = challengeLogic;
@@ -59,6 +62,7 @@ public class Services {
         this.autoIslandLevelRefresh = autoIslandLevelRefresh;
         this.placeholderModule = placeholderModule;
         this.progressLogic = progressLogic;
+        this.dragonFightManager = dragonFightManager;
     }
 
     public void startup(uSkyBlock plugin) {
@@ -79,6 +83,7 @@ public class Services {
         if (plugin.getWorldManager().getEndWorld() != null) {
             WorldGuardHandler.setupGlobal(plugin.getWorldManager().getEndWorld());
         }
+        dragonFightManager.startup();
     }
 
     public void shutdown(uSkyBlock plugin) {
@@ -87,6 +92,7 @@ public class Services {
         challengeLogic.shutdown();
         eventLogic.shutdown();
         playerLogic.shutdown();
+        dragonFightManager.shutdown();
         islandLogic.shutdown();
         playerDB.shutdown();
         progressLogic.shutdown();

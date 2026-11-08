@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -395,6 +397,49 @@ public class WorldGuardHandler {
 
     private static BlockVector3 toVector(Location location) {
         return BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+    }
+
+    /**
+     * Gets a WorldGuard region by its exact id in the given world.
+     *
+     * @param world    World to look in, may be null.
+     * @param regionId Region id, case insensitive; may be null.
+     * @return The region, or null when the world/region is unavailable.
+     */
+    @Nullable
+    public static ProtectedRegion getRegion(@Nullable World world, @Nullable String regionId) {
+        if (world == null || regionId == null || regionId.isBlank()) {
+            return null;
+        }
+        RegionManager regionManager = getRegionManager(world);
+        if (regionManager == null) {
+            return null;
+        }
+        ProtectedRegion region = regionManager.getRegion(regionId.toLowerCase(Locale.ROOT));
+        if (region != null) {
+            return region;
+        }
+        for (Map.Entry<String, ProtectedRegion> entry : regionManager.getRegions().entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(regionId)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Checks whether a location is inside the given WorldGuard region.
+     *
+     * @param location Location to check, may be null.
+     * @param regionId Region id, case insensitive; may be null.
+     * @return True when the location is inside the region.
+     */
+    public static boolean isInRegion(@Nullable Location location, @Nullable String regionId) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+        ProtectedRegion region = getRegion(location.getWorld(), regionId);
+        return region != null && region.contains(location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }
 
     public static ProtectedRegion getNetherRegionAt(Location location) {
